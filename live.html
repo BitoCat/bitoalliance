@@ -252,6 +252,15 @@ body {
     </div>
 
 
+    <!-- 貓咪隧道快訊 -->
+    <div class="card" style="flex:1;display:flex;flex-direction:column;gap:6px;min-height:0;">
+      <div class="card-label">🐱 BitoCat 貓咪隧道快訊</div>
+      <div id="tunnelAlerts" style="display:flex;flex-direction:column;gap:6px;flex:1;">
+        <div style="font-size:12px;color:#c9a88a;text-align:center;padding:8px;">等待快訊...</div>
+      </div>
+      <span class="src-tag src-p">TradingView Webhook</span>
+    </div>
+
   </div><!-- /左側 -->
 
   <!-- ══ 中間 TradingView ══ -->
@@ -808,8 +817,46 @@ async function fetchHotList() {
 
 
 
-setInterval(fetchFG,       3600000);
-setInterval(fetchSignal,    15000);
+
+// ════════════════════════
+// 貓咪隧道快訊（最新4則）
+// ════════════════════════
+let lastTunnelId = null;
+async function fetchTunnelAlerts() {
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/bitocat_alerts?type=eq.tunnel&order=created_at.desc&limit=4`,
+      { headers: SB_HEADERS }
+    );
+    const data = await r.json();
+    if (!Array.isArray(data) || data.length === 0) return;
+    const container = document.getElementById('tunnelAlerts');
+    if (!container) return;
+    if (data[0].id !== lastTunnelId) lastTunnelId = data[0].id;
+    container.innerHTML = data.map(a => {
+      const isUpper = (a.signal || '').toLowerCase() === 'upper';
+      const color  = isUpper ? '#C0392B' : '#27AE60';
+      const icon   = isUpper ? '▲' : '▼';
+      const bg     = isUpper ? '#fdf2f2' : '#f2fbf5';
+      const border = isUpper ? '#C0392B' : '#27AE60';
+      const t = new Date(a.created_at);
+      const timeStr = t.toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit', hour12:false});
+      const price = a.price ? ` @ ${parseFloat(a.price).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})}` : '';
+      return `<div style="background:${bg};border-left:3px solid ${border};border-radius:6px;padding:8px 10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:14px;font-weight:600;color:${color};">${icon} ${a.timeframe||''} ${isUpper?'上軌':'下軌'}觸及</span>
+          <span style="font-size:11px;color:#8B6F47;">${timeStr}</span>
+        </div>
+        <div style="font-size:11px;color:#8B6F47;margin-top:2px;">${a.ticker||'BTCUSDT'}${price}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {}
+}
+fetchTunnelAlerts();
+
+setInterval(fetchFG,           3600000);
+setInterval(fetchSignal,        15000);
+setInterval(fetchTunnelAlerts,  15000);
 
 // ════════════════════════
 // Debug 工具（開 console 用）
