@@ -403,624 +403,218 @@ body {
 </div><!-- /body -->
 
 <script>
-// ════════════════════════
-// 設定區（只改這裡）
-// ════════════════════════
-const SYMBOL       = 'BTCUSDT';
-const SUPABASE_URL  = 'https://kldumnxdlgovaxtiszyn.supabase.co';
+// ════════════════════
+// 設定
+// ════════════════════
+const SYMBOL      = 'BTCUSDT';
+const SUPABASE_URL = 'https://kldumnxdlgovaxtiszyn.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsZHVtbnhkbGdvdmF4dGlzenluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjIyNDgsImV4cCI6MjA5MzY5ODI0OH0.P_anfYpSV2tgCPIQ7uZDVBjUFY3UhfEXk9u3XjlzBHI';
-const SB_HEADERS = { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON };
-const BITUNIX    = 'https://web-production-f4735.up.railway.app';
-const LIVE_DATA  = `${BITUNIX}/live-data?symbol=${SYMBOL}`;
-const BINANCE    = 'https://fapi.binance.com/futures/data';
+const SB_HEADERS  = { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON };
+const BITUNIX_API = 'https://web-production-f4735.up.railway.app';
+const BINANCE     = 'https://fapi.binance.com/futures/data';
 
-// ════════════════════════
-// 時鐘
-// ════════════════════════
-function tick() {
-  const n = new Date();
-  document.getElementById('clock').textContent =
-    n.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
-  document.getElementById('dateLabel').textContent =
-    n.toLocaleDateString('zh-TW',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
-}
-tick(); setInterval(tick, 1000);
+const altCoins = [
+  {sym:'ETH',  priceId:'ethPrice', chgId:'ethChg'},
+  {sym:'SOL',  priceId:'solPrice', chgId:'solChg'},
+  {sym:'BNB',  priceId:'bnbPrice', chgId:'bnbChg'},
+  {sym:'XRP',  priceId:'xrpPrice', chgId:'xrpChg'},
+  {sym:'DOGE', priceId:'dogePrice',chgId:'dogeChg'},
+  {sym:'ADA',  priceId:'adaPrice', chgId:'adaChg'},
+];
 
-// ════════════════════════
-// 連線狀態
-// ════════════════════════
-function setConn(ok) {
-  document.getElementById('dot').className = 'conn-dot ' + (ok ? 'ok' : 'err');
-  document.getElementById('connLabel').textContent = ok ? '即時連線中' : '連線失敗';
-}
-
-// ════════════════════════
-// 格式化工具
-// ════════════════════════
-const fmt  = (n, d=1) => parseFloat(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+// ════════════════════
+// 工具函式
+// ════════════════════
 const fmtB = v => v >= 1e9 ? '$'+(v/1e9).toFixed(2)+'B' : v >= 1e6 ? '$'+(v/1e6).toFixed(1)+'M' : '$'+v.toFixed(0);
+const fmt1 = v => parseFloat(v).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1});
 
-// ════════════════════════
-// 資金費率倒數
-// ════════════════════════
-let nextFunding = null, fundingPeriod = 8 * 3600000;
+function setConn(ok) {
+  const dot = document.getElementById('dot');
+  const lbl = document.getElementById('connLabel');
+  if (dot) dot.className = 'conn-dot ' + (ok ? 'ok' : 'err');
+  if (lbl) lbl.textContent = ok ? '即時連線中' : '連線失敗';
+}
+
+function updateClock() {
+  const n = new Date();
+  const cl = document.getElementById('clock');
+  const dl = document.getElementById('dateLabel');
+  if (cl) cl.textContent = n.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+  if (dl) dl.textContent = n.toLocaleDateString('zh-TW',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ════════════════════
+// Gauge 工具
+// ════════════════════
+let nextFunding = null;
+let fundingPeriod = 8 * 3600000;
+
 setInterval(() => {
   if (!nextFunding) return;
   const diff = Math.max(0, nextFunding - Date.now());
   const h = Math.floor(diff/3600000), m = Math.floor(diff%3600000/60000), s = Math.floor(diff%60000/1000);
   const p2 = n => String(n).padStart(2,'0');
-  document.getElementById('countdownText').textContent = `${p2(h)}:${p2(m)}`;
-  document.getElementById('countdownLabel').textContent = `下次結算 ${p2(h)}:${p2(m)}:${p2(s)}`;
-  // 倒數環進度
-  const elapsed  = fundingPeriod - diff;
-  const progress = Math.min(elapsed / fundingPeriod, 1);
-  const circ = 2 * Math.PI * 18;
-  const dash = circ * progress;
-  document.getElementById('countdownArc').setAttribute('stroke-dasharray', `${dash} ${circ - dash}`);
+  const ct = document.getElementById('countdownText');
+  const cl = document.getElementById('countdownLabel');
+  if (ct) ct.textContent = p2(h)+':'+p2(m);
+  if (cl) cl.textContent = '下次結算 '+p2(h)+':'+p2(m)+':'+p2(s);
+  const circ = 2*Math.PI*18;
+  const elapsed = fundingPeriod - diff;
+  const progress = Math.min(elapsed/fundingPeriod, 1);
+  const arc = document.getElementById('countdownArc');
+  if (arc) arc.setAttribute('stroke-dasharray', (circ*progress)+' '+(circ*(1-progress)));
 }, 1000);
 
-// ════════════════════════
-// Gauge 指針計算
-// ════════════════════════
-// 資金費率：-0.05% → 左端(180°)  0% → 中(90°)  +0.10% → 右端(0°)
-function fundingAngle(rate) {
-  const clamped = Math.max(-0.05, Math.min(0.10, rate));
-  const pct = (clamped + 0.05) / 0.15;
-  return 180 - pct * 180; // 180=左 0=右
-}
 function polarPoint(cx, cy, r, deg) {
-  const rad = (deg - 90) * Math.PI / 180;
-  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+  const rad = (deg-90)*Math.PI/180;
+  return {x: cx+r*Math.cos(rad), y: cy+r*Math.sin(rad)};
 }
 function arcPath(cx, cy, r, startDeg, endDeg) {
-  const s = polarPoint(cx, cy, r, startDeg);
-  const e = polarPoint(cx, cy, r, endDeg);
-  const large = Math.abs(endDeg - startDeg) > 180 ? 1 : 0;
+  const s = polarPoint(cx,cy,r,startDeg), e = polarPoint(cx,cy,r,endDeg);
+  const large = Math.abs(endDeg-startDeg)>180?1:0;
   return `M ${s.x} ${s.y} A ${r} ${r} 0 ${large} 1 ${e.x} ${e.y}`;
 }
+
 function updateFundingGauge(rate) {
-  const pct  = (Math.max(-0.05, Math.min(0.10, rate)) + 0.05) / 0.15;
-  const deg  = -90 + pct * 180; // -90=左 +90=右
-  const tip  = polarPoint(156, 88, 92, deg);
-  document.getElementById('fundingNeedle').setAttribute('x2', tip.x);
-  document.getElementById('fundingNeedle').setAttribute('y2', tip.y);
-  // 弧（從 -90 到 deg）
-  const arcD = arcPath(156, 88, 100, -90, deg);
-  document.getElementById('fundingArc').setAttribute('d', arcD);
-  const color = rate > 0.03 ? '#C0392B' : rate < 0 ? '#27AE60' : '#B85C1A';
-  document.getElementById('fundingArc').setAttribute('stroke', color);
-  const sign = rate >= 0 ? '+' : '';
-  document.getElementById('fundingVal').textContent = `${sign}${(rate*100).toFixed(4)}%`;
-  document.getElementById('fundingVal').setAttribute('fill', color);
+  const pct = (Math.max(-0.05,Math.min(0.10,rate))+0.05)/0.15;
+  const deg = -90+pct*180;
+  const tip = polarPoint(156,88,92,deg);
+  const needle = document.getElementById('fundingNeedle');
+  const arc    = document.getElementById('fundingArc');
+  const val    = document.getElementById('fundingVal');
+  if (needle) { needle.setAttribute('x2',tip.x); needle.setAttribute('y2',tip.y); }
+  if (arc)    { arc.setAttribute('d', arcPath(156,88,100,-90,deg)); arc.setAttribute('stroke', rate>0.03?'#C0392B':rate<0?'#27AE60':'#B85C1A'); }
+  if (val)    { val.textContent=(rate>=0?'+':'')+( rate*100).toFixed(4)+'%'; val.setAttribute('fill',rate>0.03?'#C0392B':rate<0?'#27AE60':'#B85C1A'); }
 }
 
-// 恐懼貪婪 Gauge：0=極恐(左) 100=極貪(右)
-function updateFgGauge(val) {
-  const pct = val / 100;
-  const deg = -90 + pct * 180;
-  const tip = polarPoint(156, 84, 92, deg);
-  document.getElementById('fgNeedle').setAttribute('x2', tip.x);
-  document.getElementById('fgNeedle').setAttribute('y2', tip.y);
-  const color = val <= 25 ? '#C0392B' : val >= 75 ? '#27AE60' : '#B85C1A';
-  document.getElementById('fgVal').textContent = val;
-  document.getElementById('fgVal').setAttribute('fill', color);
+function updateFgGauge(v) {
+  const deg = -90+(v/100)*180;
+  const tip = polarPoint(156,84,92,deg);
+  const needle = document.getElementById('fgNeedle');
+  const val    = document.getElementById('fgVal');
+  const col    = v<=25?'#C0392B':v>=75?'#27AE60':'#B85C1A';
+  if (needle) { needle.setAttribute('x2',tip.x); needle.setAttribute('y2',tip.y); }
+  if (val)    { val.textContent=v; val.setAttribute('fill',col); }
 }
 
-// ════════════════════════
-// Sparkline 畫法
-// ════════════════════════
-function drawSparkline(svgId, data, color, fillOpacity) {
-  const svg  = document.getElementById(svgId);
-  const W    = 312, H = svgId === 'sparkSvg' ? 44 : 40;
-  const min  = Math.min(...data), max = Math.max(...data);
-  const range= max - min || 1;
-  const pts  = data.map((v, i) => {
-    const x = (i / (data.length - 1)) * W;
-    const y = H - ((v - min) / range) * (H - 4) - 2;
-    return `${x},${y}`;
-  }).join(' ');
-  const lastPt = pts.split(' ').pop();
-  const [lx, ly] = lastPt.split(',');
-  svg.innerHTML = `
-    <polygon points="${pts} ${W},${H} 0,${H}" fill="${color}" opacity="${fillOpacity}"/>
+function drawSparkline(svgId, data, color, opacity) {
+  const svg = document.getElementById(svgId);
+  if (!svg) return;
+  const W=312, H=svgId==='sparkSvg'?44:40;
+  const min=Math.min(...data), max=Math.max(...data), range=max-min||1;
+  const pts = data.map((v,i)=>`${(i/(data.length-1))*W},${H-((v-min)/range)*(H-4)-2}`).join(' ');
+  const last = pts.split(' ').pop().split(',');
+  svg.innerHTML = `<polygon points="${pts} ${W},${H} 0,${H}" fill="${color}" opacity="${opacity}"/>
     <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>
-    <circle cx="${lx}" cy="${ly}" r="3" fill="${color}"/>
-  `;
+    <circle cx="${last[0]}" cy="${last[1]}" r="3" fill="${color}"/>`;
 }
 
-// ════════════════════════
-// 1. Ticker（現價、漲跌幅、高低、成交量）
-// 確認欄位：lastPrice, open, high, low, quoteVol
-// ════════════════════════
-let lastPrice = null;
-async function fetchTicker() {
-  try {
-    const r = await fetch(`${BITUNIX}/ticker?symbols=${SYMBOL}`);
-    const j = await r.json();
-    // data 可能是陣列或單一物件
-    const d = Array.isArray(j.data) ? j.data[0] : j.data;
-    if (!d) { setConn(false); return; }
-
-    const price = parseFloat(d.lastPrice);
-    const open  = parseFloat(d.open);
-    const high  = parseFloat(d.high);
-    const low   = parseFloat(d.low);
-    const vol   = parseFloat(d.quoteVol);
-
-    if (isNaN(price) || price <= 0) { setConn(false); return; }
-
-    // 現價
-    const priceEl = document.getElementById('btcPrice');
-    priceEl.textContent = price.toLocaleString('en-US', {minimumFractionDigits:1, maximumFractionDigits:1});
-    if (lastPrice !== null && lastPrice !== price) {
-      const up = price >= lastPrice;
-      priceEl.classList.add(up ? 'up' : 'down');
-      setTimeout(() => priceEl.classList.remove('up','down'), 1200);
-    }
-    lastPrice = price;
-
-    // 漲跌幅（open = 24h 前開盤價）
-    if (open > 0) {
-      const chg  = ((price - open) / open) * 100;
-      const sign = chg >= 0 ? '▲ +' : '▼ ';
-      const el   = document.getElementById('btcChange');
-      el.textContent = sign + Math.abs(chg).toFixed(2) + '%  (24h)';
-      el.className   = 'val-sm ' + (chg >= 0 ? 'up' : 'down');
-    }
-
-    // 日內高低
-    if (high > 0) document.getElementById('dayHigh').textContent =
-      high.toLocaleString('en-US', {minimumFractionDigits:1, maximumFractionDigits:1});
-    if (low > 0)  document.getElementById('dayLow').textContent  =
-      low.toLocaleString('en-US', {minimumFractionDigits:1, maximumFractionDigits:1});
-
-    // 成交量（quoteVol = USDT 計價）
-    // 顯示在 OI 區塊旁，此處不重複
-
-    setConn(true);
-  } catch(e) { setConn(false); }
-}
-
-// ════════════════════════
-// 2. K 線 Sparkline（近24根1h）
-// Bitunix kline 回傳：[timestamp, open, high, low, close, volume]
-// ════════════════════════
-async function fetchKline() {
-  try {
-    const r = await fetch(`${BITUNIX}/kline?symbol=${SYMBOL}&interval=60&limit=48`);
-    const j = await r.json();
-    const raw = j.data || [];
-    if (raw.length < 2) return;
-    // Bitunix 回傳新→舊，反轉成舊→新
-    const data = [...raw].reverse();
-    const closes = data
-      .map(k => parseFloat(k.close))
-      .filter(v => !isNaN(v) && v > 0);
-    if (closes.length >= 2) drawSparkline('sparkSvg', closes, '#B85C1A', 0.2);
-  } catch(e) {}
-}
-
-// ════════════════════════
-// 3. 資金費率
-// ════════════════════════
-async function fetchFunding() {
-  try {
-    const r = await fetch(`${BITUNIX}/funding?symbol=${SYMBOL}`);
-    const j = await r.json();
-    // Bitunix funding 回傳單一物件
-    const raw = j.data;
-    const d = Array.isArray(raw) ? raw[0] : raw;
-    if (!d) return;
-    const rate = parseFloat(d.fundingRate);
-    updateFundingGauge(rate);
-    if (d.nextFundingTime) nextFunding = parseInt(d.nextFundingTime);
-    if (d.fundingInterval) {
-      fundingPeriod = parseInt(d.fundingInterval) * 3600000;
-      document.getElementById('fundingInterval').textContent = `結算週期 ${d.fundingInterval} 小時`;
-    }
-  } catch(e) {}
-}
-
-// ════════════════════════
-// 4. 訂單深度
-// ════════════════════════
-async function fetchDepth() {
-  try {
-    const r = await fetch(`${BITUNIX}/depth?symbol=${SYMBOL}&limit=5`);
-    const j = await r.json();
-    const raw = j.data;
-    const d = Array.isArray(raw) ? raw[0] : raw;
-    if (!d) return;
-    // Bitunix depth: bids/asks 可能是 [[price, qty]] 或 [{price, qty}]
-    const parseSide = (side) => (side || []).reduce((s, item) => {
-      const p = parseFloat(Array.isArray(item) ? item[0] : (item.price || item[0]));
-      const q = parseFloat(Array.isArray(item) ? item[1] : (item.qty   || item[1]));
-      return s + (isNaN(p*q) ? 0 : p*q);
-    }, 0);
-    const bidVol = parseSide(d.bids);
-    const askVol = parseSide(d.asks);
-    const total  = bidVol + askVol;
-    if (total <= 0) return;
-    const bidPct = (bidVol / total * 100).toFixed(0);
-    const askPct = (askVol / total * 100).toFixed(0);
-    document.getElementById('depthBid').style.width = bidPct + '%';
-    document.getElementById('depthAsk').style.width = askPct + '%';
-    document.getElementById('depthBidVal').textContent = `買 ${bidPct}%`;
-    document.getElementById('depthAskVal').textContent = `賣 ${askPct}%`;
-    document.getElementById('depthSub').textContent = `買方 ${fmtB(bidVol)} vs 賣方 ${fmtB(askVol)}`;
-  } catch(e) {}
-}
-
-// ════════════════════════
-// 5. 多空比（Binance）
-// ════════════════════════
-async function fetchLongShort() {
-  try {
-    const r = await fetch(`${BINANCE}/globalLongShortAccountRatio?symbol=${SYMBOL}&period=5m&limit=1`);
-    const j = await r.json();
-    const d = Array.isArray(j) ? j[0] : j;
-    if (!d) return;
-    // Binance: longAccount / shortAccount 是 0~1 的比例
-    const lPct = parseFloat(d.longAccount  || d.longRatio  || 0) * 100;
-    const sPct = parseFloat(d.shortAccount || d.shortRatio || 0) * 100;
-    const ratio = (lPct / sPct).toFixed(2);
-    document.getElementById('longBar').style.width  = lPct.toFixed(0) + '%';
-    document.getElementById('shortBar').style.width = sPct.toFixed(0) + '%';
-    document.getElementById('longPct').textContent  = `多 ${lPct.toFixed(0)}%`;
-    document.getElementById('shortPct').textContent = `空 ${sPct.toFixed(0)}%`;
-    const label = lPct > sPct ? '多方佔優' : '空方佔優';
-    document.getElementById('ratioSub').textContent = `比例 ${ratio} · ${label}`;
-  } catch(e) {}
-}
-
-// ════════════════════════
-// 6. OI（Binance）
-// ════════════════════════
-let prevOI = null;
-async function fetchOI() {
-  try {
-    const r = await fetch(`${BINANCE}/openInterestHist?symbol=${SYMBOL}&period=1h&limit=24`);
-    const j = await r.json();
-    if (!Array.isArray(j) || j.length < 2) return;
-    // Binance 回傳是舊→新排序
-    const vals = j.map(d => parseFloat(d.sumOpenInterestValue));
-    drawSparkline('oiSvg', vals, '#4a9eff', 0.15);
-    const latest = vals[vals.length - 1];
-    const prev   = vals[0];
-    const chg    = ((latest - prev) / prev) * 100;
-    document.getElementById('oiVal').textContent = fmtB(latest);
-    const chgEl = document.getElementById('oiChg');
-    chgEl.textContent = (chg >= 0 ? '▲ +' : '▼ ') + Math.abs(chg).toFixed(2) + '%（24h）';
-    chgEl.className   = 'val-sm ' + (chg >= 0 ? 'up' : 'down');
-  } catch(e) {}
-}
-
-// ════════════════════════
-// 7. 恐懼貪婪
-// ════════════════════════
-async function fetchFG() {
-  try {
-    const r = await fetch('https://api.alternative.me/fng/?limit=1');
-    const j = await r.json();
-    const d = j.data?.[0];
-    if (!d) return;
-    const val = parseInt(d.value);
-    updateFgGauge(val);
-    document.getElementById('fgLabel').textContent = d.value_classification;
-    document.getElementById('fgLabel').style.color =
-      val <= 25 ? '#C0392B' : val >= 75 ? '#27AE60' : '#B85C1A';
-  } catch(e) {}
-}
-
-// ════════════════════════
-// 8. BitoCat 訊號（Supabase）
-// ════════════════════════
-let lastSigId = null;
-async function fetchSignal() {
-  try {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/bitocat_alerts?order=created_at.desc&limit=1`,
-      { headers: SB_HEADERS }
-    );
-    const j = await r.json();
-    const s = Array.isArray(j) ? j[0] : null;
-    if (!s) return;
-
-    const card   = document.getElementById('signalCard');
-    const dirEl  = document.getElementById('signalDir');
-    const infoEl = document.getElementById('signalInfo');
-    const msgEl  = document.getElementById('signalMsg');
-
-    const isNew  = s.id !== lastSigId;
-    const type   = (s.signal_type || '').toLowerCase();
-    const isLong = type === 'long' || type === '多頭';
-    const isShort= type === 'short' || type === '空頭';
-
-    dirEl.textContent  = isLong ? '▲ 做多' : isShort ? '▼ 做空' : '— 出場';
-    dirEl.style.color  = isLong ? '#27AE60' : isShort ? '#C0392B' : '#8B6F47';
-
-    const t = new Date(s.created_at);
-    const timeStr = t.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',hour12:false});
-    infoEl.textContent = `${s.ticker || ''} · ${s.timeframe || ''} · ${timeStr}`;
-    msgEl.textContent  = s.message || '';
-
-    card.className = 'card signal' + (isLong ? ' long' : isShort ? ' short' : '');
-
-    if (isNew) {
-      card.classList.add('signal-pop');
-      setTimeout(() => card.classList.remove('signal-pop'), 400);
-      lastSigId = s.id;
-    }
-  } catch(e) {}
-}
-
-// ════════════════════════
-// 幣種行情條（ETH SOL BNB XRP DOGE ADA）
-// ════════════════════════
-const altCoins = [
-  {sym:'ETH',  priceId:'ethPrice',  chgId:'ethChg'},
-  {sym:'SOL',  priceId:'solPrice',  chgId:'solChg'},
-  {sym:'BNB',  priceId:'bnbPrice',  chgId:'bnbChg'},
-  {sym:'XRP',  priceId:'xrpPrice',  chgId:'xrpChg'},
-  {sym:'DOGE', priceId:'dogePrice', chgId:'dogeChg'},
-  {sym:'ADA',  priceId:'adaPrice',  chgId:'adaChg'},
-];
-async function fetchAltTickers() {
-  try {
-    const syms = altCoins.map(c=>c.sym+'USDT').join(',');
-    const r = await fetch(`${BITUNIX}/ticker?symbols=${syms}`);
-    const j = await r.json();
-    const raw2 = j.data || [];
-    const data = Array.isArray(raw2) ? raw2 : [raw2];
-    if (data.length === 0) return;
-    data.forEach(d => {
-      const sym  = (d.symbol || '').replace('USDT','');
-      const coin = altCoins.find(c=>c.sym===sym);
-      if (!coin) return;
-      const price = parseFloat(d.lastPrice);
-      const open  = parseFloat(d.open);
-      if (isNaN(price) || price <= 0) return;
-      const chg   = open > 0 ? ((price-open)/open*100) : 0;
-      const sign  = chg >= 0 ? '+' : '';
-      const priceEl = document.getElementById(coin.priceId);
-      const chgEl   = document.getElementById(coin.chgId);
-      if (priceEl) {
-        priceEl.textContent = price >= 100
-          ? price.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})
-          : price.toLocaleString('en-US',{minimumFractionDigits:3,maximumFractionDigits:4});
-      }
-      if (chgEl) {
-        chgEl.textContent = sign + Math.abs(chg).toFixed(2) + '%';
-        chgEl.style.color = chg >= 0 ? '#27AE60' : '#C0392B';
-      }
-    });
-  } catch(e) {}
-}
-
-// ════════════════════════
-// Bitunix 熱門合約排行
-// ════════════════════════
-async function fetchHotList() {
-  try {
-    const r = await fetch(`${BITUNIX}/ticker?symbols=BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,XRPUSDT,DOGEUSDT,ADAUSDT,LINKUSDT,AVAXUSDT,DOTUSDT`);
-    const j = await r.json();
-    const rawData = j.data || [];
-    const data = (Array.isArray(rawData) ? rawData : [rawData]).filter(d => d.symbol && d.symbol.endsWith('USDT'));
-    // 依 quoteVol 排序，取前5
-    data.sort((a,b) => parseFloat(b.quoteVol||0) - parseFloat(a.quoteVol||0));
-    const top5 = data.slice(0,5);
-    const container = document.getElementById('hotList');
-    if (!container) return;
-    container.innerHTML = top5.map(d => {
-      const sym   = d.symbol.replace('USDT','');
-      const price = parseFloat(d.lastPrice);
-      const open  = parseFloat(d.open);
-      const chg   = open > 0 ? ((price-open)/open*100) : 0;
-      const sign  = chg >= 0 ? '+' : '';
-      const color = chg >= 0 ? '#27AE60' : '#C0392B';
-      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-top:0.5px solid #d4b896;">
-        <span style="font-size:12px;font-weight:500;color:#3D2B1F;">${sym}</span>
-        <span style="font-size:11px;color:#8B6F47;font-variant-numeric:tabular-nums;">${price>=100?fmt(price,1):fmt(price,3)}</span>
-        <span style="font-size:12px;font-weight:500;color:${color};">${sign}${chg.toFixed(2)}%</span>
-      </div>`;
-    }).join('');
-  } catch(e) {}
-}
-
-
-
-
-
-
-
-// ════════════════════════
-// 貓咪隧道快訊（最新4則）
-// ════════════════════════
-let lastTunnelId = null;
-async function fetchTunnelAlerts() {
-  try {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/bitocat_alerts?type=eq.tunnel&order=created_at.desc&limit=4`,
-      { headers: SB_HEADERS }
-    );
-    const data = await r.json();
-    if (!Array.isArray(data) || data.length === 0) return;
-    const container = document.getElementById('tunnelAlerts');
-    if (!container) return;
-    if (data[0].id !== lastTunnelId) lastTunnelId = data[0].id;
-    container.innerHTML = data.map(a => {
-      const isUpper = (a.signal || '').toLowerCase() === 'upper';
-      const color  = isUpper ? '#C0392B' : '#27AE60';
-      const icon   = isUpper ? '▲' : '▼';
-      const bg     = isUpper ? '#fdf2f2' : '#f2fbf5';
-      const border = isUpper ? '#C0392B' : '#27AE60';
-      const t = new Date(a.created_at);
-      const timeStr = t.toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit', hour12:false});
-      const price = a.price ? ` @ ${parseFloat(a.price).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})}` : '';
-      return `<div style="background:${bg};border-left:3px solid ${border};border-radius:6px;padding:8px 10px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:14px;font-weight:600;color:${color};">${icon} ${a.timeframe||''} ${isUpper?'上軌':'下軌'}觸及</span>
-          <span style="font-size:11px;color:#8B6F47;">${timeStr}</span>
-        </div>
-        <div style="font-size:11px;color:#8B6F47;margin-top:2px;">${a.ticker||'BTCUSDT'}${price}</div>
-      </div>`;
-    }).join('');
-  } catch(e) {}
-}
-fetchTunnelAlerts();
-
-setInterval(fetchFG,           3600000);
-fetchLiveData();
-setInterval(fetchLiveData,      8000);
-setInterval(fetchSignal,       15000);
-setInterval(fetchTunnelAlerts, 15000);
-
-// ════════════════════════
-// Debug 工具（開 console 用）
-// 在瀏覽器 console 輸入 debugAPI() 可看到 API 回傳
-// ════════════════════════
-// ════════════════════════
-// 單一請求取得所有數據（/live-data）
-// ════════════════════════
+// ════════════════════
+// 主數據（/live-data）
+// ════════════════════
 let lastPrice = null;
 
 function processLiveData(d) {
   if (!d || d.code !== 0) { setConn(false); return; }
   setConn(true);
 
+  // Ticker
   const t = d.ticker || {};
-  const price = parseFloat(t.lastPrice);
-  const open  = parseFloat(t.open);
-  const high  = parseFloat(t.high);
-  const low   = parseFloat(t.low);
-
+  const price = parseFloat(t.lastPrice), open=parseFloat(t.open), high=parseFloat(t.high), low=parseFloat(t.low);
   if (price > 0) {
-    const priceEl = document.getElementById('btcPrice');
-    priceEl.textContent = price.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1});
+    const el = document.getElementById('btcPrice');
+    if (el) { el.textContent = fmt1(price); }
     if (lastPrice !== null && lastPrice !== price) {
       const up = price >= lastPrice;
-      priceEl.classList.add(up ? 'up' : 'down');
-      setTimeout(() => priceEl.classList.remove('up','down'), 1200);
+      if (el) { el.classList.add(up?'up':'down'); setTimeout(()=>el.classList.remove('up','down'),1200); }
     }
     lastPrice = price;
   }
-  if (open > 0 && price > 0) {
-    const chg = ((price - open) / open) * 100;
-    const el  = document.getElementById('btcChange');
-    el.textContent = (chg >= 0 ? '\u25b2 +' : '\u25bc ') + Math.abs(chg).toFixed(2) + '%  (24h)';
-    el.className   = 'val-sm ' + (chg >= 0 ? 'up' : 'down');
+  if (open>0 && price>0) {
+    const chg=((price-open)/open)*100, el=document.getElementById('btcChange');
+    if (el) { el.textContent=(chg>=0?'▲ +':'▼ ')+Math.abs(chg).toFixed(2)+'%  (24h)'; el.className='val-sm '+(chg>=0?'up':'down'); }
   }
-  if (high > 0) document.getElementById('dayHigh').textContent =
-    high.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1});
-  if (low > 0) document.getElementById('dayLow').textContent =
-    low.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1});
+  const dh=document.getElementById('dayHigh'), dl=document.getElementById('dayLow');
+  if (dh && high>0) dh.textContent=fmt1(high);
+  if (dl && low>0)  dl.textContent=fmt1(low);
 
-  const klines = d.kline || [];
-  if (klines.length >= 2) {
-    const closes = klines.map(k => parseFloat(k.close)).filter(v => !isNaN(v) && v > 0);
-    if (closes.length >= 2) drawSparkline('sparkSvg', closes, '#B85C1A', 0.2);
-  }
+  // Kline
+  const klines=d.kline||[];
+  if (klines.length>=2) { const closes=klines.map(k=>parseFloat(k.close)).filter(v=>v>0); if(closes.length>=2) drawSparkline('sparkSvg',closes,'#B85C1A',0.2); }
 
-  const f = d.funding || {};
-  const rate = parseFloat(f.fundingRate);
+  // Funding
+  const f=d.funding||{}, rate=parseFloat(f.fundingRate);
   if (!isNaN(rate)) {
     updateFundingGauge(rate);
-    if (f.nextFundingTime) nextFunding = parseInt(f.nextFundingTime);
-    if (f.fundingInterval) {
-      fundingPeriod = parseInt(f.fundingInterval) * 3600000;
-      document.getElementById('fundingInterval').textContent = `結算週期 ${f.fundingInterval} 小時`;
-    }
+    if (f.nextFundingTime) nextFunding=parseInt(f.nextFundingTime);
+    if (f.fundingInterval) { fundingPeriod=parseInt(f.fundingInterval)*3600000; const fi=document.getElementById('fundingInterval'); if(fi) fi.textContent=`結算週期 ${f.fundingInterval} 小時`; }
   }
 
-  const dep = d.depth || {};
-  const parseSide = (side) => (side||[]).reduce((s,item) => {
-    const p = parseFloat(Array.isArray(item) ? item[0] : (item.price||0));
-    const q = parseFloat(Array.isArray(item) ? item[1] : (item.qty||0));
-    return s + (isNaN(p*q) ? 0 : p*q);
-  }, 0);
-  const bidVol = parseSide(dep.bids);
-  const askVol = parseSide(dep.asks);
-  const total  = bidVol + askVol;
-  if (total > 0) {
-    const bPct = (bidVol/total*100).toFixed(0);
-    const aPct = (askVol/total*100).toFixed(0);
-    document.getElementById('depthBid').style.width = bPct + '%';
-    document.getElementById('depthAsk').style.width = aPct + '%';
-    document.getElementById('depthBidVal').textContent = `買 ${bPct}%`;
-    document.getElementById('depthAskVal').textContent = `賣 ${aPct}%`;
-    document.getElementById('depthSub').textContent = `買方 ${fmtB(bidVol)} vs 賣方 ${fmtB(askVol)}`;
+  // Depth
+  const dep=d.depth||{};
+  const parseSide=side=>(side||[]).reduce((s,item)=>{ const p=parseFloat(Array.isArray(item)?item[0]:(item.price||0)),q=parseFloat(Array.isArray(item)?item[1]:(item.qty||0)); return s+(isNaN(p*q)?0:p*q); },0);
+  const bv=parseSide(dep.bids), av=parseSide(dep.asks), tot=bv+av;
+  if (tot>0) {
+    const bp=(bv/tot*100).toFixed(0), ap=(av/tot*100).toFixed(0);
+    const db=document.getElementById('depthBid'), da=document.getElementById('depthAsk');
+    const dbv=document.getElementById('depthBidVal'), dav=document.getElementById('depthAskVal'), ds=document.getElementById('depthSub');
+    if(db) db.style.width=bp+'%'; if(da) da.style.width=ap+'%';
+    if(dbv) dbv.textContent=`買 ${bp}%`; if(dav) dav.textContent=`賣 ${ap}%`;
+    if(ds)  ds.textContent=`買方 ${fmtB(bv)} vs 賣方 ${fmtB(av)}`;
   }
 
-  const ls = d.ls || {};
-  const lPct = parseFloat(ls.longAccount||ls.longRatio||0) * 100;
-  const sPct = parseFloat(ls.shortAccount||ls.shortRatio||0) * 100;
-  if (lPct > 0 && sPct > 0) {
-    document.getElementById('longBar').style.width  = lPct.toFixed(0) + '%';
-    document.getElementById('shortBar').style.width = sPct.toFixed(0) + '%';
-    document.getElementById('longPct').textContent  = `多 ${lPct.toFixed(0)}%`;
-    document.getElementById('shortPct').textContent = `空 ${sPct.toFixed(0)}%`;
-    const ratio = (lPct/sPct).toFixed(2);
-    document.getElementById('ratioSub').textContent = `比例 ${ratio} · ${lPct>sPct?'多方佔優':'空方佔優'}`;
+  // Long/Short
+  const ls=d.ls||{}, lp=parseFloat(ls.longAccount||ls.longRatio||0)*100, sp=parseFloat(ls.shortAccount||ls.shortRatio||0)*100;
+  if (lp>0&&sp>0) {
+    const lb=document.getElementById('longBar'), sb=document.getElementById('shortBar');
+    const lpt=document.getElementById('longPct'), spt=document.getElementById('shortPct'), rs=document.getElementById('ratioSub');
+    if(lb) lb.style.width=lp.toFixed(0)+'%'; if(sb) sb.style.width=sp.toFixed(0)+'%';
+    if(lpt) lpt.textContent=`多 ${lp.toFixed(0)}%`; if(spt) spt.textContent=`空 ${sp.toFixed(0)}%`;
+    if(rs)  rs.textContent=`比例 ${(lp/sp).toFixed(2)} · ${lp>sp?'多方佔優':'空方佔優'}`;
   }
 
-  const oi = d.oi || [];
-  if (oi.length >= 2) {
-    const vals = oi.map(x => parseFloat(x.sumOpenInterestValue));
-    drawSparkline('oiSvg', vals, '#4a9eff', 0.15);
-    const latest = vals[vals.length-1], prev = vals[0];
-    const chg = ((latest-prev)/prev)*100;
-    document.getElementById('oiVal').textContent = fmtB(latest);
-    const el = document.getElementById('oiChg');
-    el.textContent = (chg>=0?'\u25b2 +':'\u25bc ') + Math.abs(chg).toFixed(2) + '\uff0524h\uff09';
-    el.className   = 'val-sm ' + (chg>=0?'up':'down');
+  // OI
+  const oi=d.oi||[];
+  if (oi.length>=2) {
+    const vals=oi.map(x=>parseFloat(x.sumOpenInterestValue));
+    drawSparkline('oiSvg',vals,'#4a9eff',0.15);
+    const latest=vals[vals.length-1], prev=vals[0], chg=((latest-prev)/prev)*100;
+    const ov=document.getElementById('oiVal'), oc=document.getElementById('oiChg');
+    if(ov) ov.textContent=fmtB(latest);
+    if(oc) { oc.textContent=(chg>=0?'▲ +':'▼ ')+Math.abs(chg).toFixed(2)+'%（24h）'; oc.className='val-sm '+(chg>=0?'up':'down'); }
   }
 
-  const fg = d.fg || {};
+  // Fear & Greed
+  const fg=d.fg||{};
   if (fg.value) {
-    const val = parseInt(fg.value);
-    updateFgGauge(val);
-    const lbl = document.getElementById('fgLabel');
-    lbl.textContent = fg.value_classification || '';
-    lbl.style.color = val<=25?'#C0392B':val>=75?'#27AE60':'#B85C1A';
+    const v=parseInt(fg.value); updateFgGauge(v);
+    const lbl=document.getElementById('fgLabel');
+    if(lbl) { lbl.textContent=fg.value_classification||''; lbl.style.color=v<=25?'#C0392B':v>=75?'#27AE60':'#B85C1A'; }
   }
 
-  const alts = d.alts || [];
-  alts.forEach(item => {
-    const sym  = (item.symbol||'').replace('USDT','');
-    const coin = altCoins.find(c=>c.sym===sym);
+  // Alt coins
+  (d.alts||[]).forEach(item => {
+    const sym=(item.symbol||'').replace('USDT',''), coin=altCoins.find(c=>c.sym===sym);
     if (!coin) return;
-    const pr = parseFloat(item.lastPrice);
-    const op = parseFloat(item.open);
+    const pr=parseFloat(item.lastPrice), op=parseFloat(item.open);
     if (isNaN(pr)||pr<=0) return;
-    const chg  = op>0 ? ((pr-op)/op*100) : 0;
-    const sign = chg>=0?'+':'';
-    const priceEl = document.getElementById(coin.priceId);
-    const chgEl   = document.getElementById(coin.chgId);
-    if (priceEl) priceEl.textContent = pr>=100
-      ? pr.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})
-      : pr.toLocaleString('en-US',{minimumFractionDigits:3,maximumFractionDigits:4});
-    if (chgEl) {
-      chgEl.textContent = sign + Math.abs(chg).toFixed(2) + '%';
-      chgEl.style.color = chg>=0?'#27AE60':'#C0392B';
-    }
+    const chg=op>0?((pr-op)/op*100):0, sign=chg>=0?'+':'';
+    const pe=document.getElementById(coin.priceId), ce=document.getElementById(coin.chgId);
+    if(pe) pe.textContent=pr>=100?fmt1(pr):pr.toLocaleString('en-US',{minimumFractionDigits:3,maximumFractionDigits:4});
+    if(ce) { ce.textContent=sign+Math.abs(chg).toFixed(2)+'%'; ce.style.color=chg>=0?'#27AE60':'#C0392B'; }
   });
 
-  const hot = d.hot || [];
-  const hotEl = document.getElementById('hotList');
-  if (hotEl && hot.length > 0) {
+  // Hot list
+  const hot=d.hot||[], hotEl=document.getElementById('hotList');
+  if (hotEl && hot.length>0) {
     hotEl.innerHTML = hot.map(item => {
-      const sym  = (item.symbol||'').replace('USDT','');
-      const pr   = parseFloat(item.lastPrice);
-      const op   = parseFloat(item.open);
-      const chg  = op>0?((pr-op)/op*100):0;
-      const sign = chg>=0?'+':'';
-      const col  = chg>=0?'#27AE60':'#C0392B';
-      const prStr = pr>=100
-        ? pr.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})
-        : pr.toLocaleString('en-US',{minimumFractionDigits:3,maximumFractionDigits:4});
+      const sym=(item.symbol||'').replace('USDT',''), pr=parseFloat(item.lastPrice), op=parseFloat(item.open);
+      const chg=op>0?((pr-op)/op*100):0, sign=chg>=0?'+':'', col=chg>=0?'#27AE60':'#C0392B';
       return `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-top:0.5px solid #d4b896;">
         <span style="font-size:13px;font-weight:500;color:#3D2B1F;">${sym}</span>
-        <span style="font-size:12px;color:#8B6F47;font-variant-numeric:tabular-nums;">${prStr}</span>
+        <span style="font-size:12px;color:#8B6F47;font-variant-numeric:tabular-nums;">${pr>=100?fmt1(pr):pr.toLocaleString('en-US',{minimumFractionDigits:3,maximumFractionDigits:4})}</span>
         <span style="font-size:13px;font-weight:500;color:${col};">${sign}${Math.abs(chg).toFixed(2)}%</span>
       </div>`;
     }).join('');
@@ -1029,33 +623,89 @@ function processLiveData(d) {
 
 async function fetchLiveData() {
   try {
-    const r = await fetch(LIVE_DATA);
+    const r = await fetch(`${BITUNIX_API}/live-data?symbol=${SYMBOL}`);
     const j = await r.json();
     processLiveData(j);
   } catch(e) { setConn(false); }
 }
 
-async function debugAPI() {
-  console.group('=== Bitunix API Debug ===');
+// ════════════════════
+// BitoCat 訊號
+// ════════════════════
+let lastSigId = null;
+async function fetchSignal() {
   try {
-    const r1 = await fetch(`${BITUNIX}/ticker?symbols=BTCUSDT`);
-    const j1 = await r1.json();
-    console.log('Ticker:', j1.data && j1.data[0]);
-  } catch(e) { console.error('Ticker error:', e); }
-  try {
-    const end = Date.now(), start = end - 3*3600000;
-    const r2 = await fetch(`${BITUNIX}/kline?symbol=BTCUSDT&interval=1h&startTime=${start}&endTime=${end}`);
-    const j2 = await r2.json();
-    console.log('Kline sample (first 2):', (j2.data||[]).slice(0,2));
-  } catch(e) { console.error('Kline error:', e); }
-  try {
-    const r3 = await fetch(`${BITUNIX}/funding?symbol=BTCUSDT`);
-    const j3 = await r3.json();
-    console.log('Funding:', j3.data);
-  } catch(e) { console.error('Funding error:', e); }
-  console.groupEnd();
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/bitocat_alerts?order=created_at.desc&limit=1`, {headers: SB_HEADERS});
+    const j = await r.json();
+    const s = Array.isArray(j) ? j[0] : null;
+    if (!s) return;
+    const card=document.getElementById('signalCard'), dirEl=document.getElementById('signalDir');
+    const infoEl=document.getElementById('signalInfo'), msgEl=document.getElementById('signalMsg');
+    const type=(s.signal_type||'').toLowerCase();
+    const isLong=type==='long'||type==='多頭', isShort=type==='short'||type==='空頭';
+    if(dirEl) { dirEl.textContent=isLong?'▲ 做多':isShort?'▼ 做空':'— 出場'; dirEl.style.color=isLong?'#27AE60':isShort?'#C0392B':'#8B6F47'; }
+    const t=new Date(s.created_at), ts=t.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',hour12:false});
+    if(infoEl) infoEl.textContent=`${s.ticker||''} · ${s.timeframe||''} · ${ts}`;
+    if(msgEl)  msgEl.textContent=s.message||'';
+    if(card)   card.className='card signal'+(isLong?' long':isShort?' short':'');
+    if (s.id!==lastSigId && lastSigId!==null) { if(card) { card.classList.add('signal-pop'); setTimeout(()=>card.classList.remove('signal-pop'),400); } }
+    lastSigId=s.id;
+  } catch(e) {}
 }
-window.debugAPI = debugAPI;
+
+async function fetchSignalCount() {
+  try {
+    const today=new Date().toISOString().split('T')[0];
+    const r=await fetch(`${SUPABASE_URL}/rest/v1/bitocat_alerts?created_at=gte.${today}T00:00:00&select=id,signal_type`,{headers:SB_HEADERS});
+    const data=await r.json();
+    if (!Array.isArray(data)) return;
+    const el=document.getElementById('signalCount'), sub=document.getElementById('signalCountSub');
+    if(el) el.textContent=data.length;
+    if(sub) sub.textContent=data.length===0?'尚無訊號':`多頭 ${data.filter(d=>(d.signal_type||'').includes('long')||d.signal_type==='多頭').length} 次 · 空頭 ${data.filter(d=>(d.signal_type||'').includes('short')||d.signal_type==='空頭').length} 次`;
+  } catch(e) {}
+}
+
+// ════════════════════
+// 貓咪隧道快訊
+// ════════════════════
+let lastTunnelId = null;
+async function fetchTunnelAlerts() {
+  try {
+    const r=await fetch(`${SUPABASE_URL}/rest/v1/bitocat_alerts?type=eq.tunnel&order=created_at.desc&limit=4`,{headers:SB_HEADERS});
+    const data=await r.json();
+    if (!Array.isArray(data)||data.length===0) return;
+    const container=document.getElementById('tunnelAlerts');
+    if (!container) return;
+    if(data[0].id!==lastTunnelId) lastTunnelId=data[0].id;
+    container.innerHTML=data.map(a => {
+      const isUpper=(a.signal||'').toLowerCase()==='upper';
+      const color=isUpper?'#C0392B':'#27AE60', icon=isUpper?'▲':'▼';
+      const bg=isUpper?'#fdf2f2':'#f2fbf5', border=isUpper?'#C0392B':'#27AE60';
+      const t=new Date(a.created_at), ts=t.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',hour12:false});
+      const price=a.price?` @ ${parseFloat(a.price).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})}` : '';
+      return `<div style="background:${bg};border-left:3px solid ${border};border-radius:6px;padding:8px 10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:14px;font-weight:600;color:${color};">${icon} ${a.timeframe||''} ${isUpper?'上軌':'下軌'}觸及</span>
+          <span style="font-size:11px;color:#8B6F47;">${ts}</span>
+        </div>
+        <div style="font-size:11px;color:#8B6F47;margin-top:2px;">${a.ticker||'BTCUSDT'}${price}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {}
+}
+
+// ════════════════════
+// 啟動
+// ════════════════════
+fetchLiveData();
+fetchSignal();
+fetchSignalCount();
+fetchTunnelAlerts();
+
+setInterval(fetchLiveData,      8000);
+setInterval(fetchSignal,       15000);
+setInterval(fetchTunnelAlerts, 15000);
+setInterval(fetchSignalCount,  60000);
 </script>
 </body>
 </html>
