@@ -273,12 +273,11 @@ body {
             <th>時框</th>
             <th>PHL 1</th>
             <th>PHL 2</th>
-            <th>PHL 3</th>
             <th>共振</th>
           </tr>
         </thead>
         <tbody id="phlTable">
-          <tr><td colspan="5" style="text-align:center;color:#c9a88a;padding:8px;font-size:11px;">計算中...</td></tr>
+          <tr><td colspan="4" style="text-align:center;color:#c9a88a;padding:8px;font-size:13px;">計算中...</td></tr>
         </tbody>
       </table>
       <span class="src-tag src-b" style="margin-top:6px;">Bitunix K線即時計算</span>
@@ -837,180 +836,125 @@ async function fetchHotList() {
 
 
 // ════════════════════════
-// PHL Triple 表格計算
-// 時框：5m 15m 30m 1h 4h 1D
+// PHL 表格計算
+// 每行顯示 PHL1（當前時框）和 PHL2（2倍時框）
+// 5m: PHL1=5m, PHL2=10m
+// 15m: PHL1=15m, PHL2=30m
+// 30m: PHL1=30m, PHL2=1h
+// 1h: PHL1=1h, PHL2=2h
+// 4h: PHL1=4h, PHL2=8h
+// 日線: PHL1=1d, PHL2=1w
 // ════════════════════════
 const PHL_TFS = [
-  { label: '5m',  interval: '5',    minutes: 5   },
-  { label: '15m', interval: '15',   minutes: 15  },
-  { label: '30m', interval: '30',   minutes: 30  },
-  { label: '1h',  interval: '60',   minutes: 60  },
-  { label: '4h',  interval: '240',  minutes: 240 },
-  { label: '日線', interval: '1D',   minutes: 1440},
+  { label: '5m',  iv1: '5',   iv2: '10'  },
+  { label: '15m', iv1: '15',  iv2: '30'  },
+  { label: '30m', iv1: '30',  iv2: '60'  },
+  { label: '1h',  iv1: '60',  iv2: '120' },
+  { label: '4h',  iv1: '240', iv2: '480' },
+  { label: '日線', iv1: '1D',  iv2: '1W'  },
 ];
 
 // EMA 計算
 function calcEMA(data, period) {
   const k = 2 / (period + 1);
-  const ema = [];
+  const result = [];
   let prev = null;
   for (let i = 0; i < data.length; i++) {
-    if (prev === null) { prev = data[i]; ema.push(data[i]); continue; }
+    if (prev === null) { prev = data[i]; result.push(data[i]); continue; }
     const val = data[i] * k + prev * (1 - k);
-    ema.push(val);
+    result.push(val);
     prev = val;
   }
-  return ema;
+  return result;
 }
 
-// SMI 計算（對應 Pine Script 的 f_smi_logic_mtf）
-function calcSMI(highs, lows, closes, lk, ld, lema) {
+// SMI 計算（lk=10, ld=3, lema=3）
+function calcSMI(highs, lows, closes) {
+  const lk = 10, ld = 3, lema = 3;
   const n = closes.length;
   const relRanges = [], hlRanges = [];
   for (let i = 0; i < n; i++) {
-    const start = Math.max(0, i - lk + 1);
+    const s = Math.max(0, i - lk + 1);
     let hh = -Infinity, ll = Infinity;
-    for (let j = start; j <= i; j++) {
+    for (let j = s; j <= i; j++) {
       if (highs[j] > hh) hh = highs[j];
       if (lows[j]  < ll) ll = lows[j];
     }
-    const mid = (hh + ll) / 2;
-    relRanges.push(closes[i] - mid);
+    relRanges.push(closes[i] - (hh + ll) / 2);
     hlRanges.push(hh - ll);
   }
-  const r1 = calcEMA(relRanges, ld);
-  const r2 = calcEMA(r1, ld);
-  const h1 = calcEMA(hlRanges, ld);
-  const h2 = calcEMA(h1, ld);
-  const smi = r2.map((r, i) => 200 * (r / (h2[i] === 0 ? 1 : h2[i])));
+  const r2   = calcEMA(calcEMA(relRanges, ld), ld);
+  const h2   = calcEMA(calcEMA(hlRanges,  ld), ld);
+  const smi  = r2.map((r, i) => 200 * (r / (h2[i] === 0 ? 1 : h2[i])));
   const slow = calcEMA(smi, lema);
   return { smi, slow };
 }
 
-// 取得狀態文字與顏色
-function getPHLStatus(smi, slow, ob=40, os=-40) {
-  const s = smi, sl = slow;
-  if (s > ob)  return { txt: s > sl ? '超買⬆︎' : '超買⬇︎', cls: 'phl-ob' };
-  if (s < os)  return { txt: s < sl ? '超賣⬆︎' : '超賣⬇︎', cls: 'phl-os' };
-  return { txt: s > sl ? '中段⬆︎' : '中段⬇︎', cls: 'phl-mid' };
+// 取得狀態文字與 CSS class
+function getPHLStatus(smi, slow) {
+  const ob = 40, os = -40;
+  if (smi > ob) return { txt: smi > slow ? '超買⬆︎' : '超買⬇︎', cls: 'phl-ob' };
+  if (smi < os) return { txt: smi < slow ? '超賣⬆︎' : '超賣⬇︎', cls: 'phl-os' };
+  return { txt: smi > slow ? '中段⬆︎' : '中段⬇︎', cls: 'phl-mid' };
 }
 
-// 抓某時框的 K 線並計算 PHL 1/2/3
-async function fetchPHLForTF(tf) {
+// 抓 K 線並計算 SMI 最後一根
+async function calcPHLForInterval(interval) {
   try {
-    // Bitunix 格式：{time, open, high, low, close, baseVol, quoteVol}
-    // 回傳是新→舊排序，需要反轉
     const r = await fetch(
-      `${BITUNIX}/kline?symbol=${SYMBOL}&interval=${tf.interval}&limit=150`
+      `${BITUNIX}/kline?symbol=${SYMBOL}&interval=${interval}&limit=150`
     );
     const j = await r.json();
     const raw = j.data || [];
     if (raw.length < 30) return null;
-    // 反轉成舊→新（方便 EMA 計算）
-    const data = [...raw].reverse();
-
+    const data   = [...raw].reverse(); // 反轉成舊→新
     const highs  = data.map(k => parseFloat(k.high));
     const lows   = data.map(k => parseFloat(k.low));
     const closes = data.map(k => parseFloat(k.close));
-
-    // PHL 1（1x 當前時框）
-    const p1 = calcSMI(highs, lows, closes, 10, 3, 3);
-    const last1 = { smi: p1.smi.at(-1), slow: p1.slow.at(-1) };
-
-    // PHL 2（2x 時框 = ratio 2）
-    const p2 = calcSMI(highs, lows, closes, 20, 6, 6);
-    const last2 = { smi: p2.smi.at(-1), slow: p2.slow.at(-1) };
-
-    // PHL 3（4x 時框 = ratio 4）
-    const p3 = calcSMI(highs, lows, closes, 40, 12, 12);
-    const last3 = { smi: p3.smi.at(-1), slow: p3.slow.at(-1) };
-
-    return {
-      tf:   tf.label,
-      phl1: getPHLStatus(last1.smi, last1.slow),
-      phl2: getPHLStatus(last2.smi, last2.slow),
-      phl3: getPHLStatus(last3.smi, last3.slow),
-      // 共振判斷
-      allOB: last1.smi > 40 && last2.smi > 40 && last3.smi > 40,
-      allOS: last1.smi < -40 && last2.smi < -40 && last3.smi < -40,
-      dualOB: last1.smi > 40 && last2.smi > 40,
-      dualOS: last1.smi < -40 && last2.smi < -40,
-    };
+    const { smi, slow } = calcSMI(highs, lows, closes);
+    return { smiVal: smi.at(-1), slowVal: slow.at(-1) };
   } catch(e) { return null; }
 }
 
 async function fetchPHLTable() {
-  const results = await Promise.all(PHL_TFS.map(tf => fetchPHLForTF(tf)));
+  // 收集所有需要的 interval（去重）
+  const allIntervals = [...new Set(PHL_TFS.flatMap(tf => [tf.iv1, tf.iv2]))];
+  const cache = {};
+  await Promise.all(allIntervals.map(async iv => {
+    cache[iv] = await calcPHLForInterval(iv);
+  }));
+
   const container = document.getElementById('phlTable');
   if (!container) return;
 
-  let html = '';
-  results.forEach(row => {
-    if (!row) return;
-    let resHtml = '<span style="color:#8B6F47;">—</span>';
-    if (row.allOS)       resHtml = '<span style="color:#27AE60;font-weight:500;">🚀 三線超賣</span>';
-    else if (row.allOB)  resHtml = '<span style="color:#C0392B;font-weight:500;">⚠️ 三線超買</span>';
-    else if (row.dualOS) resHtml = '<span style="color:#27AE60;">雙線超賣</span>';
-    else if (row.dualOB) resHtml = '<span style="color:#C0392B;">雙線超買</span>';
+  let tableHtml = '';
+  PHL_TFS.forEach(tf => {
+    const d1 = cache[tf.iv1];
+    const d2 = cache[tf.iv2];
 
-    html += `<tr>
-      <td class="phl-tf">${row.tf}</td>
-      <td class="phl-cell ${row.phl1.cls}">${row.phl1.txt}</td>
-      <td class="phl-cell ${row.phl2.cls}">${row.phl2.txt}</td>
-      <td class="phl-cell ${row.phl3.cls}">${row.phl3.txt}</td>
+    const s1 = d1 ? getPHLStatus(d1.smiVal, d1.slowVal) : { txt: '—', cls: 'phl-mid' };
+    const s2 = d2 ? getPHLStatus(d2.smiVal, d2.slowVal) : { txt: '—', cls: 'phl-mid' };
+
+    const isOB = d1 && d2 && d1.smiVal > 40 && d2.smiVal > 40;
+    const isOS = d1 && d2 && d1.smiVal < -40 && d2.smiVal < -40;
+
+    let resHtml = '<span style="color:#c9a88a;">—</span>';
+    if (isOS) resHtml = '<span style="color:#27AE60;font-weight:500;">🚀 共振</span>';
+    if (isOB) resHtml = '<span style="color:#C0392B;font-weight:500;">⚠️ 共振</span>';
+
+    tableHtml += `<tr>
+      <td class="phl-tf">${tf.label}</td>
+      <td class="phl-cell ${s1.cls}">${s1.txt}</td>
+      <td class="phl-cell ${s2.cls}">${s2.txt}</td>
       <td class="phl-res">${resHtml}</td>
     </tr>`;
   });
-  container.innerHTML = html;
+  container.innerHTML = tableHtml;
 }
 
-// ════════════════════════
-// 今日訊號計數
-// ════════════════════════
-async function fetchSignalCount() {
-  try {
-    const today = new Date().toISOString().split('T')[0];
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/bitocat_alerts?created_at=gte.${today}T00:00:00&select=id,signal_type`,
-      { headers: SB_HEADERS }
-    );
-    const data = await r.json();
-    if (!Array.isArray(data)) return;
-    const count  = data.length;
-    const longs  = data.filter(d=>(d.signal_type||'').toLowerCase().includes('long')||d.signal_type==='多頭').length;
-    const shorts = data.filter(d=>(d.signal_type||'').toLowerCase().includes('short')||d.signal_type==='空頭').length;
-    document.getElementById('signalCount').textContent = count;
-    document.getElementById('signalCountSub').textContent =
-      count === 0 ? '尚無訊號' : `多頭 ${longs} 次 · 空頭 ${shorts} 次`;
-  } catch(e) {}
-}
-
-// ════════════════════════
-// 啟動
-// ════════════════════════
-fetchTicker();
-fetchKline();
-fetchFunding();
-fetchDepth();
-fetchLongShort();
-fetchOI();
-fetchFG();
-fetchSignal();
-fetchAltTickers();
-fetchHotList();
-fetchSignalCount();
-fetchPHLTable();
-
-setInterval(fetchTicker,      5000);
-setInterval(fetchDepth,      10000);
-setInterval(fetchAltTickers, 10000);
-setInterval(fetchFunding,    30000);
-setInterval(fetchLongShort,  30000);
-setInterval(fetchHotList,    60000);
-setInterval(fetchOI,         60000);
-setInterval(fetchSignalCount,60000);
-setInterval(fetchKline,     300000);
 setInterval(fetchPHLTable,  60000);
+
+
 setInterval(fetchFG,       3600000);
 setInterval(fetchSignal,    15000);
 
