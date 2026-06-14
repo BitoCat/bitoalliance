@@ -536,7 +536,8 @@ async function fetchTicker() {
   try {
     const r = await fetch(`${BITUNIX}/ticker?symbols=${SYMBOL}`);
     const j = await r.json();
-    const d = j.data && j.data[0];
+    // data 可能是陣列或單一物件
+    const d = Array.isArray(j.data) ? j.data[0] : j.data;
     if (!d) { setConn(false); return; }
 
     const price = parseFloat(d.lastPrice);
@@ -587,9 +588,10 @@ async function fetchKline() {
   try {
     const r = await fetch(`${BITUNIX}/kline?symbol=${SYMBOL}&interval=60&limit=48`);
     const j = await r.json();
-    const data = j.data || [];
-    if (data.length < 2) return;
-    // Bitunix 格式：{time, open, high, low, close, baseVol, quoteVol}
+    const raw = j.data || [];
+    if (raw.length < 2) return;
+    // Bitunix 回傳新→舊，反轉成舊→新
+    const data = [...raw].reverse();
     const closes = data
       .map(k => parseFloat(k.close))
       .filter(v => !isNaN(v) && v > 0);
@@ -604,7 +606,9 @@ async function fetchFunding() {
   try {
     const r = await fetch(`${BITUNIX}/funding?symbol=${SYMBOL}`);
     const j = await r.json();
-    const d = j.data?.[0] || j.data;
+    // Bitunix funding 回傳單一物件
+    const raw = j.data;
+    const d = Array.isArray(raw) ? raw[0] : raw;
     if (!d) return;
     const rate = parseFloat(d.fundingRate);
     updateFundingGauge(rate);
@@ -623,10 +627,17 @@ async function fetchDepth() {
   try {
     const r = await fetch(`${BITUNIX}/depth?symbol=${SYMBOL}&limit=5`);
     const j = await r.json();
-    const d = j.data;
+    const raw = j.data;
+    const d = Array.isArray(raw) ? raw[0] : raw;
     if (!d) return;
-    const bidVol = (d.bids || []).reduce((s, b) => s + parseFloat(b[1] || b.qty || 0) * parseFloat(b[0] || b.price || 0), 0);
-    const askVol = (d.asks || []).reduce((s, a) => s + parseFloat(a[1] || a.qty || 0) * parseFloat(a[0] || a.price || 0), 0);
+    // Bitunix depth: bids/asks 可能是 [[price, qty]] 或 [{price, qty}]
+    const parseSide = (side) => (side || []).reduce((s, item) => {
+      const p = parseFloat(Array.isArray(item) ? item[0] : (item.price || item[0]));
+      const q = parseFloat(Array.isArray(item) ? item[1] : (item.qty   || item[1]));
+      return s + (isNaN(p*q) ? 0 : p*q);
+    }, 0);
+    const bidVol = parseSide(d.bids);
+    const askVol = parseSide(d.asks);
     const total  = bidVol + askVol;
     if (total <= 0) return;
     const bidPct = (bidVol / total * 100).toFixed(0);
@@ -648,8 +659,9 @@ async function fetchLongShort() {
     const j = await r.json();
     const d = Array.isArray(j) ? j[0] : j;
     if (!d) return;
-    const lPct = parseFloat(d.longAccount) * 100;
-    const sPct = parseFloat(d.shortAccount) * 100;
+    // Binance: longAccount / shortAccount 是 0~1 的比例
+    const lPct = parseFloat(d.longAccount  || d.longRatio  || 0) * 100;
+    const sPct = parseFloat(d.shortAccount || d.shortRatio || 0) * 100;
     const ratio = (lPct / sPct).toFixed(2);
     document.getElementById('longBar').style.width  = lPct.toFixed(0) + '%';
     document.getElementById('shortBar').style.width = sPct.toFixed(0) + '%';
@@ -757,7 +769,8 @@ async function fetchAltTickers() {
     const syms = altCoins.map(c=>c.sym+'USDT').join(',');
     const r = await fetch(`${BITUNIX}/ticker?symbols=${syms}`);
     const j = await r.json();
-    const data = j.data || [];
+    const raw2 = j.data || [];
+    const data = Array.isArray(raw2) ? raw2 : [raw2];
     if (data.length === 0) return;
     data.forEach(d => {
       const sym  = (d.symbol || '').replace('USDT','');
@@ -790,7 +803,8 @@ async function fetchHotList() {
   try {
     const r = await fetch(`${BITUNIX}/ticker?symbols=BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,XRPUSDT,DOGEUSDT,ADAUSDT,LINKUSDT,AVAXUSDT,DOTUSDT`);
     const j = await r.json();
-    const data = (j.data || []).filter(d => d.symbol.endsWith('USDT'));
+    const rawData = j.data || [];
+    const data = (Array.isArray(rawData) ? rawData : [rawData]).filter(d => d.symbol && d.symbol.endsWith('USDT'));
     // 依 quoteVol 排序，取前5
     data.sort((a,b) => parseFloat(b.quoteVol||0) - parseFloat(a.quoteVol||0));
     const top5 = data.slice(0,5);
