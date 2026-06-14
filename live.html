@@ -123,22 +123,7 @@ body {
 .qr-sub   { font-size: 11px; color: #6B4C2A; margin-top: 3px; }
 
 
-/* ── PHL 表格 ── */
-.phl-table-wrap { background: #edd4be; border-radius: 8px; padding: 10px 12px; }
-.phl-table-wrap table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.phl-table-wrap th {
-  font-size: 11px; color: #8B6F47; font-weight: 500;
-  padding: 5px 6px; border-bottom: 1px solid #d4b896;
-  text-align: center; letter-spacing: .03em;
-}
-.phl-tf  { font-size: 13px; font-weight: 500; color: #3D2B1F; padding: 6px 6px; min-width: 36px; }
-.phl-cell { text-align: center; padding: 6px 4px; border-radius: 3px; font-weight: 500; font-size: 12px; }
-.phl-ob-dn { color: #C0392B; font-weight: 600; }  /* 超買⬇︎ 紅色警示 */
-.phl-ob-up { color: #E8A040; font-weight: 600; }  /* 超買⬆︎ 橙色觀察 */
-.phl-os-up { color: #27AE60; font-weight: 600; }  /* 超賣⬆︎ 綠色機會 */
-.phl-os-dn { color: #E8A040; font-weight: 600; }  /* 超賣⬇︎ 橙色觀察 */
-.phl-mid   { color: #8B6F47; }
-.phl-res { text-align: center; padding: 6px 4px; font-size: 11px; }
+
 
 /* ── 幣種行情條 ── */
 .ticker-item {
@@ -266,24 +251,6 @@ body {
       <span class="src-tag src-b">Bitunix</span>
     </div>
 
-    <!-- PHL Triple 狀態表 -->
-    <div class="phl-table-wrap">
-      <div class="card-label" style="margin-bottom:6px;">🐱 BitoCat PHL 三層共振</div>
-      <table>
-        <thead>
-          <tr>
-            <th>時框</th>
-            <th>PHL 1</th>
-            <th>PHL 2</th>
-            <th>共振</th>
-          </tr>
-        </thead>
-        <tbody id="phlTable">
-          <tr><td colspan="4" style="text-align:center;color:#c9a88a;padding:8px;font-size:13px;">計算中...</td></tr>
-        </tbody>
-      </table>
-      <span class="src-tag src-b" style="margin-top:6px;">Bitunix K線即時計算</span>
-    </div>
 
   </div><!-- /左側 -->
 
@@ -837,60 +804,7 @@ async function fetchHotList() {
 }
 
 
-// ════════════════════════
-// PHL 表格（後端計算，前端只發一個請求）
-// ════════════════════════
-const PHL_TFS = [
-  { label: '5m',  iv1: '5',   iv2: '10'  },
-  { label: '15m', iv1: '15',  iv2: '30'  },
-  { label: '30m', iv1: '30',  iv2: '60'  },
-  { label: '1h',  iv1: '60',  iv2: '120' },
-  { label: '4h',  iv1: '240', iv2: '8h'  },
-  { label: '日線', iv1: '1D',  iv2: '1W'  },
-];
 
-function getPHLClass(status) {
-  if (!status) return 'phl-mid';
-  if (status.includes('超買⬇')) return 'phl-ob-dn';
-  if (status.includes('超買⬆')) return 'phl-ob-up';
-  if (status.includes('超賣⬆')) return 'phl-os-up';
-  if (status.includes('超賣⬇')) return 'phl-os-dn';
-  return 'phl-mid';
-}
-
-async function fetchPHLTable() {
-  try {
-    const r = await fetch(`${BITUNIX}/phl`);
-    const j = await r.json();
-    const d = j.data || {};
-    const container = document.getElementById('phlTable');
-    if (!container) return;
-
-    let tableHtml = '';
-    PHL_TFS.forEach(tf => {
-      const d1 = d[tf.iv1];
-      const d2 = d[tf.iv2];
-      const s1  = d1 ? d1.status : '—';
-      const s2  = d2 ? d2.status : '—';
-      const c1  = getPHLClass(s1);
-      const c2  = getPHLClass(s2);
-      const isOB = d1 && d2 && d1.smi > 40  && d2.smi > 40;
-      const isOS = d1 && d2 && d1.smi < -40 && d2.smi < -40;
-      let resHtml = '<span style="color:#c9a88a;">—</span>';
-      if (isOS) resHtml = '<span style="color:#27AE60;font-weight:600;">🚀 超賣共振</span>';
-      if (isOB) resHtml = '<span style="color:#C0392B;font-weight:600;">⚠️ 超買共振</span>';
-      tableHtml += `<tr>
-        <td class="phl-tf">${tf.label}</td>
-        <td class="phl-cell ${c1}">${s1}</td>
-        <td class="phl-cell ${c2}">${s2}</td>
-        <td class="phl-res">${resHtml}</td>
-      </tr>`;
-    });
-    container.innerHTML = tableHtml;
-  } catch(e) {}
-}
-
-setInterval(fetchPHLTable, 60000);
 
 
 
