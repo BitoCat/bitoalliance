@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920">
+<title>BitoAlliance Live — BitoCat 直播儀表板</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #edd4be;
+    font-family: -apple-system, 'Helvetica Neue', sans-serif;
+    width: 1920px;
+    height: 1080px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: #3D2B1F;
+    padding: 0 20px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .brand {
+    font-size: 16px;
+    font-weight: 500;
+    color: #EDE0CE;
+    letter-spacing: .04em;
+  }
+  .brand-sub {
+    font-size: 11px;
+    color: #8B6F47;
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .header-clock {
+    font-size: 18px;
+    font-weight: 500;
+    color: #EDE0CE;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: .04em;
+  }
+  .header-date {
+    font-size: 12px;
+    color: #8B6F47;
+  }
+  .live-badge {
+    background: #C0392B;
+    color: white;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 4px;
+    letter-spacing: .06em;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .6; }
+  }
+
+  /* ── 主體三欄 ── */
+  .main-body {
+    display: grid;
+    grid-template-columns: 240px 1fr 240px;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── 左右面板共用 ── */
+  .panel {
+    background: #f5e8d8;
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-right: 1px solid #d4b896;
+  }
+  .panel.right {
+    border-right: none;
+    border-left: 1px solid #d4b896;
+  }
+  .panel-title {
+    font-size: 10px;
+    font-weight: 500;
+    color: #8B6F47;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #d4b896;
+  }
+
+  /* ── 數據卡片 ── */
+  .data-card {
+    background: #edd4be;
+    border-radius: 8px;
+    padding: 10px 12px;
+    transition: background .3s;
+  }
+  .data-card.flash-up   { background: #d6f0de; }
+  .data-card.flash-down { background: #fde8e8; }
+  .data-label {
+    font-size: 10px;
+    color: #8B6F47;
+    margin-bottom: 3px;
+  }
+  .data-val {
+    font-size: 22px;
+    font-weight: 500;
+    color: #3D2B1F;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+  }
+  .data-val.accent { color: #B85C1A; }
+  .data-val.up     { color: #27AE60; }
+  .data-val.down   { color: #C0392B; }
+  .data-sub {
+    font-size: 11px;
+    color: #8B6F47;
+    margin-top: 3px;
+  }
+
+  /* 價格大卡 */
+  .price-card {
+    background: #3D2B1F;
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .price-pair {
+    font-size: 10px;
+    color: #8B6F47;
+    margin-bottom: 4px;
+  }
+  .price-val {
+    font-size: 28px;
+    font-weight: 500;
+    color: #EDE0CE;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+    transition: color .3s;
+  }
+  .price-change {
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 4px;
+  }
+  .price-change.up   { color: #27AE60; }
+  .price-change.down { color: #C0392B; }
+
+  /* ── 中間 TV 佔位區 ── */
+  .tv-area {
+    background: #edd4be;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .tv-hint {
+    font-size: 14px;
+    color: #c9a88a;
+  }
+  .tv-hint-sub {
+    font-size: 12px;
+    color: #d4b896;
+  }
+
+  /* ── 訊號卡片 ── */
+  .signal-card {
+    background: #edd4be;
+    border-radius: 8px;
+    padding: 10px 12px;
+    border-left: 3px solid #B85C1A;
+    transition: all .3s;
+  }
+  .signal-card.new {
+    animation: signalGlow 1.5s ease;
+  }
+  @keyframes signalGlow {
+    0%   { box-shadow: 0 0 0 0 rgba(184,92,26,.6); }
+    50%  { box-shadow: 0 0 0 8px rgba(184,92,26,0); }
+    100% { box-shadow: 0 0 0 0 rgba(184,92,26,0); }
+  }
+  .signal-card.dim {
+    border-left-color: #c9a88a;
+    opacity: .55;
+  }
+  .signal-time {
+    font-size: 10px;
+    color: #8B6F47;
+    margin-bottom: 3px;
+  }
+  .signal-text {
+    font-size: 13px;
+    font-weight: 500;
+    color: #3D2B1F;
+  }
+  .signal-ticker {
+    font-size: 12px;
+    color: #B85C1A;
+    font-weight: 500;
+  }
+  .dir-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-top: 5px;
+  }
+  .dir-badge.long  { background: #d6f0de; color: #1a6b35; }
+  .dir-badge.short { background: #fde8e8; color: #9b1c1c; }
+  .dir-badge.exit  { background: #f0e8d6; color: #6b4a1a; }
+
+  /* 無訊號提示 */
+  .no-signal {
+    background: #edd4be;
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+    color: #B89A78;
+    font-size: 12px;
+  }
+
+  /* ── QR code 區 ── */
+  .qr-area {
+    margin-top: auto;
+    background: #3D2B1F;
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+  }
+  .qr-img {
+    width: 100px;
+    height: 100px;
+    background: white;
+    border-radius: 4px;
+    margin: 0 auto 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: #8B6F47;
+  }
+  .qr-img img {
+    width: 100%;
+    height: 100%;
+    border-radius: 4px;
+    object-fit: contain;
+  }
+  .qr-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #EDE0CE;
+  }
+  .qr-sub {
+    font-size: 10px;
+    color: #8B6F47;
+    margin-top: 3px;
+  }
+
+  /* ── 連線狀態 ── */
+  .conn-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #8B6F47;
+    display: inline-block;
+    margin-right: 5px;
+    transition: background .3s;
+  }
+  .conn-dot.connected    { background: #27AE60; }
+  .conn-dot.disconnected { background: #C0392B; }
+  .conn-label {
+    font-size: 10px;
+    color: #8B6F47;
+  }
+
+  /* 資金費率倒數 */
+  .countdown {
+    font-size: 11px;
+    color: #B85C1A;
+    font-variant-numeric: tabular-nums;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<div class="header">
+  <div class="header-left">
+    <div>
+      <div class="brand">🐱 比特聯盟 BitoAlliance</div>
+      <div class="brand-sub">BitoCat 直播儀表板</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span class="conn-dot" id="connDot"></span>
+      <span class="conn-label" id="connLabel">連線中...</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <div style="text-align:right;">
+      <div class="header-clock" id="clock">--:--:--</div>
+      <div class="header-date" id="dateLabel"></div>
+    </div>
+    <div class="live-badge">● LIVE</div>
+  </div>
+</div>
+
+<!-- ── 主體 ── -->
+<div class="main-body">
+
+  <!-- 左側面板 -->
+  <div class="panel">
+    <div class="panel-title">市場數據</div>
+
+    <!-- BTC 大字價格 -->
+    <div class="price-card">
+      <div class="price-pair">BTC / USDT 永續</div>
+      <div class="price-val" id="btcPrice">—</div>
+      <div class="price-change" id="btcChange">—</div>
+    </div>
+
+    <!-- 資金費率 -->
+    <div class="data-card" id="cardFunding">
+      <div class="data-label">資金費率</div>
+      <div class="data-val accent" id="fundingRate">—</div>
+      <div class="data-sub countdown" id="fundingCountdown">下次結算 —</div>
+    </div>
+
+    <!-- 多空比 -->
+    <div class="data-card">
+      <div class="data-label">多空比（長倉 / 短倉）</div>
+      <div class="data-val" id="longShortRatio">—</div>
+      <div class="data-sub" id="longShortLabel">—</div>
+    </div>
+
+    <!-- 24h 成交量 -->
+    <div class="data-card">
+      <div class="data-label">24h 成交量</div>
+      <div class="data-val accent" id="volume24h">—</div>
+    </div>
+
+    <!-- 恐懼貪婪 -->
+    <div class="data-card">
+      <div class="data-label">恐懼貪婪指數</div>
+      <div class="data-val" id="fearGreed">—</div>
+      <div class="data-sub" id="fearGreedLabel">—</div>
+    </div>
+  </div>
+
+  <!-- 中間 TradingView 區（OBS 捕捉你的 TV 視窗） -->
+  <div class="tv-area">
+    <div class="tv-hint">← 左右面板由 OBS 瀏覽器來源載入此頁面</div>
+    <div class="tv-hint-sub">中間區域由 OBS 視窗捕捉你的 TradingView</div>
+    <div class="tv-hint-sub">實際直播時這裡不會顯示文字</div>
+  </div>
+
+  <!-- 右側面板 -->
+  <div class="panel right">
+    <div class="panel-title">🐱 BitoCat 訊號</div>
+
+    <div id="signalList">
+      <div class="no-signal">尚無訊號<br>等待 TradingView 推播</div>
+    </div>
+
+    <!-- QR code -->
+    <div class="qr-area">
+      <div class="qr-img" id="qrContainer">
+        <!-- 換成你的 Bitunix 推薦連結 QR code 圖片 -->
+        <span>QR code<br>待設定</span>
+      </div>
+      <div class="qr-label">掃碼加入直客</div>
+      <div class="qr-sub">免費使用 BitoCat 指標</div>
+      <div class="qr-sub" style="margin-top:4px;color:#c9a88a;">bitunix.com · 推薦碼待填</div>
+    </div>
+  </div>
+
+</div><!-- main-body -->
+
+<script>
+// ════════════════════════════════════════
+// 設定區（之後只改這裡）
+// ════════════════════════════════════════
+const SUPABASE_URL  = 'https://kldumnxdlgovaxtiszyn.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsZHVtbnhkbGdvdmF4dGlzenluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjIyNDgsImV4cCI6MjA5MzY5ODI0OH0.P_anfYpSV2tgCPIQ7uZDVBjUFY3UhfEXk9u3XjlzBHI';
+const SB_HEADERS = {
+  'apikey': SUPABASE_ANON,
+  'Authorization': 'Bearer ' + SUPABASE_ANON
+};
+const BITUNIX_WS   = 'wss://fstream.bitunix.com/public';
+const SYMBOL       = 'BTCUSDT';
+
+// ════════════════════════════════════════
+// 時鐘
+// ════════════════════════════════════════
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false});
+  document.getElementById('dateLabel').textContent =
+    now.toLocaleDateString('zh-TW', {year:'numeric', month:'long', day:'numeric', weekday:'short'});
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ════════════════════════════════════════
+// 資金費率倒數計時
+// ════════════════════════════════════════
+let nextFundingTime = null;
+function updateCountdown() {
+  if (!nextFundingTime) return;
+  const diff = nextFundingTime - Date.now();
+  if (diff <= 0) {
+    document.getElementById('fundingCountdown').textContent = '結算中...';
+    return;
+  }
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  const pad = n => String(n).padStart(2, '0');
+  document.getElementById('fundingCountdown').textContent =
+    `下次結算 ${pad(h)}:${pad(m)}:${pad(s)}`;
+}
+setInterval(updateCountdown, 1000);
+
+// ════════════════════════════════════════
+// Bitunix Websocket
+// ════════════════════════════════════════
+let ws = null;
+let wsReconnectTimer = null;
+let lastPrice = null;
+
+function setConnStatus(connected) {
+  const dot   = document.getElementById('connDot');
+  const label = document.getElementById('connLabel');
+  dot.className   = 'conn-dot ' + (connected ? 'connected' : 'disconnected');
+  label.textContent = connected ? '即時連線中' : '重新連線...';
+}
+
+function connectWS() {
+  if (ws) { try { ws.close(); } catch(e){} }
+  ws = new WebSocket(BITUNIX_WS);
+
+  ws.onopen = () => {
+    setConnStatus(true);
+    // 訂閱 Ticker（現價、漲跌幅、成交量）
+    ws.send(JSON.stringify({
+      op: 'subscribe',
+      args: [`ticker.${SYMBOL}`]
+    }));
+  };
+
+  ws.onmessage = (event) => {
+    try {
+      const msg = JSON.parse(event.data);
+      if (msg.topic && msg.topic.startsWith('ticker.')) {
+        handleTicker(msg.data);
+      }
+    } catch(e) {}
+  };
+
+  ws.onclose = () => {
+    setConnStatus(false);
+    wsReconnectTimer = setTimeout(connectWS, 3000);
+  };
+
+  ws.onerror = () => {
+    setConnStatus(false);
+    ws.close();
+  };
+}
+
+function handleTicker(data) {
+  if (!data) return;
+  const price  = parseFloat(data.lastPrice || data.last || 0);
+  const change = parseFloat(data.priceChangePercent || data.chg || 0);
+  const vol    = parseFloat(data.volume || data.vol || 0);
+
+  // 價格
+  if (price > 0) {
+    const priceEl = document.getElementById('btcPrice');
+    const isUp    = lastPrice === null || price >= lastPrice;
+    priceEl.textContent = price.toLocaleString('en-US', {minimumFractionDigits:1, maximumFractionDigits:1});
+    priceEl.style.color = lastPrice === null ? '#EDE0CE' : (isUp ? '#27AE60' : '#C0392B');
+    setTimeout(() => { priceEl.style.color = '#EDE0CE'; }, 1000);
+    lastPrice = price;
+  }
+
+  // 漲跌幅
+  const changeEl = document.getElementById('btcChange');
+  if (!isNaN(change)) {
+    const sign = change >= 0 ? '+' : '';
+    changeEl.textContent  = `${sign}${change.toFixed(2)}%  (24h)`;
+    changeEl.className    = 'price-change ' + (change >= 0 ? 'up' : 'down');
+  }
+
+  // 成交量
+  if (vol > 0) {
+    let volStr;
+    if (vol >= 1e9)      volStr = '$' + (vol / 1e9).toFixed(1) + 'B';
+    else if (vol >= 1e6) volStr = '$' + (vol / 1e6).toFixed(1) + 'M';
+    else                 volStr = '$' + vol.toFixed(0);
+    document.getElementById('volume24h').textContent = volStr;
+  }
+}
+
+// ════════════════════════════════════════
+// 資金費率（REST，每 30 秒更新）
+// ════════════════════════════════════════
+async function fetchFundingRate() {
+  try {
+    const res  = await fetch(`https://fapi.bitunix.com/api/v1/futures/market/funding_rate?symbol=${SYMBOL}`);
+    const json = await res.json();
+    const data = json.data && json.data[0] ? json.data[0] : json.data;
+    if (!data) return;
+
+    const rate = parseFloat(data.fundingRate) * 100;
+    const el   = document.getElementById('fundingRate');
+    const sign = rate >= 0 ? '+' : '';
+    el.textContent = `${sign}${rate.toFixed(4)}%`;
+    el.className   = 'data-val ' + (rate > 0.03 ? 'down' : rate < 0 ? 'up' : 'accent');
+
+    if (data.nextFundingTime) {
+      nextFundingTime = parseInt(data.nextFundingTime);
+    }
+  } catch(e) {
+    document.getElementById('fundingRate').textContent = '—';
+  }
+}
+
+// ════════════════════════════════════════
+// 多空比（REST，每 30 秒更新）
+// ════════════════════════════════════════
+async function fetchLongShort() {
+  try {
+    const res  = await fetch(`https://fapi.bitunix.com/api/v1/futures/market/tickers?symbol=${SYMBOL}`);
+    const json = await res.json();
+    const data = json.data && json.data[0] ? json.data[0] : null;
+    if (!data) return;
+
+    const longRatio  = parseFloat(data.longRatio  || data.buyRatio  || 0);
+    const shortRatio = parseFloat(data.shortRatio || data.sellRatio || 0);
+
+    if (longRatio > 0 && shortRatio > 0) {
+      const ratio = (longRatio / shortRatio).toFixed(2);
+      const el    = document.getElementById('longShortRatio');
+      el.textContent = ratio;
+      el.className   = 'data-val ' + (longRatio > shortRatio ? 'up' : 'down');
+      document.getElementById('longShortLabel').textContent =
+        `多方 ${(longRatio * 100).toFixed(1)}%  ／  空方 ${(shortRatio * 100).toFixed(1)}%`;
+    }
+  } catch(e) {}
+}
+
+// ════════════════════════════════════════
+// 恐懼貪婪指數（每小時更新）
+// ════════════════════════════════════════
+async function fetchFearGreed() {
+  try {
+    const res  = await fetch('https://api.alternative.me/fng/?limit=1');
+    const json = await res.json();
+    const d    = json.data && json.data[0];
+    if (!d) return;
+
+    const val   = parseInt(d.value);
+    const el    = document.getElementById('fearGreed');
+    el.textContent = val;
+    el.className   = 'data-val ' + (val >= 60 ? 'down' : val <= 30 ? 'up' : 'accent');
+    document.getElementById('fearGreedLabel').textContent = d.value_classification;
+  } catch(e) {}
+}
+
+// ════════════════════════════════════════
+// BitoCat 訊號（Supabase，每 15 秒）
+// ════════════════════════════════════════
+let lastSignalId = null;
+
+function formatSignalTime(ts) {
+  const d = new Date(ts);
+  return d.toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit', hour12:false});
+}
+
+function renderSignals(signals) {
+  const container = document.getElementById('signalList');
+  if (!signals || signals.length === 0) {
+    container.innerHTML = '<div class="no-signal">尚無訊號<br>等待 TradingView 推播</div>';
+    return;
+  }
+
+  let html = '';
+  signals.forEach((s, i) => {
+    const dirMap = { long:'long', short:'short', exit:'exit', '多頭':'long', '空頭':'short', '出場':'exit' };
+    const dirClass  = dirMap[s.signal_type] || 'exit';
+    const dirText   = s.signal_type === 'long' || s.signal_type === '多頭' ? '做多'
+                    : s.signal_type === 'short' || s.signal_type === '空頭' ? '做空' : '出場';
+    const isNew     = i === 0 && s.id !== lastSignalId;
+    const cardClass = i === 0 ? (isNew ? 'signal-card new' : 'signal-card') : 'signal-card dim';
+
+    html += `
+      <div class="${cardClass}">
+        <div class="signal-time">${formatSignalTime(s.created_at)} · ${s.timeframe || ''}</div>
+        <div class="signal-ticker">${s.ticker || ''}</div>
+        <div class="signal-text">${s.message || ''}</div>
+        <span class="dir-badge ${dirClass}">${dirText}</span>
+      </div>`;
+
+    if (i === 0 && isNew) lastSignalId = s.id;
+  });
+  container.innerHTML = html;
+}
+
+async function fetchSignals() {
+  try {
+    const url = `${SUPABASE_URL}/rest/v1/bitocat_alerts?order=created_at.desc&limit=3`;
+    const res = await fetch(url, { headers: SB_HEADERS });
+    const data = await res.json();
+    if (Array.isArray(data)) renderSignals(data);
+  } catch(e) {}
+}
+
+// ════════════════════════════════════════
+// 啟動
+// ════════════════════════════════════════
+connectWS();
+fetchFundingRate();
+fetchLongShort();
+fetchFearGreed();
+fetchSignals();
+
+setInterval(fetchFundingRate, 30000);
+setInterval(fetchLongShort,   30000);
+setInterval(fetchFearGreed,   3600000);
+setInterval(fetchSignals,     15000);
+</script>
+</body>
+</html>
