@@ -320,15 +320,6 @@ body {
       <span class="src-tag src-p">BitoAlliance 獨家</span>
     </div>
 
-    <!-- 今日訊號計數 -->
-    <div class="card" style="display:flex;align-items:center;gap:12px;padding:10px 14px;">
-      <div style="font-size:32px;font-weight:500;color:#B85C1A;" id="signalCount">0</div>
-      <div>
-        <div style="font-size:12px;font-weight:500;color:#3D2B1F;">今日 BitoCat 訊號</div>
-        <div style="font-size:10px;color:#8B6F47;" id="signalCountSub">尚無訊號</div>
-      </div>
-    </div>
-
     <!-- 多空比 -->
     <div class="card">
       <div class="card-label">多空比（帳戶數）</div>
@@ -653,17 +644,7 @@ async function fetchSignal() {
   } catch(e) {}
 }
 
-async function fetchSignalCount() {
-  try {
-    const today=new Date().toISOString().split('T')[0];
-    const r=await fetch(`${SUPABASE_URL}/rest/v1/bitocat_alerts?created_at=gte.${today}T00:00:00&select=id,signal_type`,{headers:SB_HEADERS});
-    const data=await r.json();
-    if (!Array.isArray(data)) return;
-    const el=document.getElementById('signalCount'), sub=document.getElementById('signalCountSub');
-    if(el) el.textContent=data.length;
-    if(sub) sub.textContent=data.length===0?'尚無訊號':`多頭 ${data.filter(d=>(d.signal_type||'').includes('long')||d.signal_type==='多頭').length} 次 · 空頭 ${data.filter(d=>(d.signal_type||'').includes('short')||d.signal_type==='空頭').length} 次`;
-  } catch(e) {}
-}
+
 
 // ════════════════════
 // 貓咪隧道快訊
@@ -699,13 +680,11 @@ async function fetchTunnelAlerts() {
 // ════════════════════
 fetchLiveData();
 fetchSignal();
-fetchSignalCount();
 fetchTunnelAlerts();
 
 setInterval(fetchLiveData,      8000);
 setInterval(fetchSignal,       15000);
 setInterval(fetchTunnelAlerts, 15000);
-setInterval(fetchSignalCount,  60000);
 </script>
 </body>
 </html>
