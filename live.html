@@ -838,14 +838,7 @@ async function fetchHotList() {
 
 
 // ════════════════════════
-// PHL 表格計算
-// 每行顯示 PHL1（當前時框）和 PHL2（2倍時框）
-// 5m: PHL1=5m, PHL2=10m
-// 15m: PHL1=15m, PHL2=30m
-// 30m: PHL1=30m, PHL2=1h
-// 1h: PHL1=1h, PHL2=2h
-// 4h: PHL1=4h, PHL2=8h
-// 日線: PHL1=1d, PHL2=1w
+// PHL 表格（後端計算，前端只發一個請求）
 // ════════════════════════
 const PHL_TFS = [
   { label: '5m',  iv1: '5',   iv2: '10'  },
@@ -856,118 +849,49 @@ const PHL_TFS = [
   { label: '日線', iv1: '1D',  iv2: '1W'  },
 ];
 
-// EMA 計算
-function calcEMA(data, period) {
-  const k = 2 / (period + 1);
-  const result = [];
-  let prev = null;
-  for (let i = 0; i < data.length; i++) {
-    if (prev === null) { prev = data[i]; result.push(data[i]); continue; }
-    const val = data[i] * k + prev * (1 - k);
-    result.push(val);
-    prev = val;
-  }
-  return result;
-}
-
-// SMI 計算（lk=10, ld=3, lema=3）
-function calcSMI(highs, lows, closes) {
-  const lk = 10, ld = 3, lema = 3;
-  const n = closes.length;
-  const relRanges = [], hlRanges = [];
-  for (let i = 0; i < n; i++) {
-    const s = Math.max(0, i - lk + 1);
-    let hh = -Infinity, ll = Infinity;
-    for (let j = s; j <= i; j++) {
-      if (highs[j] > hh) hh = highs[j];
-      if (lows[j]  < ll) ll = lows[j];
-    }
-    relRanges.push(closes[i] - (hh + ll) / 2);
-    hlRanges.push(hh - ll);
-  }
-  const r2   = calcEMA(calcEMA(relRanges, ld), ld);
-  const h2   = calcEMA(calcEMA(hlRanges,  ld), ld);
-  const smi  = r2.map((r, i) => 200 * (r / (h2[i] === 0 ? 1 : h2[i])));
-  const slow = calcEMA(smi, lema);
-  return { smi, slow };
-}
-
-// 取得狀態文字與 CSS class
-// 超買⬇︎ = 紅色警示, 超買⬆︎ = 橙色觀察
-// 超賣⬆︎ = 綠色機會, 超賣⬇︎ = 橙色觀察
-function getPHLStatus(smi, slow) {
-  const ob = 40, os = -40;
-  if (smi > ob) {
-    return smi > slow
-      ? { txt: '超買⬆︎', cls: 'phl-ob-up' }
-      : { txt: '超買⬇︎', cls: 'phl-ob-dn' };
-  }
-  if (smi < os) {
-    return smi < slow
-      ? { txt: '超賣⬆︎', cls: 'phl-os-up' }
-      : { txt: '超賣⬇︎', cls: 'phl-os-dn' };
-  }
-  return { txt: smi > slow ? '中段⬆︎' : '中段⬇︎', cls: 'phl-mid' };
-}
-
-// 抓 K 線並計算 SMI 最後一根（含 timeout）
-async function calcPHLForInterval(interval) {
-  try {
-    // Safari 相容：用 Promise.race 做 timeout
-    const fetchPromise = fetch(
-      `${BITUNIX}/kline?symbol=${SYMBOL}&interval=${interval}&limit=80`
-    );
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('timeout')), 8000)
-    );
-    const r = await Promise.race([fetchPromise, timeoutPromise]);
-    const j = await r.json();
-    const raw = j.data || [];
-    if (raw.length < 15) return null;
-    const data   = [...raw].reverse();
-    const highs  = data.map(k => parseFloat(k.high));
-    const lows   = data.map(k => parseFloat(k.low));
-    const closes = data.map(k => parseFloat(k.close));
-    const { smi, slow } = calcSMI(highs, lows, closes);
-    return { smiVal: smi.at(-1), slowVal: slow.at(-1) };
-  } catch(e) { return null; }
-}
-
-function renderPHLTable(cache) {
-  const container = document.getElementById('phlTable');
-  if (!container) return;
-  let tableHtml = '';
-  PHL_TFS.forEach(tf => {
-    const d1 = cache[tf.iv1];
-    const d2 = cache[tf.iv2];
-    const s1 = d1 ? getPHLStatus(d1.smiVal, d1.slowVal) : { txt: '—', cls: 'phl-mid' };
-    const s2 = d2 ? getPHLStatus(d2.smiVal, d2.slowVal) : { txt: '—', cls: 'phl-mid' };
-    const isOB = d1 && d2 && d1.smiVal > 40 && d2.smiVal > 40;
-    const isOS = d1 && d2 && d1.smiVal < -40 && d2.smiVal < -40;
-    let resHtml = '<span style="color:#c9a88a;">—</span>';
-    if (isOS) resHtml = '<span style="color:#27AE60;font-weight:600;">🚀 超賣共振</span>';
-    if (isOB) resHtml = '<span style="color:#C0392B;font-weight:600;">⚠️ 超買共振</span>';
-    tableHtml += `<tr>
-      <td class="phl-tf">${tf.label}</td>
-      <td class="phl-cell ${s1.cls}">${s1.txt}</td>
-      <td class="phl-cell ${s2.cls}">${s2.txt}</td>
-      <td class="phl-res">${resHtml}</td>
-    </tr>`;
-  });
-  container.innerHTML = tableHtml;
+function getPHLClass(status) {
+  if (!status) return 'phl-mid';
+  if (status.includes('超買⬇')) return 'phl-ob-dn';
+  if (status.includes('超買⬆')) return 'phl-ob-up';
+  if (status.includes('超賣⬆')) return 'phl-os-up';
+  if (status.includes('超賣⬇')) return 'phl-os-dn';
+  return 'phl-mid';
 }
 
 async function fetchPHLTable() {
-  const allIntervals = [...new Set(PHL_TFS.flatMap(tf => [tf.iv1, tf.iv2]))];
-  const cache = {};
-  // 逐一抓取，每抓完一個就立刻渲染（不等全部完成）
-  for (const iv of allIntervals) {
-    cache[iv] = await calcPHLForInterval(iv);
-    renderPHLTable(cache); // 即時更新畫面
-  }
+  try {
+    const r = await fetch(`${BITUNIX}/phl`);
+    const j = await r.json();
+    const d = j.data || {};
+    const container = document.getElementById('phlTable');
+    if (!container) return;
+
+    let tableHtml = '';
+    PHL_TFS.forEach(tf => {
+      const d1 = d[tf.iv1];
+      const d2 = d[tf.iv2];
+      const s1  = d1 ? d1.status : '—';
+      const s2  = d2 ? d2.status : '—';
+      const c1  = getPHLClass(s1);
+      const c2  = getPHLClass(s2);
+      const isOB = d1 && d2 && d1.smi > 40  && d2.smi > 40;
+      const isOS = d1 && d2 && d1.smi < -40 && d2.smi < -40;
+      let resHtml = '<span style="color:#c9a88a;">—</span>';
+      if (isOS) resHtml = '<span style="color:#27AE60;font-weight:600;">🚀 超賣共振</span>';
+      if (isOB) resHtml = '<span style="color:#C0392B;font-weight:600;">⚠️ 超買共振</span>';
+      tableHtml += `<tr>
+        <td class="phl-tf">${tf.label}</td>
+        <td class="phl-cell ${c1}">${s1}</td>
+        <td class="phl-cell ${c2}">${s2}</td>
+        <td class="phl-res">${resHtml}</td>
+      </tr>`;
+    });
+    container.innerHTML = tableHtml;
+  } catch(e) {}
 }
 
-setInterval(fetchPHLTable,  60000);
+setInterval(fetchPHLTable, 60000);
+
 
 
 setInterval(fetchFG,       3600000);
