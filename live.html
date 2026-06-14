@@ -122,6 +122,22 @@ body {
 .qr-title { font-size: 14px; font-weight: 500; color: #EDE0CE; }
 .qr-sub   { font-size: 11px; color: #6B4C2A; margin-top: 3px; }
 
+
+/* ── PHL 表格 ── */
+.phl-table-wrap { background: #edd4be; border-radius: 8px; padding: 10px 12px; }
+.phl-table-wrap table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.phl-table-wrap th {
+  font-size: 9px; color: #8B6F47; font-weight: 500;
+  padding: 4px 6px; border-bottom: 1px solid #d4b896;
+  text-align: center; letter-spacing: .03em;
+}
+.phl-tf  { font-size: 11px; font-weight: 500; color: #3D2B1F; padding: 5px 6px; min-width: 32px; }
+.phl-cell { text-align: center; padding: 5px 4px; border-radius: 3px; font-weight: 500; font-size: 11px; }
+.phl-ob  { color: #C0392B; }
+.phl-os  { color: #27AE60; }
+.phl-mid { color: #8B6F47; }
+.phl-res { text-align: center; padding: 5px 4px; font-size: 10px; }
+
 /* ── 幣種行情條 ── */
 .ticker-item {
   flex: 1;
@@ -246,6 +262,26 @@ body {
         </div>
       </div>
       <span class="src-tag src-b">Bitunix</span>
+    </div>
+
+    <!-- PHL Triple 狀態表 -->
+    <div class="phl-table-wrap">
+      <div class="card-label" style="margin-bottom:6px;">🐱 BitoCat PHL 三層共振</div>
+      <table>
+        <thead>
+          <tr>
+            <th>時框</th>
+            <th>PHL 1</th>
+            <th>PHL 2</th>
+            <th>PHL 3</th>
+            <th>共振</th>
+          </tr>
+        </thead>
+        <tbody id="phlTable">
+          <tr><td colspan="5" style="text-align:center;color:#c9a88a;padding:8px;font-size:11px;">計算中...</td></tr>
+        </tbody>
+      </table>
+      <span class="src-tag src-b" style="margin-top:6px;">Bitunix K線即時計算</span>
     </div>
 
   </div><!-- /左側 -->
@@ -806,6 +842,135 @@ async function fetchHotList() {
   } catch(e) {}
 }
 
+
+// ════════════════════════
+// PHL Triple 表格計算
+// 時框：5m 15m 30m 1h 4h 1D
+// ════════════════════════
+const PHL_TFS = [
+  { label: '5m',  interval: '5',    minutes: 5   },
+  { label: '15m', interval: '15',   minutes: 15  },
+  { label: '30m', interval: '30',   minutes: 30  },
+  { label: '1h',  interval: '60',   minutes: 60  },
+  { label: '4h',  interval: '240',  minutes: 240 },
+  { label: '日線', interval: '1D',   minutes: 1440},
+];
+
+// EMA 計算
+function calcEMA(data, period) {
+  const k = 2 / (period + 1);
+  const ema = [];
+  let prev = null;
+  for (let i = 0; i < data.length; i++) {
+    if (prev === null) { prev = data[i]; ema.push(data[i]); continue; }
+    const val = data[i] * k + prev * (1 - k);
+    ema.push(val);
+    prev = val;
+  }
+  return ema;
+}
+
+// SMI 計算（對應 Pine Script 的 f_smi_logic_mtf）
+function calcSMI(highs, lows, closes, lk, ld, lema) {
+  const n = closes.length;
+  const relRanges = [], hlRanges = [];
+  for (let i = 0; i < n; i++) {
+    const start = Math.max(0, i - lk + 1);
+    let hh = -Infinity, ll = Infinity;
+    for (let j = start; j <= i; j++) {
+      if (highs[j] > hh) hh = highs[j];
+      if (lows[j]  < ll) ll = lows[j];
+    }
+    const mid = (hh + ll) / 2;
+    relRanges.push(closes[i] - mid);
+    hlRanges.push(hh - ll);
+  }
+  const r1 = calcEMA(relRanges, ld);
+  const r2 = calcEMA(r1, ld);
+  const h1 = calcEMA(hlRanges, ld);
+  const h2 = calcEMA(h1, ld);
+  const smi = r2.map((r, i) => 200 * (r / (h2[i] === 0 ? 1 : h2[i])));
+  const slow = calcEMA(smi, lema);
+  return { smi, slow };
+}
+
+// 取得狀態文字與顏色
+function getPHLStatus(smi, slow, ob=40, os=-40) {
+  const s = smi, sl = slow;
+  if (s > ob)  return { txt: s > sl ? '超買⬆︎' : '超買⬇︎', cls: 'phl-ob' };
+  if (s < os)  return { txt: s < sl ? '超賣⬆︎' : '超賣⬇︎', cls: 'phl-os' };
+  return { txt: s > sl ? '中段⬆︎' : '中段⬇︎', cls: 'phl-mid' };
+}
+
+// 抓某時框的 K 線並計算 PHL 1/2/3
+async function fetchPHLForTF(tf) {
+  try {
+    const end   = Date.now();
+    const bars  = 120; // 足夠的 K 棒數
+    const start = end - bars * tf.minutes * 60 * 1000;
+    const r = await fetch(
+      `${BITUNIX}/kline?symbol=${SYMBOL}&interval=${tf.interval}&startTime=${start}&endTime=${end}`
+    );
+    const j = await r.json();
+    const data = j.data || [];
+    if (data.length < 30) return null;
+
+    // Bitunix kline: [timestamp, open, high, low, close, volume]
+    const highs  = data.map(k => Array.isArray(k) ? parseFloat(k[2]) : parseFloat(k.high  || k.h));
+    const lows   = data.map(k => Array.isArray(k) ? parseFloat(k[3]) : parseFloat(k.low   || k.l));
+    const closes = data.map(k => Array.isArray(k) ? parseFloat(k[4]) : parseFloat(k.close || k.c));
+
+    // PHL 1（1x 當前時框）
+    const p1 = calcSMI(highs, lows, closes, 10, 3, 3);
+    const last1 = { smi: p1.smi.at(-1), slow: p1.slow.at(-1) };
+
+    // PHL 2（2x 時框 = ratio 2）
+    const p2 = calcSMI(highs, lows, closes, 20, 6, 6);
+    const last2 = { smi: p2.smi.at(-1), slow: p2.slow.at(-1) };
+
+    // PHL 3（4x 時框 = ratio 4）
+    const p3 = calcSMI(highs, lows, closes, 40, 12, 12);
+    const last3 = { smi: p3.smi.at(-1), slow: p3.slow.at(-1) };
+
+    return {
+      tf:   tf.label,
+      phl1: getPHLStatus(last1.smi, last1.slow),
+      phl2: getPHLStatus(last2.smi, last2.slow),
+      phl3: getPHLStatus(last3.smi, last3.slow),
+      // 共振判斷
+      allOB: last1.smi > 40 && last2.smi > 40 && last3.smi > 40,
+      allOS: last1.smi < -40 && last2.smi < -40 && last3.smi < -40,
+      dualOB: last1.smi > 40 && last2.smi > 40,
+      dualOS: last1.smi < -40 && last2.smi < -40,
+    };
+  } catch(e) { return null; }
+}
+
+async function fetchPHLTable() {
+  const results = await Promise.all(PHL_TFS.map(tf => fetchPHLForTF(tf)));
+  const container = document.getElementById('phlTable');
+  if (!container) return;
+
+  let html = '';
+  results.forEach(row => {
+    if (!row) return;
+    let resHtml = '<span style="color:#8B6F47;">—</span>';
+    if (row.allOS)       resHtml = '<span style="color:#27AE60;font-weight:500;">🚀 三線超賣</span>';
+    else if (row.allOB)  resHtml = '<span style="color:#C0392B;font-weight:500;">⚠️ 三線超買</span>';
+    else if (row.dualOS) resHtml = '<span style="color:#27AE60;">雙線超賣</span>';
+    else if (row.dualOB) resHtml = '<span style="color:#C0392B;">雙線超買</span>';
+
+    html += `<tr>
+      <td class="phl-tf">${row.tf}</td>
+      <td class="phl-cell ${row.phl1.cls}">${row.phl1.txt}</td>
+      <td class="phl-cell ${row.phl2.cls}">${row.phl2.txt}</td>
+      <td class="phl-cell ${row.phl3.cls}">${row.phl3.txt}</td>
+      <td class="phl-res">${resHtml}</td>
+    </tr>`;
+  });
+  container.innerHTML = html;
+}
+
 // ════════════════════════
 // 今日訊號計數
 // ════════════════════════
@@ -841,6 +1006,7 @@ fetchSignal();
 fetchAltTickers();
 fetchHotList();
 fetchSignalCount();
+fetchPHLTable();
 
 setInterval(fetchTicker,      5000);
 setInterval(fetchDepth,      10000);
@@ -851,6 +1017,7 @@ setInterval(fetchHotList,    60000);
 setInterval(fetchOI,         60000);
 setInterval(fetchSignalCount,60000);
 setInterval(fetchKline,     300000);
+setInterval(fetchPHLTable,  60000);
 setInterval(fetchFG,       3600000);
 setInterval(fetchSignal,    15000);
 
