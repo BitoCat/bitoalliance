@@ -122,6 +122,20 @@ body {
 .qr-title { font-size: 14px; font-weight: 500; color: #EDE0CE; }
 .qr-sub   { font-size: 11px; color: #6B4C2A; margin-top: 3px; }
 
+/* ── 幣種行情條 ── */
+.ticker-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-right: 1px solid #5C3D2A;
+}
+.ticker-item:last-child { border-right: none; }
+.tick-sym   { font-size: 13px; font-weight: 500; color: #C4A882; min-width: 36px; }
+.tick-price { font-size: 13px; font-weight: 500; color: #EDE0CE; font-variant-numeric: tabular-nums; }
+.tick-chg   { font-size: 12px; font-weight: 500; }
+
 /* flash */
 @keyframes flashUp   { 0%{background:#d6f0de} 100%{background:#edd4be} }
 @keyframes flashDown { 0%{background:#fde8e8} 100%{background:#edd4be} }
@@ -237,11 +251,45 @@ body {
   </div><!-- /左側 -->
 
   <!-- ══ 中間 TradingView ══ -->
-  <div class="tv-area">
-    <div style="font-size:40px;">📈</div>
-    <div class="tv-hint">← 左右面板由 OBS 瀏覽器來源載入此頁</div>
-    <div class="tv-sub">中間區塊由 OBS 視窗捕捉你的 TradingView</div>
-    <div class="tv-sub" style="margin-top:4px;">直播時此提示文字不會出現</div>
+  <div class="tv-area" style="flex-direction:column;justify-content:flex-end;padding-bottom:0;">
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;">
+      <div style="font-size:40px;">📈</div>
+      <div class="tv-hint">← 左右面板由 OBS 瀏覽器來源載入此頁</div>
+      <div class="tv-sub">中間區塊由 OBS 視窗捕捉你的 TradingView</div>
+    </div>
+    <!-- 幣種行情條 -->
+    <div id="tickerBar" style="width:100%;background:#3D2B1F;padding:10px 16px;display:flex;gap:0;border-top:1px solid #5C3D2A;">
+      <div class="ticker-item" id="tick_ETH">
+        <span class="tick-sym">ETH</span>
+        <span class="tick-price" id="ethPrice">—</span>
+        <span class="tick-chg" id="ethChg">—</span>
+      </div>
+      <div class="ticker-item" id="tick_SOL">
+        <span class="tick-sym">SOL</span>
+        <span class="tick-price" id="solPrice">—</span>
+        <span class="tick-chg" id="solChg">—</span>
+      </div>
+      <div class="ticker-item" id="tick_BNB">
+        <span class="tick-sym">BNB</span>
+        <span class="tick-price" id="bnbPrice">—</span>
+        <span class="tick-chg" id="bnbChg">—</span>
+      </div>
+      <div class="ticker-item" id="tick_XRP">
+        <span class="tick-sym">XRP</span>
+        <span class="tick-price" id="xrpPrice">—</span>
+        <span class="tick-chg" id="xrpChg">—</span>
+      </div>
+      <div class="ticker-item" id="tick_DOGE">
+        <span class="tick-sym">DOGE</span>
+        <span class="tick-price" id="dogePrice">—</span>
+        <span class="tick-chg" id="dogeChg">—</span>
+      </div>
+      <div class="ticker-item" id="tick_ADA">
+        <span class="tick-sym">ADA</span>
+        <span class="tick-price" id="adaPrice">—</span>
+        <span class="tick-chg" id="adaChg">—</span>
+      </div>
+    </div>
   </div>
 
   <!-- ══ 右側面板：籌碼 + 獨家訊號 ══ -->
@@ -257,6 +305,15 @@ body {
         <div style="font-size:10px;color:#B85C1A;margin-top:3px;" id="signalMsg"></div>
       </div>
       <span class="src-tag src-p">BitoAlliance 獨家</span>
+    </div>
+
+    <!-- 今日訊號計數 -->
+    <div class="card" style="display:flex;align-items:center;gap:12px;padding:10px 14px;">
+      <div style="font-size:32px;font-weight:500;color:#B85C1A;" id="signalCount">0</div>
+      <div>
+        <div style="font-size:12px;font-weight:500;color:#3D2B1F;">今日 BitoCat 訊號</div>
+        <div style="font-size:10px;color:#8B6F47;" id="signalCountSub">尚無訊號</div>
+      </div>
     </div>
 
     <!-- 多空比 -->
@@ -283,6 +340,15 @@ body {
       <span class="src-tag src-bn">Binance 樣本</span>
     </div>
 
+    <!-- Bitunix 熱門合約排行 -->
+    <div class="card" style="padding:10px 14px;">
+      <div class="card-label">Bitunix 熱門合約 24h 漲跌</div>
+      <div id="hotList" style="display:flex;flex-direction:column;gap:4px;margin-top:6px;">
+        <div style="font-size:11px;color:#c9a88a;">載入中...</div>
+      </div>
+      <span class="src-tag src-b">Bitunix</span>
+    </div>
+
     <!-- 恐懼貪婪 Gauge -->
     <div class="card">
       <div class="card-label">恐懼貪婪指數</div>
@@ -300,15 +366,23 @@ body {
       <span class="src-tag src-f">Alternative.me</span>
     </div>
 
-    <!-- QR code -->
-    <div class="qr-wrap">
-      <div class="qr-box" id="qrBox">
-        <!-- 把這裡換成 <img src="你的QR圖片網址"> -->
-        <span style="text-align:center;line-height:1.5;">QR code<br>待設定</span>
+    <!-- 三個 QR code -->
+    <div style="margin-top:auto;display:flex;gap:8px;">
+      <div style="background:#3D2B1F;border-radius:10px;padding:10px 8px;text-align:center;flex:1;">
+        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAN4AAADeCAIAAADdBSngAAAE7klEQVR4nO3d260jRRRAUQYRCAEQA8ETAwGQiflFaoRKpXpsN2t9j92+462SjqsfPz6fz0/Q8/PtDwD/TppESZMoaRIlTaKkSZQ0iZImUdIkSppESZOoX0b+0e+//br5Y/yXP/78a+JVc5955FjPd5571aqj73uffUY+oVWTKGkSJU2ipEmUNIkamtCf5qbmEXOT49zUvM+qKf7kX1H7Tq2aREmTKGkSJU2ipEnU5IT+tG/Pes6qaXfk7zr5q8LJSf/ud2rVJEqaREmTKGkSJU2ilk3odz2nwud0uWreHJl/V51DPnesu+cPrGLVJEqaREmTKGkSJU2iXjKhz5mbrPfN4/yTVZMoaRIlTaKkSZQ0iVo2oZ/ct61NxHM7+Ksm/X276nf34q2aREmTKGkSJU2ipEnU5IT+jTNy7d+MOHlOe+07tWoSJU2ipEmUNImSJlE/Pp/P7c9wyMnrtfdNu/17wq9i1SRKmkRJkyhpEiVNooYm9H3PDlt13ffJe5U/rTr6qr/07v/qKlZNoqRJlDSJkiZR0iRqckIfcfLs67vz5r5fDO7eSX7fNzjyzlZNoqRJlDSJkiZR0iRq8jr0VfdGe9q3a3zSqjl636w9d/STv4RYNYmSJlHSJEqaREmTqI1PWzt5xfTJJ5KvOvrJcwxW/RVz39fcX2rVJEqaREmTKGkSJU2ihib0k08AP3n1+sir9k3fteu+n/btvI+wahIlTaKkSZQ0iZImURvPcl/1znNHP3ne+76d5X3X4J+ctV2HzqtIkyhpEiVNoqRJ1LLnoe+7D/mqneWTU2rtVXevOreHzqtIkyhpEiVNoqRJ1NCEvu8e4/vm1n3TZe0JaPu+i7vn4Vs1iZImUdIkSppESZOoyevQ5+y7pvvkc8FOPrVt7t+8g1WTKGkSJU2ipEmUNImafB567e7ld+8mt+967Tl3n8a+ilWTKGkSJU2ipEmUNIlaNqHPvar2VLKT++N3rxR4qs31Vk2ipEmUNImSJlHSJOroWe4n33nuWHd3w/vXvI+8zypWTaKkSZQ0iZImUdIkanIP/WnfM7/mnJz9T56dvmr277NqEiVNoqRJlDSJkiZRk3vo+54/vm+KX3Wm974r3PftvI8ca9/vA0/OcueLSZMoaRIlTaKkSdTk09ZG7HuW2Vuf7Hb3rIPabyxWTaKkSZQ0iZImUdIkaugs96eT9/2+ey323Kv6d3gbOdbd3z2smkRJkyhpEiVNoqRJ1Manra3aS717DfXJneWTc/0q+36ZsWoSJU2ipEmUNImSJlGTe+h33b0zW//u7ic/874n6Fk1iZImUdIkSppESZOoZfdy3+fk89D3HX3EvnvZ3b3Tvj10XkWaREmTKGkSJU2ihu4U97Rvbl11H/L+mfmrdrrnzB3r5Ce0ahIlTaKkSZQ0iZImUZMT+tPJHep9c/TJ675r9807eXRnufPFpEmUNImSJlHSJGrZhH7Svt3nfVdVP8298zfef95Z7ryKNImSJlHSJEqaRH3lhF67N9rJ9zm5877qne2h8yrSJEqaREmTKGkStexpa6ucnEn7d0ur/WJwklWTKGkSJU2ipEmUNIma3EO/e3f3u2df79vBnzv608m5foSz3HkVaRIlTaKkSZQ0ifrK56Hzf2DVJEqaREmTKGkSJU2ipEmUNImSJlHSJEqaREmTqL8BTasSkql5xTEAAAAASUVORK5CYII=" style="width:80px;height:80px;border-radius:4px;display:block;margin:0 auto 6px;">
+        <div style="font-size:11px;font-weight:500;color:#EDE0CE;line-height:1.4;">加入直客</div>
+        <div style="font-size:9px;color:#6B4C2A;margin-top:2px;">免費用指標</div>
       </div>
-      <div class="qr-title">掃碼加入直客</div>
-      <div class="qr-sub">免費使用 BitoCat 指標</div>
-      <div class="qr-sub" style="margin-top:2px;color:#4a4a4a;">Bitunix · 推薦碼待填</div>
+      <div style="background:#3D2B1F;border-radius:10px;padding:10px 8px;text-align:center;flex:1;">
+        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAN4AAADeCAIAAADdBSngAAAFA0lEQVR4nO3d7Y0kJxRAUa/lQDYAx+DgHYMDcCazAZRlIfSg7rTO+T1TPR9XSDQ0/Pj6+voNen5/+weA/yZNoqRJlDSJkiZR0iRKmkRJkyhpEiVNoqRJ1B8rX/TXnz8P/xj/5+9//t34rufP/HzO3u819ZxzVv5i/f+pUZMoaRIlTaKkSZQ0iVqaoT/tzZpX7M0cV+bjU/bm/nuz5nPvTjzV/qdGTaKkSZQ0iZImUdIkanOG/jS1Hr33WnvPOTez3vuave+qzaynfh6jJlHSJEqaREmTKGkSNTZDr9mb207N2c+tmNd21J9j1CRKmkRJkyhpEiVNoj5khn5uV/nenH1q7fvcjvo+oyZR0iRKmkRJkyhpEjU2Q6/NCvdm3yvP2fuaqX34U0+eevVzjJpESZMoaRIlTaKkSdTmDL2213pvFXtqB/vUSvfNr3mq/U+NmkRJkyhpEiVNoqRJ1NIMvbY+/lQ7y/3ma9VObp9i1CRKmkRJkyhpEiVNojbvQ795J/i53elT3zX1nJsr3Tf/X3uMmkRJkyhpEiVNoqRJVG6X+7m5/80d4yvPOXfa/JSp19r7Gxo1iZImUdIkSppESZOoH19fXyMP+o6fob55G/vNE+BXnPt/Pe39zEZNoqRJlDSJkiZR0iRqaYY+9cnr/glmtbvMvuNffupvaNQkSppESZMoaRIlTaI2Z+gr3l37Pjezrs12956z4uaa/pNRkyhpEiVNoqRJlDSJGltD35vNvbuP+uYJeOd+r3N/+RXn3jEwahIlTaKkSZQ0iZImUWNr6Oc+Uf7unH3qyXuvfu49jafa5/2NmkRJkyhpEiVNoqRJ1Nh96OdO+b75/sDeq9/cUX/O1G/htjU+nDSJkiZR0iRKmkS9vIb+7llk786s392ZX/s0wZNRkyhpEiVNoqRJlDSJ2lxDP/fp7KnnTP2E786Izz3n5s+8x6hJlDSJkiZR0iRKmkSN3Yf+VJsDfsbd6ytPfvdvuPJdK4yaREmTKGkSJU2ipEnUN7gPfcq757A99WfW517LLne+MWkSJU2ipEmUNIkaW0O/uf/53d3XK25+xvzmCflP51bVjZpESZMoaRIlTaKkSdTVk+JW1PaZr7z6d1yhvrmfwRo6H0WaREmTKGkSJU2ilk6Ke5q6uezdW9JWTN22NjWvv3lf/LvnARo1iZImUdIkSppESZOozRn6itpce0X/PYSbOwFungv3ZNQkSppESZMoaRIlTaJyJ8XdvN3s3XXk2i3zK27unzdqEiVNoqRJlDSJkiZRm/eh79lba9578tQt4efWrM9919O5u97O7TowahIlTaKkSZQ0iZImUUsz9HdPSl/ZfX3utZ6mdnq/u8p/86Q4a+h8FGkSJU2ipEmUNIk6eFLcnr112xU3bzbfe/XafvWnm+/VGDWJkiZR0iRKmkRJk6ixk+LePfdsZW777oz43Plye7/7lHPv1Rg1iZImUdIkSppESZOog2e5v2vq8+xPe3P/c2e51+6dn/oUgFGTKGkSJU2ipEmUNIn6kBn6ufPKzn02fOo+9BU370x32xofTppESZMoaRIlTaLGZujndjuvvNbeuvaUqZ3nN9fHb940t8eoSZQ0iZImUdIkSppEbd6HflP//LSnm2v6e6Y+4T71ez0ZNYmSJlHSJEqaREmTqKUZOtxn1CRKmkRJkyhpEiVNoqRJlDSJkiZR0iRKmkRJk6hfmUoYjARRU38AAAAASUVORK5CYII=" style="width:80px;height:80px;border-radius:4px;display:block;margin:0 auto 6px;">
+        <div style="font-size:11px;font-weight:500;color:#EDE0CE;line-height:1.4;">指標年費</div>
+        <div style="font-size:9px;color:#6B4C2A;margin-top:2px;">NT$3,600/年</div>
+      </div>
+      <div style="background:#3D2B1F;border-radius:10px;padding:10px 8px;text-align:center;flex:1;">
+        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAN4AAADeCAIAAADdBSngAAAFCklEQVR4nO3d220tNQBAUS6iEAqgBoqnBgqgk1CAEViWHzuHtb6TmZNkayTHHvvH19fXT9Dz8+sPAP9MmkRJkyhpEiVNoqRJlDSJkiZR0iRKmkRJk6hfZr7o999+Pfwx/s0ff/618F0zn3ntyjP3Gq+89juc+YQzd5/5rptmPqGnJlHSJEqaREmTKGkSNTVCH+0a247WRo67vuvciHi0NorfdfeZz7PL2l/HU5MoaRIlTaKkSZQ0iVocoY/OzRHP3OvcrPGuUfO5n/TcaoGbf9ORpyZR0iRKmkRJkyhpErVthF5zbmx7buZ913XermDfxVOTKGkSJU2ipEmUNIn62BH6mnOr5XfN8n/qeHzkqUmUNImSJlHSJEqaRG0boZ97i/mccyvGd60Pfztmf/s39dQkSppESZMoaRIlTaIWR+ifMW+7a8X42nXOfc2a2t/UU5MoaRIlTaKkSZQ0iZoaoffnx9+Obdesjf1nvmbm5+r/TT01iZImUdIkSppESZOoH19fX//5RW93J6udAvb2Z/+On3mNpyZR0iRKmkRJkyhpErU4h37zFLBz68Nn9OeaR+dOSL957rynJlHSJEqaREmTKGkStTiHPjr3NvSuUfza3Xe5efL7zHVGb/8PM/LUJEqaREmTKGkSJU2iDr6HvjZ2e3tq+a4rj19zc4e3t+8FWOXOh5MmUdIkSppESZOoqRF6fw59dHOkv2vef+3z3LzyrutY5c43Jk2ipEmUNImSJlFTq9zXvJ3bfXuv2rnqa1e+uXZi5KlJlDSJkiZR0iRKmkRtm0Pf5dza+Lfj6M8Yj9/cbc9TkyhpEiVNoqRJlDSJmhqhj86d3nVunHhu1njXXnY318+f4z10Ppw0iZImUdIkSppEbTttbc2uUXNt5/Zzb9PP3GvtyjfXvVvlzjcmTaKkSZQ0iZImUdvm0Hc5t+PcLjdPY5+5+9rXnNtNzhw6H06aREmTKGkSJU2itp2HPjo3St1193P7mY9q+72vcR46SJMqaRIlTaKkSdTiCP3cG9M3T20793OtuTlDvXb3GebQ+XDSJEqaREmTKGkSdfC0tTXnxonn9jO/+b+Ic3vU195n99QkSppESZMoaRIlTaKuzqGfG9vePAWsvxK+/x8DI3S+MWkSJU2ipEmUNIla3CluzbmR481zys6N62+OrG+eauc9dD6KNImSJlHSJEqaRG2bQ9/1XTPXGd08JfztqeVv/xdxc62CpyZR0iRKmkRJkyhpEnV1Dv3cO9Rrdo12z+0v9/Zkt5u75I08NYmSJlHSJEqaREmTqNxOcTPejhxHN083W7v723fMvYfOR5EmUdIkSppESZOoqTn0m+eYj8bRXG1N+9p1RuOVz/3m355zN8NTkyhpEiVNoqRJlDSJWlzl/vZU7rdr0dfG7DP3OrdefXRzH/s1nppESZMoaRIlTaKkSdS299Bv7iG2dvebO5Pv2klv16ry2kh/hqcmUdIkSppESZMoaRJ1dae4m97un3bzbLWbq+5n7PrZPTWJkiZR0iRKmkRJk6gPGaGfW50+49xebed2ib/5mdd4ahIlTaKkSZQ0iZImUdtG6Dd3U7+5w/m5MfLo5r5wo7enn488NYmSJlHSJEqaREmTqMUR+tvd3c/tunZzVn30dr/3c7Pz9nLno0iTKGkSJU2ipEnUtzwPnf8DT02ipEmUNImSJlHSJEqaREmTKGkSJU2ipEmUNIn6Gy0M7gXmWibuAAAAAElFTkSuQmCC" style="width:80px;height:80px;border-radius:4px;display:block;margin:0 auto 6px;">
+        <div style="font-size:11px;font-weight:500;color:#EDE0CE;line-height:1.4;">網站註冊</div>
+        <div style="font-size:9px;color:#6B4C2A;margin-top:2px;">BitoAlliance</div>
+      </div>
     </div>
 
   </div><!-- /右側 -->
@@ -649,6 +723,92 @@ async function fetchSignal() {
 }
 
 // ════════════════════════
+// 幣種行情條（ETH SOL BNB XRP DOGE ADA）
+// ════════════════════════
+const altCoins = [
+  {sym:'ETH',  priceId:'ethPrice',  chgId:'ethChg'},
+  {sym:'SOL',  priceId:'solPrice',  chgId:'solChg'},
+  {sym:'BNB',  priceId:'bnbPrice',  chgId:'bnbChg'},
+  {sym:'XRP',  priceId:'xrpPrice',  chgId:'xrpChg'},
+  {sym:'DOGE', priceId:'dogePrice', chgId:'dogeChg'},
+  {sym:'ADA',  priceId:'adaPrice',  chgId:'adaChg'},
+];
+async function fetchAltTickers() {
+  try {
+    const syms = altCoins.map(c=>c.sym+'USDT').join(',');
+    const r = await fetch(`${BITUNIX}/tickers?symbols=${syms}`);
+    const j = await r.json();
+    const data = j.data || [];
+    data.forEach(d => {
+      const sym  = d.symbol.replace('USDT','');
+      const coin = altCoins.find(c=>c.sym===sym);
+      if (!coin) return;
+      const price = parseFloat(d.lastPrice);
+      const open  = parseFloat(d.open);
+      const chg   = open > 0 ? ((price-open)/open*100) : 0;
+      const sign  = chg >= 0 ? '+' : '';
+      const priceEl = document.getElementById(coin.priceId);
+      const chgEl   = document.getElementById(coin.chgId);
+      if (priceEl) priceEl.textContent = price >= 100 ? fmt(price,1) : fmt(price,3);
+      if (chgEl) {
+        chgEl.textContent = `${sign}${chg.toFixed(2)}%`;
+        chgEl.style.color = chg >= 0 ? '#27AE60' : '#C0392B';
+      }
+    });
+  } catch(e) {}
+}
+
+// ════════════════════════
+// Bitunix 熱門合約排行
+// ════════════════════════
+async function fetchHotList() {
+  try {
+    const r = await fetch(`${BITUNIX}/tickers`);
+    const j = await r.json();
+    const data = (j.data || []).filter(d => d.symbol.endsWith('USDT'));
+    // 依 quoteVol 排序，取前5
+    data.sort((a,b) => parseFloat(b.quoteVol||0) - parseFloat(a.quoteVol||0));
+    const top5 = data.slice(0,5);
+    const container = document.getElementById('hotList');
+    if (!container) return;
+    container.innerHTML = top5.map(d => {
+      const sym   = d.symbol.replace('USDT','');
+      const price = parseFloat(d.lastPrice);
+      const open  = parseFloat(d.open);
+      const chg   = open > 0 ? ((price-open)/open*100) : 0;
+      const sign  = chg >= 0 ? '+' : '';
+      const color = chg >= 0 ? '#27AE60' : '#C0392B';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-top:0.5px solid #d4b896;">
+        <span style="font-size:12px;font-weight:500;color:#3D2B1F;">${sym}</span>
+        <span style="font-size:11px;color:#8B6F47;font-variant-numeric:tabular-nums;">${price>=100?fmt(price,1):fmt(price,3)}</span>
+        <span style="font-size:12px;font-weight:500;color:${color};">${sign}${chg.toFixed(2)}%</span>
+      </div>`;
+    }).join('');
+  } catch(e) {}
+}
+
+// ════════════════════════
+// 今日訊號計數
+// ════════════════════════
+async function fetchSignalCount() {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/bitocat_alerts?created_at=gte.${today}T00:00:00&select=id,signal_type`,
+      { headers: SB_HEADERS }
+    );
+    const data = await r.json();
+    if (!Array.isArray(data)) return;
+    const count  = data.length;
+    const longs  = data.filter(d=>(d.signal_type||'').toLowerCase().includes('long')||d.signal_type==='多頭').length;
+    const shorts = data.filter(d=>(d.signal_type||'').toLowerCase().includes('short')||d.signal_type==='空頭').length;
+    document.getElementById('signalCount').textContent = count;
+    document.getElementById('signalCountSub').textContent =
+      count === 0 ? '尚無訊號' : `多頭 ${longs} 次 · 空頭 ${shorts} 次`;
+  } catch(e) {}
+}
+
+// ════════════════════════
 // 啟動
 // ════════════════════════
 fetchTicker();
@@ -659,15 +819,21 @@ fetchLongShort();
 fetchOI();
 fetchFG();
 fetchSignal();
+fetchAltTickers();
+fetchHotList();
+fetchSignalCount();
 
-setInterval(fetchTicker,    5000);
-setInterval(fetchDepth,    10000);
-setInterval(fetchFunding,  30000);
-setInterval(fetchLongShort,30000);
-setInterval(fetchOI,       60000);
-setInterval(fetchKline,   300000);
-setInterval(fetchFG,     3600000);
-setInterval(fetchSignal,   15000);
+setInterval(fetchTicker,      5000);
+setInterval(fetchDepth,      10000);
+setInterval(fetchAltTickers, 10000);
+setInterval(fetchFunding,    30000);
+setInterval(fetchLongShort,  30000);
+setInterval(fetchHotList,    60000);
+setInterval(fetchOI,         60000);
+setInterval(fetchSignalCount,60000);
+setInterval(fetchKline,     300000);
+setInterval(fetchFG,       3600000);
+setInterval(fetchSignal,    15000);
 </script>
 </body>
 </html>
