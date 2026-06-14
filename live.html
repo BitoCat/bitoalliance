@@ -79,8 +79,8 @@ body {
 .card.signal { border: 1.5px solid #B85C1A; background: #fdf8f2; }
 .card.signal.long  { border-color: #27AE60; background: #f2fbf5; }
 .card.signal.short { border-color: #C0392B; background: #fdf2f2; }
-.card-label { font-size: 11px; color: #8B6F47; margin-bottom: 4px; letter-spacing: .03em; }
-.src-tag { font-size: 10px; padding: 2px 7px; border-radius: 3px; display: inline-block; margin-top: 5px; }
+.card-label { font-size: 12px; color: #8B6F47; margin-bottom: 5px; letter-spacing: .03em; }
+.src-tag { font-size: 11px; padding: 2px 8px; border-radius: 3px; display: inline-block; margin-top: 5px; }
 .src-b  { background: #EAF3DE; color: #27500A; }
 .src-bn { background: #FAEEDA; color: #633806; }
 .src-p  { background: #F0E8F8; color: #5B2D8E; }
@@ -107,10 +107,10 @@ body {
 .tv-sub  { font-size: 11px; color: #d4b896; }
 
 /* ── 多空比 Bar ── */
-.ratio-bar { height: 26px; border-radius: 5px; overflow: hidden; display: flex; margin-top: 6px; }
+.ratio-bar { height: 30px; border-radius: 5px; overflow: hidden; display: flex; margin-top: 6px; }
 .ratio-long  { background: #27AE60; display:flex; align-items:center; padding-left:9px; transition: width .6s; }
 .ratio-short { background: #C0392B; display:flex; align-items:center; justify-content:flex-end; padding-right:9px; transition: width .6s; }
-.ratio-label { font-size: 12px; font-weight: 500; color: white; }
+.ratio-label { font-size: 13px; font-weight: 500; color: white; }
 
 /* ── 深度 Bar ── */
 .depth-bar { height: 24px; border-radius: 5px; overflow: hidden; display: flex; margin-top: 6px; }
@@ -125,18 +125,18 @@ body {
 
 /* ── PHL 表格 ── */
 .phl-table-wrap { background: #edd4be; border-radius: 8px; padding: 10px 12px; }
-.phl-table-wrap table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.phl-table-wrap table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .phl-table-wrap th {
-  font-size: 9px; color: #8B6F47; font-weight: 500;
-  padding: 4px 6px; border-bottom: 1px solid #d4b896;
+  font-size: 11px; color: #8B6F47; font-weight: 500;
+  padding: 5px 6px; border-bottom: 1px solid #d4b896;
   text-align: center; letter-spacing: .03em;
 }
-.phl-tf  { font-size: 11px; font-weight: 500; color: #3D2B1F; padding: 5px 6px; min-width: 32px; }
-.phl-cell { text-align: center; padding: 5px 4px; border-radius: 3px; font-weight: 500; font-size: 11px; }
+.phl-tf  { font-size: 13px; font-weight: 500; color: #3D2B1F; padding: 6px 6px; min-width: 36px; }
+.phl-cell { text-align: center; padding: 6px 4px; border-radius: 3px; font-weight: 500; font-size: 12px; }
 .phl-ob  { color: #C0392B; }
 .phl-os  { color: #27AE60; }
 .phl-mid { color: #8B6F47; }
-.phl-res { text-align: center; padding: 5px 4px; font-size: 10px; }
+.phl-res { text-align: center; padding: 6px 4px; font-size: 11px; }
 
 /* ── 幣種行情條 ── */
 .ticker-item {
@@ -148,9 +148,9 @@ body {
   border-right: 1px solid #5C3D2A;
 }
 .ticker-item:last-child { border-right: none; }
-.tick-sym   { font-size: 13px; font-weight: 500; color: #C4A882; min-width: 36px; }
-.tick-price { font-size: 13px; font-weight: 500; color: #EDE0CE; font-variant-numeric: tabular-nums; }
-.tick-chg   { font-size: 12px; font-weight: 500; }
+.tick-sym   { font-size: 15px; font-weight: 500; color: #C4A882; min-width: 40px; }
+.tick-price { font-size: 15px; font-weight: 500; color: #EDE0CE; font-variant-numeric: tabular-nums; }
+.tick-chg   { font-size: 14px; font-weight: 500; }
 
 /* flash */
 @keyframes flashUp   { 0%{background:#d6f0de} 100%{background:#edd4be} }
@@ -294,7 +294,7 @@ body {
       <div class="tv-sub">中間區塊由 OBS 視窗捕捉你的 TradingView</div>
     </div>
     <!-- 幣種行情條 -->
-    <div id="tickerBar" style="width:100%;background:#3D2B1F;padding:10px 16px;display:flex;gap:0;border-top:1px solid #5C3D2A;">
+    <div id="tickerBar" style="width:100%;background:#3D2B1F;padding:14px 16px;display:flex;gap:0;border-top:1px solid #5C3D2A;">
       <div class="ticker-item" id="tick_ETH">
         <span class="tick-sym">ETH</span>
         <span class="tick-price" id="ethPrice">—</span>
@@ -608,22 +608,14 @@ async function fetchTicker() {
 // ════════════════════════
 async function fetchKline() {
   try {
-    const end   = Date.now();
-    const start = end - 25 * 3600 * 1000;
-    const r = await fetch(
-      `${BITUNIX}/kline?symbol=${SYMBOL}&interval=1h&startTime=${start}&endTime=${end}`
-    );
+    const r = await fetch(`${BITUNIX}/kline?symbol=${SYMBOL}&interval=60&limit=48`);
     const j = await r.json();
     const data = j.data || [];
     if (data.length < 2) return;
-    // 嘗試各種可能的格式
-    const closes = data.map(k => {
-      if (Array.isArray(k)) return parseFloat(k[4]); // [ts, o, h, l, c, v]
-      if (k.close !== undefined) return parseFloat(k.close);
-      if (k.c !== undefined) return parseFloat(k.c);
-      const vals = Object.values(k);
-      return parseFloat(vals[4] || vals[1]);
-    }).filter(v => !isNaN(v) && v > 0);
+    // Bitunix 格式：{time, open, high, low, close, baseVol, quoteVol}
+    const closes = data
+      .map(k => parseFloat(k.close))
+      .filter(v => !isNaN(v) && v > 0);
     if (closes.length >= 2) drawSparkline('sparkSvg', closes, '#B85C1A', 0.2);
   } catch(e) {}
 }
@@ -700,6 +692,7 @@ async function fetchOI() {
     const r = await fetch(`${BINANCE}/openInterestHist?symbol=${SYMBOL}&period=1h&limit=24`);
     const j = await r.json();
     if (!Array.isArray(j) || j.length < 2) return;
+    // Binance 回傳是舊→新排序
     const vals = j.map(d => parseFloat(d.sumOpenInterestValue));
     drawSparkline('oiSvg', vals, '#4a9eff', 0.15);
     const latest = vals[vals.length - 1];
@@ -707,7 +700,7 @@ async function fetchOI() {
     const chg    = ((latest - prev) / prev) * 100;
     document.getElementById('oiVal').textContent = fmtB(latest);
     const chgEl = document.getElementById('oiChg');
-    chgEl.textContent = (chg >= 0 ? '▲ +' : '▼ ') + chg.toFixed(2) + '%（24h）';
+    chgEl.textContent = (chg >= 0 ? '▲ +' : '▼ ') + Math.abs(chg).toFixed(2) + '%（24h）';
     chgEl.className   = 'val-sm ' + (chg >= 0 ? 'up' : 'down');
   } catch(e) {}
 }
@@ -905,20 +898,20 @@ function getPHLStatus(smi, slow, ob=40, os=-40) {
 // 抓某時框的 K 線並計算 PHL 1/2/3
 async function fetchPHLForTF(tf) {
   try {
-    const end   = Date.now();
-    const bars  = 120; // 足夠的 K 棒數
-    const start = end - bars * tf.minutes * 60 * 1000;
+    // Bitunix 格式：{time, open, high, low, close, baseVol, quoteVol}
+    // 回傳是新→舊排序，需要反轉
     const r = await fetch(
-      `${BITUNIX}/kline?symbol=${SYMBOL}&interval=${tf.interval}&startTime=${start}&endTime=${end}`
+      `${BITUNIX}/kline?symbol=${SYMBOL}&interval=${tf.interval}&limit=150`
     );
     const j = await r.json();
-    const data = j.data || [];
-    if (data.length < 30) return null;
+    const raw = j.data || [];
+    if (raw.length < 30) return null;
+    // 反轉成舊→新（方便 EMA 計算）
+    const data = [...raw].reverse();
 
-    // Bitunix kline: [timestamp, open, high, low, close, volume]
-    const highs  = data.map(k => Array.isArray(k) ? parseFloat(k[2]) : parseFloat(k.high  || k.h));
-    const lows   = data.map(k => Array.isArray(k) ? parseFloat(k[3]) : parseFloat(k.low   || k.l));
-    const closes = data.map(k => Array.isArray(k) ? parseFloat(k[4]) : parseFloat(k.close || k.c));
+    const highs  = data.map(k => parseFloat(k.high));
+    const lows   = data.map(k => parseFloat(k.low));
+    const closes = data.map(k => parseFloat(k.close));
 
     // PHL 1（1x 當前時框）
     const p1 = calcSMI(highs, lows, closes, 10, 3, 3);
