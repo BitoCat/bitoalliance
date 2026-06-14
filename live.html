@@ -397,7 +397,7 @@ const SYMBOL       = 'BTCUSDT';
 const SUPABASE_URL  = 'https://kldumnxdlgovaxtiszyn.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsZHVtbnhkbGdvdmF4dGlzenluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjIyNDgsImV4cCI6MjA5MzY5ODI0OH0.P_anfYpSV2tgCPIQ7uZDVBjUFY3UhfEXk9u3XjlzBHI';
 const SB_HEADERS = { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON };
-const BITUNIX    = 'https://fapi.bitunix.com/api/v1/futures/market';
+const BITUNIX    = 'https://web-production-f4735.up.railway.app';
 const BINANCE    = 'https://fapi.binance.com/futures/data';
 
 // ════════════════════════
@@ -521,7 +521,7 @@ function drawSparkline(svgId, data, color, fillOpacity) {
 let lastPrice = null;
 async function fetchTicker() {
   try {
-    const r = await fetch(`${BITUNIX}/tickers?symbols=${SYMBOL}`);
+    const r = await fetch(`${BITUNIX}/ticker?symbols=${SYMBOL}`);
     const j = await r.json();
     const d = j.data && j.data[0];
     if (!d) { setConn(false); return; }
@@ -597,7 +597,7 @@ async function fetchKline() {
 // ════════════════════════
 async function fetchFunding() {
   try {
-    const r = await fetch(`${BITUNIX}/funding_rate?symbol=${SYMBOL}`);
+    const r = await fetch(`${BITUNIX}/funding?symbol=${SYMBOL}`);
     const j = await r.json();
     const d = j.data?.[0] || j.data;
     if (!d) return;
@@ -749,7 +749,7 @@ const altCoins = [
 async function fetchAltTickers() {
   try {
     const syms = altCoins.map(c=>c.sym+'USDT').join(',');
-    const r = await fetch(`${BITUNIX}/tickers?symbols=${syms}`);
+    const r = await fetch(`${BITUNIX}/ticker?symbols=${syms}`);
     const j = await r.json();
     const data = j.data || [];
     if (data.length === 0) return;
@@ -782,7 +782,7 @@ async function fetchAltTickers() {
 // ════════════════════════
 async function fetchHotList() {
   try {
-    const r = await fetch(`${BITUNIX}/tickers?symbols=BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,XRPUSDT,DOGEUSDT,ADAUSDT,LINKUSDT,AVAXUSDT,DOTUSDT`);
+    const r = await fetch(`${BITUNIX}/ticker?symbols=BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,XRPUSDT,DOGEUSDT,ADAUSDT,LINKUSDT,AVAXUSDT,DOTUSDT`);
     const j = await r.json();
     const data = (j.data || []).filter(d => d.symbol.endsWith('USDT'));
     // 依 quoteVol 排序，取前5
@@ -861,7 +861,7 @@ setInterval(fetchSignal,    15000);
 async function debugAPI() {
   console.group('=== Bitunix API Debug ===');
   try {
-    const r1 = await fetch(`${BITUNIX}/tickers?symbols=BTCUSDT`);
+    const r1 = await fetch(`${BITUNIX}/ticker?symbols=BTCUSDT`);
     const j1 = await r1.json();
     console.log('Ticker:', j1.data && j1.data[0]);
   } catch(e) { console.error('Ticker error:', e); }
@@ -872,7 +872,7 @@ async function debugAPI() {
     console.log('Kline sample (first 2):', (j2.data||[]).slice(0,2));
   } catch(e) { console.error('Kline error:', e); }
   try {
-    const r3 = await fetch(`${BITUNIX}/funding_rate?symbol=BTCUSDT`);
+    const r3 = await fetch(`${BITUNIX}/funding?symbol=BTCUSDT`);
     const j3 = await r3.json();
     console.log('Funding:', j3.data);
   } catch(e) { console.error('Funding error:', e); }
