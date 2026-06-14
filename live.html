@@ -516,14 +516,15 @@ function drawSparkline(svgId, data, color, fillOpacity) {
 
 // ════════════════════════
 // 1. Ticker（現價、漲跌幅、高低、成交量）
+// 確認欄位：lastPrice, open, high, low, quoteVol
 // ════════════════════════
 let lastPrice = null;
 async function fetchTicker() {
   try {
     const r = await fetch(`${BITUNIX}/tickers?symbols=${SYMBOL}`);
     const j = await r.json();
-    const d = j.data?.[0];
-    if (!d) return;
+    const d = j.data && j.data[0];
+    if (!d) { setConn(false); return; }
 
     const price = parseFloat(d.lastPrice);
     const open  = parseFloat(d.open);
@@ -531,33 +532,35 @@ async function fetchTicker() {
     const low   = parseFloat(d.low);
     const vol   = parseFloat(d.quoteVol);
 
+    if (isNaN(price) || price <= 0) { setConn(false); return; }
+
     // 現價
     const priceEl = document.getElementById('btcPrice');
-    priceEl.textContent = fmt(price, 1);
-    if (lastPrice !== null) {
+    priceEl.textContent = price.toLocaleString('en-US', {minimumFractionDigits:1, maximumFractionDigits:1});
+    if (lastPrice !== null && lastPrice !== price) {
       const up = price >= lastPrice;
       priceEl.classList.add(up ? 'up' : 'down');
       setTimeout(() => priceEl.classList.remove('up','down'), 1200);
     }
     lastPrice = price;
 
-    // 漲跌幅
+    // 漲跌幅（open = 24h 前開盤價）
     if (open > 0) {
       const chg  = ((price - open) / open) * 100;
       const sign = chg >= 0 ? '▲ +' : '▼ ';
       const el   = document.getElementById('btcChange');
-      el.textContent = `${sign}${chg.toFixed(2)}%  (24h)`;
+      el.textContent = sign + Math.abs(chg).toFixed(2) + '%  (24h)';
       el.className   = 'val-sm ' + (chg >= 0 ? 'up' : 'down');
     }
 
-    // 高低
-    document.getElementById('dayHigh').textContent = fmt(high, 1);
-    document.getElementById('dayLow').textContent  = fmt(low, 1);
+    // 日內高低
+    if (high > 0) document.getElementById('dayHigh').textContent =
+      high.toLocaleString('en-US', {minimumFractionDigits:1, maximumFractionDigits:1});
+    if (low > 0)  document.getElementById('dayLow').textContent  =
+      low.toLocaleString('en-US', {minimumFractionDigits:1, maximumFractionDigits:1});
 
-    // 成交量
-    if (vol > 0) {
-      // 在 OI 旁邊順便顯示一下不重複放
-    }
+    // 成交量（quoteVol = USDT 計價）
+    // 顯示在 OI 區塊旁，此處不重複
 
     setConn(true);
   } catch(e) { setConn(false); }
@@ -565,17 +568,27 @@ async function fetchTicker() {
 
 // ════════════════════════
 // 2. K 線 Sparkline（近24根1h）
+// Bitunix kline 回傳：[timestamp, open, high, low, close, volume]
 // ════════════════════════
 async function fetchKline() {
   try {
     const end   = Date.now();
-    const start = end - 24 * 3600 * 1000;
-    const r = await fetch(`${BITUNIX}/kline?symbol=${SYMBOL}&interval=1h&startTime=${start}&endTime=${end}`);
+    const start = end - 25 * 3600 * 1000;
+    const r = await fetch(
+      `${BITUNIX}/kline?symbol=${SYMBOL}&interval=1h&startTime=${start}&endTime=${end}`
+    );
     const j = await r.json();
     const data = j.data || [];
     if (data.length < 2) return;
-    const closes = data.map(k => parseFloat(k[4] || k.close || k.c || Object.values(k)[4]));
-    drawSparkline('sparkSvg', closes, '#B85C1A', 0.2);
+    // 嘗試各種可能的格式
+    const closes = data.map(k => {
+      if (Array.isArray(k)) return parseFloat(k[4]); // [ts, o, h, l, c, v]
+      if (k.close !== undefined) return parseFloat(k.close);
+      if (k.c !== undefined) return parseFloat(k.c);
+      const vals = Object.values(k);
+      return parseFloat(vals[4] || vals[1]);
+    }).filter(v => !isNaN(v) && v > 0);
+    if (closes.length >= 2) drawSparkline('sparkSvg', closes, '#B85C1A', 0.2);
   } catch(e) {}
 }
 
@@ -739,19 +752,25 @@ async function fetchAltTickers() {
     const r = await fetch(`${BITUNIX}/tickers?symbols=${syms}`);
     const j = await r.json();
     const data = j.data || [];
+    if (data.length === 0) return;
     data.forEach(d => {
-      const sym  = d.symbol.replace('USDT','');
+      const sym  = (d.symbol || '').replace('USDT','');
       const coin = altCoins.find(c=>c.sym===sym);
       if (!coin) return;
       const price = parseFloat(d.lastPrice);
       const open  = parseFloat(d.open);
+      if (isNaN(price) || price <= 0) return;
       const chg   = open > 0 ? ((price-open)/open*100) : 0;
       const sign  = chg >= 0 ? '+' : '';
       const priceEl = document.getElementById(coin.priceId);
       const chgEl   = document.getElementById(coin.chgId);
-      if (priceEl) priceEl.textContent = price >= 100 ? fmt(price,1) : fmt(price,3);
+      if (priceEl) {
+        priceEl.textContent = price >= 100
+          ? price.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})
+          : price.toLocaleString('en-US',{minimumFractionDigits:3,maximumFractionDigits:4});
+      }
       if (chgEl) {
-        chgEl.textContent = `${sign}${chg.toFixed(2)}%`;
+        chgEl.textContent = sign + Math.abs(chg).toFixed(2) + '%';
         chgEl.style.color = chg >= 0 ? '#27AE60' : '#C0392B';
       }
     });
@@ -763,7 +782,7 @@ async function fetchAltTickers() {
 // ════════════════════════
 async function fetchHotList() {
   try {
-    const r = await fetch(`${BITUNIX}/tickers`);
+    const r = await fetch(`${BITUNIX}/tickers?symbols=BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,XRPUSDT,DOGEUSDT,ADAUSDT,LINKUSDT,AVAXUSDT,DOTUSDT`);
     const j = await r.json();
     const data = (j.data || []).filter(d => d.symbol.endsWith('USDT'));
     // 依 quoteVol 排序，取前5
@@ -834,6 +853,32 @@ setInterval(fetchSignalCount,60000);
 setInterval(fetchKline,     300000);
 setInterval(fetchFG,       3600000);
 setInterval(fetchSignal,    15000);
+
+// ════════════════════════
+// Debug 工具（開 console 用）
+// 在瀏覽器 console 輸入 debugAPI() 可看到 API 回傳
+// ════════════════════════
+async function debugAPI() {
+  console.group('=== Bitunix API Debug ===');
+  try {
+    const r1 = await fetch(`${BITUNIX}/tickers?symbols=BTCUSDT`);
+    const j1 = await r1.json();
+    console.log('Ticker:', j1.data && j1.data[0]);
+  } catch(e) { console.error('Ticker error:', e); }
+  try {
+    const end = Date.now(), start = end - 3*3600000;
+    const r2 = await fetch(`${BITUNIX}/kline?symbol=BTCUSDT&interval=1h&startTime=${start}&endTime=${end}`);
+    const j2 = await r2.json();
+    console.log('Kline sample (first 2):', (j2.data||[]).slice(0,2));
+  } catch(e) { console.error('Kline error:', e); }
+  try {
+    const r3 = await fetch(`${BITUNIX}/funding_rate?symbol=BTCUSDT`);
+    const j3 = await r3.json();
+    console.log('Funding:', j3.data);
+  } catch(e) { console.error('Funding error:', e); }
+  console.groupEnd();
+}
+window.debugAPI = debugAPI;
 </script>
 </body>
 </html>
