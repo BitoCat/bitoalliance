@@ -411,6 +411,7 @@ const SUPABASE_URL  = 'https://kldumnxdlgovaxtiszyn.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsZHVtbnhkbGdvdmF4dGlzenluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjIyNDgsImV4cCI6MjA5MzY5ODI0OH0.P_anfYpSV2tgCPIQ7uZDVBjUFY3UhfEXk9u3XjlzBHI';
 const SB_HEADERS = { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON };
 const BITUNIX    = 'https://web-production-f4735.up.railway.app';
+const LIVE_DATA  = `${BITUNIX}/live-data?symbol=${SYMBOL}`;
 const BINANCE    = 'https://fapi.binance.com/futures/data';
 
 // ════════════════════════
@@ -834,6 +835,236 @@ async function fetchHotList() {
 
 // ════════════════════════
 // 貓咪隧道快訊（最新4則）
+// ════════════════════════
+let lastTunnelId = null;
+async function fetchTunnelAlerts() {
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/bitocat_alerts?type=eq.tunnel&order=created_at.desc&limit=4`,
+      { headers: SB_HEADERS }
+    );
+    const data = await r.json();
+    if (!Array.isArray(data) || data.length === 0) return;
+    const container = document.getElementById('tunnelAlerts');
+    if (!container) return;
+    if (data[0].id !== lastTunnelId) lastTunnelId = data[0].id;
+    container.innerHTML = data.map(a => {
+      const isUpper = (a.signal || '').toLowerCase() === 'upper';
+      const color  = isUpper ? '#C0392B' : '#27AE60';
+      const icon   = isUpper ? '▲' : '▼';
+      const bg     = isUpper ? '#fdf2f2' : '#f2fbf5';
+      const border = isUpper ? '#C0392B' : '#27AE60';
+      const t = new Date(a.created_at);
+      const timeStr = t.toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit', hour12:false});
+      const price = a.price ? ` @ ${parseFloat(a.price).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})}` : '';
+      return `<div style="background:${bg};border-left:3px solid ${border};border-radius:6px;padding:8px 10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:14px;font-weight:600;color:${color};">${icon} ${a.timeframe||''} ${isUpper?'上軌':'下軌'}觸及</span>
+          <span style="font-size:11px;color:#8B6F47;">${timeStr}</span>
+        </div>
+        <div style="font-size:11px;color:#8B6F47;margin-top:2px;">${a.ticker||'BTCUSDT'}${price}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {}
+}
+fetchTunnelAlerts();
+
+setInterval(fetchFG,           3600000);
+setInterval(fetchSignal,        15000);
+setInterval(fetchTunnelAlerts,  15000);
+
+// ════════════════════════
+// Debug 工具（開 console 用）
+// 在瀏覽器 console 輸入 debugAPI() 可看到 API 回傳
+// ════════════════════════
+async function debugAPI() {
+  console.group('=== Bitunix API Debug ===');
+  try {
+    const r1 = await fetch(`${BITUNIX}/ticker?symbols=BTCUSDT`);
+    const j1 = await r1.json();
+    console.log('Ticker:', j1.data && j1.data[0]);
+  } catch(e) { console.error('Ticker error:', e); }
+  try {
+    const end = Date.now(), start = end - 3*3600000;
+    const r2 = await fetch(`${BITUNIX}/kline?symbol=BTCUSDT&interval=1h&startTime=${start}&endTime=${end}`);
+    const j2 = await r2.json();
+    console.log('Kline sample (first 2):', (j2.data||[]).slice(0,2));
+  } catch(e) { console.error('Kline error:', e); }
+  try {
+    const r3 = await fetch(`${BITUNIX}/funding?symbol=BTCUSDT`);
+    const j3 = await r3.json();
+    console.log('Funding:', j3.data);
+  } catch(e) { console.error('Funding error:', e); }
+  console.groupEnd();
+}
+window.debugAPI = debugAPI;
+</script>
+</body>
+</html>// ════════════════════════
+// 單一請求取得所有數據（/live-data）
+// ════════════════════════
+let lastPrice = null;
+
+function processLiveData(d) {
+  if (!d || d.code !== 0) { setConn(false); return; }
+  setConn(true);
+
+  // ── Ticker ──
+  const t = d.ticker || {};
+  const price = parseFloat(t.lastPrice);
+  const open  = parseFloat(t.open);
+  const high  = parseFloat(t.high);
+  const low   = parseFloat(t.low);
+
+  if (price > 0) {
+    const priceEl = document.getElementById('btcPrice');
+    priceEl.textContent = price.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1});
+    if (lastPrice !== null && lastPrice !== price) {
+      const up = price >= lastPrice;
+      priceEl.classList.add(up ? 'up' : 'down');
+      setTimeout(() => priceEl.classList.remove('up','down'), 1200);
+    }
+    lastPrice = price;
+  }
+  if (open > 0 && price > 0) {
+    const chg = ((price - open) / open) * 100;
+    const el  = document.getElementById('btcChange');
+    el.textContent = (chg >= 0 ? '▲ +' : '▼ ') + Math.abs(chg).toFixed(2) + '%  (24h)';
+    el.className   = 'val-sm ' + (chg >= 0 ? 'up' : 'down');
+  }
+  if (high > 0) document.getElementById('dayHigh').textContent =
+    high.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1});
+  if (low > 0)  document.getElementById('dayLow').textContent  =
+    low.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1});
+
+  // ── Kline Sparkline ──
+  const klines = d.kline || [];
+  if (klines.length >= 2) {
+    const closes = klines.map(k => parseFloat(k.close)).filter(v => !isNaN(v) && v > 0);
+    if (closes.length >= 2) drawSparkline('sparkSvg', closes, '#B85C1A', 0.2);
+  }
+
+  // ── Funding ──
+  const f = d.funding || {};
+  const rate = parseFloat(f.fundingRate);
+  if (!isNaN(rate)) {
+    updateFundingGauge(rate);
+    if (f.nextFundingTime) nextFunding = parseInt(f.nextFundingTime);
+    if (f.fundingInterval) {
+      fundingPeriod = parseInt(f.fundingInterval) * 3600000;
+      document.getElementById('fundingInterval').textContent = `結算週期 ${f.fundingInterval} 小時`;
+    }
+  }
+
+  // ── Depth ──
+  const dep = d.depth || {};
+  const parseSide = (side) => (side||[]).reduce((s,item) => {
+    const p = parseFloat(Array.isArray(item) ? item[0] : (item.price||0));
+    const q = parseFloat(Array.isArray(item) ? item[1] : (item.qty||0));
+    return s + (isNaN(p*q) ? 0 : p*q);
+  }, 0);
+  const bidVol = parseSide(dep.bids);
+  const askVol = parseSide(dep.asks);
+  const total  = bidVol + askVol;
+  if (total > 0) {
+    const bPct = (bidVol/total*100).toFixed(0);
+    const aPct = (askVol/total*100).toFixed(0);
+    document.getElementById('depthBid').style.width = bPct + '%';
+    document.getElementById('depthAsk').style.width = aPct + '%';
+    document.getElementById('depthBidVal').textContent = `買 ${bPct}%`;
+    document.getElementById('depthAskVal').textContent = `賣 ${aPct}%`;
+    document.getElementById('depthSub').textContent = `買方 ${fmtB(bidVol)} vs 賣方 ${fmtB(askVol)}`;
+  }
+
+  // ── 多空比 ──
+  const ls = d.ls || {};
+  const lPct = parseFloat(ls.longAccount||ls.longRatio||0) * 100;
+  const sPct = parseFloat(ls.shortAccount||ls.shortRatio||0) * 100;
+  if (lPct > 0 && sPct > 0) {
+    document.getElementById('longBar').style.width  = lPct.toFixed(0) + '%';
+    document.getElementById('shortBar').style.width = sPct.toFixed(0) + '%';
+    document.getElementById('longPct').textContent  = `多 ${lPct.toFixed(0)}%`;
+    document.getElementById('shortPct').textContent = `空 ${sPct.toFixed(0)}%`;
+    const ratio = (lPct/sPct).toFixed(2);
+    document.getElementById('ratioSub').textContent = `比例 ${ratio} · ${lPct>sPct?'多方佔優':'空方佔優'}`;
+  }
+
+  // ── OI ──
+  const oi = d.oi || [];
+  if (oi.length >= 2) {
+    const vals = oi.map(x => parseFloat(x.sumOpenInterestValue));
+    drawSparkline('oiSvg', vals, '#4a9eff', 0.15);
+    const latest = vals[vals.length-1], prev = vals[0];
+    const chg = ((latest-prev)/prev)*100;
+    document.getElementById('oiVal').textContent = fmtB(latest);
+    const el = document.getElementById('oiChg');
+    el.textContent = (chg>=0?'▲ +':'▼ ') + Math.abs(chg).toFixed(2) + '%（24h）';
+    el.className   = 'val-sm ' + (chg>=0?'up':'down');
+  }
+
+  // ── 恐懼貪婪 ──
+  const fg = d.fg || {};
+  if (fg.value) {
+    const val = parseInt(fg.value);
+    updateFgGauge(val);
+    const lbl = document.getElementById('fgLabel');
+    lbl.textContent = fg.value_classification || '';
+    lbl.style.color = val<=25?'#C0392B':val>=75?'#27AE60':'#B85C1A';
+  }
+
+  // ── 幣種行情條 ──
+  const alts = d.alts || [];
+  alts.forEach(item => {
+    const sym  = (item.symbol||'').replace('USDT','');
+    const coin = altCoins.find(c=>c.sym===sym);
+    if (!coin) return;
+    const pr = parseFloat(item.lastPrice);
+    const op = parseFloat(item.open);
+    if (isNaN(pr)||pr<=0) return;
+    const chg  = op>0 ? ((pr-op)/op*100) : 0;
+    const sign = chg>=0?'+':'';
+    const priceEl = document.getElementById(coin.priceId);
+    const chgEl   = document.getElementById(coin.chgId);
+    if (priceEl) priceEl.textContent = pr>=100
+      ? pr.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})
+      : pr.toLocaleString('en-US',{minimumFractionDigits:3,maximumFractionDigits:4});
+    if (chgEl) {
+      chgEl.textContent = sign + Math.abs(chg).toFixed(2) + '%';
+      chgEl.style.color = chg>=0?'#27AE60':'#C0392B';
+    }
+  });
+
+  // ── 熱門合約排行 ──
+  const hot = d.hot || [];
+  const hotEl = document.getElementById('hotList');
+  if (hotEl && hot.length > 0) {
+    hotEl.innerHTML = hot.map(item => {
+      const sym  = (item.symbol||'').replace('USDT','');
+      const pr   = parseFloat(item.lastPrice);
+      const op   = parseFloat(item.open);
+      const chg  = op>0?((pr-op)/op*100):0;
+      const sign = chg>=0?'+':'';
+      const col  = chg>=0?'#27AE60':'#C0392B';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-top:0.5px solid #d4b896;">
+        <span style="font-size:13px;font-weight:500;color:#3D2B1F;">${sym}</span>
+        <span style="font-size:12px;color:#8B6F47;font-variant-numeric:tabular-nums;">${pr>=100?pr.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1}):pr.toLocaleString('en-US',{minimumFractionDigits:3,maximumFractionDigits:4})}</span>
+        <span style="font-size:13px;font-weight:500;color:${col};">${sign}${Math.abs(chg).toFixed(2)}%</span>
+      </div>`;
+    }).join('');
+  }
+}
+
+async function fetchLiveData() {
+  try {
+    const r = await fetch(LIVE_DATA);
+    const j = await r.json();
+    processLiveData(j);
+  } catch(e) { setConn(false); }
+}
+
+// ════════════════════════
+// 貓咪隧道快訊（最新4則）
+
 // ════════════════════════
 let lastTunnelId = null;
 async function fetchTunnelAlerts() {
