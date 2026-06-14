@@ -910,16 +910,21 @@ function getPHLStatus(smi, slow) {
   return { txt: smi > slow ? '中段⬆︎' : '中段⬇︎', cls: 'phl-mid' };
 }
 
-// 抓 K 線並計算 SMI 最後一根
+// 抓 K 線並計算 SMI 最後一根（含 timeout）
 async function calcPHLForInterval(interval) {
   try {
-    const r = await fetch(
-      `${BITUNIX}/kline?symbol=${SYMBOL}&interval=${interval}&limit=150`
+    // Safari 相容：用 Promise.race 做 timeout
+    const fetchPromise = fetch(
+      `${BITUNIX}/kline?symbol=${SYMBOL}&interval=${interval}&limit=80`
     );
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), 8000)
+    );
+    const r = await Promise.race([fetchPromise, timeoutPromise]);
     const j = await r.json();
     const raw = j.data || [];
-    if (raw.length < 30) return null;
-    const data   = [...raw].reverse(); // 反轉成舊→新
+    if (raw.length < 15) return null;
+    const data   = [...raw].reverse();
     const highs  = data.map(k => parseFloat(k.high));
     const lows   = data.map(k => parseFloat(k.low));
     const closes = data.map(k => parseFloat(k.close));
@@ -928,32 +933,20 @@ async function calcPHLForInterval(interval) {
   } catch(e) { return null; }
 }
 
-async function fetchPHLTable() {
-  // 收集所有需要的 interval（去重）
-  const allIntervals = [...new Set(PHL_TFS.flatMap(tf => [tf.iv1, tf.iv2]))];
-  const cache = {};
-  await Promise.all(allIntervals.map(async iv => {
-    cache[iv] = await calcPHLForInterval(iv);
-  }));
-
+function renderPHLTable(cache) {
   const container = document.getElementById('phlTable');
   if (!container) return;
-
   let tableHtml = '';
   PHL_TFS.forEach(tf => {
     const d1 = cache[tf.iv1];
     const d2 = cache[tf.iv2];
-
     const s1 = d1 ? getPHLStatus(d1.smiVal, d1.slowVal) : { txt: '—', cls: 'phl-mid' };
     const s2 = d2 ? getPHLStatus(d2.smiVal, d2.slowVal) : { txt: '—', cls: 'phl-mid' };
-
     const isOB = d1 && d2 && d1.smiVal > 40 && d2.smiVal > 40;
     const isOS = d1 && d2 && d1.smiVal < -40 && d2.smiVal < -40;
-
     let resHtml = '<span style="color:#c9a88a;">—</span>';
     if (isOS) resHtml = '<span style="color:#27AE60;font-weight:600;">🚀 超賣共振</span>';
     if (isOB) resHtml = '<span style="color:#C0392B;font-weight:600;">⚠️ 超買共振</span>';
-
     tableHtml += `<tr>
       <td class="phl-tf">${tf.label}</td>
       <td class="phl-cell ${s1.cls}">${s1.txt}</td>
@@ -962,6 +955,16 @@ async function fetchPHLTable() {
     </tr>`;
   });
   container.innerHTML = tableHtml;
+}
+
+async function fetchPHLTable() {
+  const allIntervals = [...new Set(PHL_TFS.flatMap(tf => [tf.iv1, tf.iv2]))];
+  const cache = {};
+  // 逐一抓取，每抓完一個就立刻渲染（不等全部完成）
+  for (const iv of allIntervals) {
+    cache[iv] = await calcPHLForInterval(iv);
+    renderPHLTable(cache); // 即時更新畫面
+  }
 }
 
 setInterval(fetchPHLTable,  60000);
