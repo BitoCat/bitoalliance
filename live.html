@@ -133,9 +133,11 @@ body {
 }
 .phl-tf  { font-size: 13px; font-weight: 500; color: #3D2B1F; padding: 6px 6px; min-width: 36px; }
 .phl-cell { text-align: center; padding: 6px 4px; border-radius: 3px; font-weight: 500; font-size: 12px; }
-.phl-ob  { color: #C0392B; }
-.phl-os  { color: #27AE60; }
-.phl-mid { color: #8B6F47; }
+.phl-ob-dn { color: #C0392B; font-weight: 600; }  /* 超買⬇︎ 紅色警示 */
+.phl-ob-up { color: #E8A040; font-weight: 600; }  /* 超買⬆︎ 橙色觀察 */
+.phl-os-up { color: #27AE60; font-weight: 600; }  /* 超賣⬆︎ 綠色機會 */
+.phl-os-dn { color: #E8A040; font-weight: 600; }  /* 超賣⬇︎ 橙色觀察 */
+.phl-mid   { color: #8B6F47; }
 .phl-res { text-align: center; padding: 6px 4px; font-size: 11px; }
 
 /* ── 幣種行情條 ── */
@@ -850,7 +852,7 @@ const PHL_TFS = [
   { label: '15m', iv1: '15',  iv2: '30'  },
   { label: '30m', iv1: '30',  iv2: '60'  },
   { label: '1h',  iv1: '60',  iv2: '120' },
-  { label: '4h',  iv1: '240', iv2: '480' },
+  { label: '4h',  iv1: '240', iv2: '8h'  },
   { label: '日線', iv1: '1D',  iv2: '1W'  },
 ];
 
@@ -891,10 +893,20 @@ function calcSMI(highs, lows, closes) {
 }
 
 // 取得狀態文字與 CSS class
+// 超買⬇︎ = 紅色警示, 超買⬆︎ = 橙色觀察
+// 超賣⬆︎ = 綠色機會, 超賣⬇︎ = 橙色觀察
 function getPHLStatus(smi, slow) {
   const ob = 40, os = -40;
-  if (smi > ob) return { txt: smi > slow ? '超買⬆︎' : '超買⬇︎', cls: 'phl-ob' };
-  if (smi < os) return { txt: smi < slow ? '超賣⬆︎' : '超賣⬇︎', cls: 'phl-os' };
+  if (smi > ob) {
+    return smi > slow
+      ? { txt: '超買⬆︎', cls: 'phl-ob-up' }
+      : { txt: '超買⬇︎', cls: 'phl-ob-dn' };
+  }
+  if (smi < os) {
+    return smi < slow
+      ? { txt: '超賣⬆︎', cls: 'phl-os-up' }
+      : { txt: '超賣⬇︎', cls: 'phl-os-dn' };
+  }
   return { txt: smi > slow ? '中段⬆︎' : '中段⬇︎', cls: 'phl-mid' };
 }
 
@@ -939,8 +951,8 @@ async function fetchPHLTable() {
     const isOS = d1 && d2 && d1.smiVal < -40 && d2.smiVal < -40;
 
     let resHtml = '<span style="color:#c9a88a;">—</span>';
-    if (isOS) resHtml = '<span style="color:#27AE60;font-weight:500;">🚀 共振</span>';
-    if (isOB) resHtml = '<span style="color:#C0392B;font-weight:500;">⚠️ 共振</span>';
+    if (isOS) resHtml = '<span style="color:#27AE60;font-weight:600;">🚀 超賣共振</span>';
+    if (isOB) resHtml = '<span style="color:#C0392B;font-weight:600;">⚠️ 超買共振</span>';
 
     tableHtml += `<tr>
       <td class="phl-tf">${tf.label}</td>
