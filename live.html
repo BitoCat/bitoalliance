@@ -20,28 +20,28 @@ body {
 /* ── Header ── */
 .header {
   background: #3D2B1F;
-  padding: 0 24px;
-  height: 56px;
+  padding: 0 32px;
+  height: 68px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
 }
-.header-left { display: flex; align-items: center; gap: 16px; }
-.brand { font-size: 17px; font-weight: 500; color: #EDE0CE; letter-spacing: .04em; }
-.brand-sub { font-size: 11px; color: #6B4C2A; margin-top: 1px; }
-.conn-wrap { display: flex; align-items: center; gap: 6px; }
-.conn-dot { width: 8px; height: 8px; border-radius: 50%; background: #6B4C2A; transition: background .4s; }
+.header-left { display: flex; align-items: center; gap: 20px; }
+.brand { font-size: 22px; font-weight: 500; color: #EDE0CE; letter-spacing: .04em; }
+.brand-sub { font-size: 13px; color: #6B4C2A; margin-top: 2px; }
+.conn-wrap { display: flex; align-items: center; gap: 8px; }
+.conn-dot { width: 10px; height: 10px; border-radius: 50%; background: #6B4C2A; transition: background .4s; }
 .conn-dot.ok { background: #27AE60; }
 .conn-dot.err { background: #C0392B; }
-.conn-label { font-size: 10px; color: #6B4C2A; }
-.header-right { display: flex; align-items: center; gap: 20px; }
-.clock { font-size: 20px; font-weight: 500; color: #EDE0CE; font-variant-numeric: tabular-nums; letter-spacing: .04em; }
-.date-label { font-size: 11px; color: #6B4C2A; }
+.conn-label { font-size: 13px; color: #6B4C2A; }
+.header-right { display: flex; align-items: center; gap: 24px; }
+.clock { font-size: 26px; font-weight: 500; color: #EDE0CE; font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+.date-label { font-size: 13px; color: #6B4C2A; }
 .live-badge {
   background: #C0392B; color: white;
-  font-size: 11px; font-weight: 500;
-  padding: 4px 12px; border-radius: 4px;
+  font-size: 14px; font-weight: 500;
+  padding: 6px 16px; border-radius: 5px;
   letter-spacing: .08em;
   animation: blink 2s infinite;
 }
@@ -50,7 +50,7 @@ body {
 /* ── 主體三欄 ── */
 .body {
   display: grid;
-  grid-template-columns: 280px 1fr 280px;
+  grid-template-columns: 340px 1fr 340px;
   flex: 1;
   overflow: hidden;
 }
@@ -58,7 +58,7 @@ body {
 /* ── 面板 ── */
 .panel {
   background: #f5e8d8;
-  padding: 14px 12px;
+  padding: 16px 14px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -67,31 +67,31 @@ body {
 .panel.right { border-left: 1px solid #d4b896; }
 .panel.left  { border-right: 1px solid #d4b896; }
 .panel-title {
-  font-size: 9px; font-weight: 500; color: #8B6F47;
+  font-size: 11px; font-weight: 500; color: #8B6F47;
   letter-spacing: .06em; text-transform: uppercase;
   padding-bottom: 8px; border-bottom: 1px solid #d4b896;
   flex-shrink: 0;
 }
 
 /* ── 卡片 ── */
-.card { background: #edd4be; border-radius: 8px; padding: 10px 12px; }
+.card { background: #edd4be; border-radius: 10px; padding: 12px 14px; }
 .card.dark { background: #3D2B1F; }
 .card.signal { border: 1.5px solid #B85C1A; background: #fdf8f2; }
 .card.signal.long  { border-color: #27AE60; background: #f2fbf5; }
 .card.signal.short { border-color: #C0392B; background: #fdf2f2; }
-.card-label { font-size: 9px; color: #8B6F47; margin-bottom: 3px; letter-spacing: .03em; }
-.src-tag { font-size: 8px; padding: 1px 5px; border-radius: 2px; display: inline-block; margin-top: 4px; }
+.card-label { font-size: 11px; color: #8B6F47; margin-bottom: 4px; letter-spacing: .03em; }
+.src-tag { font-size: 10px; padding: 2px 7px; border-radius: 3px; display: inline-block; margin-top: 5px; }
 .src-b  { background: #EAF3DE; color: #27500A; }
 .src-bn { background: #FAEEDA; color: #633806; }
 .src-p  { background: #F0E8F8; color: #5B2D8E; }
 .src-f  { background: #E6F1FB; color: #0C447C; }
 
 /* 數值 */
-.val-xl { font-size: 28px; font-weight: 500; font-variant-numeric: tabular-nums; line-height: 1.1; transition: color .5s; }
-.val-lg { font-size: 18px; font-weight: 500; font-variant-numeric: tabular-nums; }
-.val-md { font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; }
-.val-sm { font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; }
-.sub    { font-size: 10px; color: #8B6F47; margin-top: 2px; }
+.val-xl { font-size: 36px; font-weight: 500; font-variant-numeric: tabular-nums; line-height: 1.1; transition: color .5s; }
+.val-lg { font-size: 24px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.val-md { font-size: 18px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.val-sm { font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.sub    { font-size: 12px; color: #8B6F47; margin-top: 3px; }
 .up     { color: #27AE60; }
 .down   { color: #C0392B; }
 .accent { color: #B85C1A; }
@@ -107,20 +107,20 @@ body {
 .tv-sub  { font-size: 11px; color: #d4b896; }
 
 /* ── 多空比 Bar ── */
-.ratio-bar { height: 20px; border-radius: 4px; overflow: hidden; display: flex; margin-top: 5px; }
-.ratio-long  { background: #27AE60; display:flex; align-items:center; padding-left:7px; transition: width .6s; }
-.ratio-short { background: #C0392B; display:flex; align-items:center; justify-content:flex-end; padding-right:7px; transition: width .6s; }
-.ratio-label { font-size: 10px; font-weight: 500; color: white; }
+.ratio-bar { height: 26px; border-radius: 5px; overflow: hidden; display: flex; margin-top: 6px; }
+.ratio-long  { background: #27AE60; display:flex; align-items:center; padding-left:9px; transition: width .6s; }
+.ratio-short { background: #C0392B; display:flex; align-items:center; justify-content:flex-end; padding-right:9px; transition: width .6s; }
+.ratio-label { font-size: 12px; font-weight: 500; color: white; }
 
 /* ── 深度 Bar ── */
-.depth-bar { height: 18px; border-radius: 4px; overflow: hidden; display: flex; margin-top: 5px; }
+.depth-bar { height: 24px; border-radius: 5px; overflow: hidden; display: flex; margin-top: 6px; }
 
 /* ── QR ── */
-.qr-wrap { margin-top: auto; background: #3D2B1F; border-radius: 8px; padding: 12px; text-align: center; }
-.qr-box { width: 88px; height: 88px; background: white; border-radius: 4px; margin: 0 auto 8px; display:flex; align-items:center; justify-content:center; font-size:10px; color:#8B6F47; }
-.qr-box img { width:100%; height:100%; border-radius:4px; object-fit:contain; }
-.qr-title { font-size: 12px; font-weight: 500; color: #EDE0CE; }
-.qr-sub   { font-size: 9px; color: #6B4C2A; margin-top: 2px; }
+.qr-wrap { margin-top: auto; background: #3D2B1F; border-radius: 10px; padding: 14px; text-align: center; }
+.qr-box { width: 100px; height: 100px; background: white; border-radius: 5px; margin: 0 auto 10px; display:flex; align-items:center; justify-content:center; font-size:11px; color:#8B6F47; }
+.qr-box img { width:100%; height:100%; border-radius:5px; object-fit:contain; }
+.qr-title { font-size: 14px; font-weight: 500; color: #EDE0CE; }
+.qr-sub   { font-size: 11px; color: #6B4C2A; margin-top: 3px; }
 
 /* flash */
 @keyframes flashUp   { 0%{background:#d6f0de} 100%{background:#edd4be} }
@@ -172,8 +172,8 @@ body {
     <!-- 1h Sparkline -->
     <div class="card" id="sparkCard">
       <div class="card-label">近24根 1h K線走勢</div>
-      <svg id="sparkSvg" width="256" height="36" viewBox="0 0 256 36" style="display:block;margin-top:4px;">
-        <text x="128" y="22" text-anchor="middle" font-size="10" fill="#c9a88a">載入中...</text>
+      <svg id="sparkSvg" width="312" height="44" viewBox="0 0 312 44" style="display:block;margin-top:4px;">
+        <text x="156" y="26" text-anchor="middle" font-size="12" fill="#c9a88a">載入中...</text>
       </svg>
       <span class="src-tag src-b">Bitunix</span>
     </div>
@@ -181,17 +181,14 @@ body {
     <!-- 資金費率 Gauge -->
     <div class="card">
       <div class="card-label">資金費率</div>
-      <svg id="fundingGauge" width="256" height="80" viewBox="0 0 256 80">
-        <!-- 背景弧 -->
-        <path d="M 28 72 A 84 84 0 0 1 228 72" fill="none" stroke="#d4b896" stroke-width="12" stroke-linecap="round"/>
-        <!-- 填色弧（id 動態更新） -->
-        <path id="fundingArc" d="M 28 72 A 84 84 0 0 1 128 0" fill="none" stroke="#B85C1A" stroke-width="12" stroke-linecap="round"/>
-        <!-- 指針 -->
-        <line id="fundingNeedle" x1="128" y1="72" x2="128" y2="4" stroke="#3D2B1F" stroke-width="2.5" stroke-linecap="round"/>
-        <circle cx="128" cy="72" r="5" fill="#3D2B1F"/>
-        <text x="22" y="78" font-size="9" fill="#27AE60">負費率</text>
-        <text x="178" y="78" font-size="9" fill="#C0392B">高費率</text>
-        <text id="fundingVal" x="128" y="58" text-anchor="middle" font-size="16" font-weight="500" fill="#B85C1A">—</text>
+      <svg id="fundingGauge" width="312" height="96" viewBox="0 0 312 96">
+        <path d="M 28 88 A 100 100 0 0 1 284 88" fill="none" stroke="#d4b896" stroke-width="14" stroke-linecap="round"/>
+        <path id="fundingArc" d="M 28 88 A 100 100 0 0 1 156 0" fill="none" stroke="#B85C1A" stroke-width="14" stroke-linecap="round"/>
+        <line id="fundingNeedle" x1="156" y1="88" x2="156" y2="4" stroke="#3D2B1F" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="156" cy="88" r="6" fill="#3D2B1F"/>
+        <text x="22" y="96" font-size="11" fill="#27AE60">負費率</text>
+        <text x="218" y="96" font-size="11" fill="#C0392B">高費率</text>
+        <text id="fundingVal" x="156" y="70" text-anchor="middle" font-size="20" font-weight="500" fill="#B85C1A">—</text>
       </svg>
       <!-- 倒數環 -->
       <div style="display:flex;align-items:center;gap:10px;margin-top:4px;">
@@ -276,8 +273,8 @@ body {
     <!-- OI Sparkline -->
     <div class="card">
       <div class="card-label">未平倉量 OI</div>
-      <svg id="oiSvg" width="256" height="32" viewBox="0 0 256 32" style="display:block;margin-top:4px;">
-        <text x="128" y="20" text-anchor="middle" font-size="10" fill="#c9a88a">載入中...</text>
+      <svg id="oiSvg" width="312" height="40" viewBox="0 0 312 40" style="display:block;margin-top:4px;">
+        <text x="156" y="24" text-anchor="middle" font-size="12" fill="#c9a88a">載入中...</text>
       </svg>
       <div style="display:flex;justify-content:space-between;margin-top:4px;">
         <div class="val-sm" id="oiVal" style="color:#4a9eff;">—</div>
@@ -289,15 +286,15 @@ body {
     <!-- 恐懼貪婪 Gauge -->
     <div class="card">
       <div class="card-label">恐懼貪婪指數</div>
-      <svg id="fgGauge" width="256" height="76" viewBox="0 0 256 76">
-        <path d="M 28 68 A 84 84 0 0 1 88 8"  fill="none" stroke="#C0392B" stroke-width="12" stroke-linecap="round"/>
-        <path d="M 88 8 A 84 84 0 0 1 168 8"  fill="none" stroke="#d4b896" stroke-width="12"/>
-        <path d="M 168 8 A 84 84 0 0 1 228 68" fill="none" stroke="#27AE60" stroke-width="12" stroke-linecap="round"/>
-        <line id="fgNeedle" x1="128" y1="68" x2="60" y2="30" stroke="#3D2B1F" stroke-width="2.5" stroke-linecap="round"/>
-        <circle cx="128" cy="68" r="5" fill="#3D2B1F"/>
-        <text id="fgVal" x="128" y="56" text-anchor="middle" font-size="20" font-weight="500" fill="#8B6F47">—</text>
-        <text x="20"  y="76" font-size="9" fill="#C0392B">恐懼</text>
-        <text x="190" y="76" font-size="9" fill="#27AE60">貪婪</text>
+      <svg id="fgGauge" width="312" height="92" viewBox="0 0 312 92">
+        <path d="M 28 84 A 100 100 0 0 1 100 10"  fill="none" stroke="#C0392B" stroke-width="14" stroke-linecap="round"/>
+        <path d="M 100 10 A 100 100 0 0 1 212 10"  fill="none" stroke="#d4b896" stroke-width="14"/>
+        <path d="M 212 10 A 100 100 0 0 1 284 84" fill="none" stroke="#27AE60" stroke-width="14" stroke-linecap="round"/>
+        <line id="fgNeedle" x1="156" y1="84" x2="80" y2="40" stroke="#3D2B1F" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="156" cy="84" r="6" fill="#3D2B1F"/>
+        <text id="fgVal" x="156" y="70" text-anchor="middle" font-size="24" font-weight="500" fill="#8B6F47">—</text>
+        <text x="20"  y="92" font-size="11" fill="#C0392B">恐懼</text>
+        <text x="240" y="92" font-size="11" fill="#27AE60">貪婪</text>
       </svg>
       <div class="sub" id="fgLabel" style="text-align:center;">—</div>
       <span class="src-tag src-f">Alternative.me</span>
@@ -396,11 +393,11 @@ function arcPath(cx, cy, r, startDeg, endDeg) {
 function updateFundingGauge(rate) {
   const pct  = (Math.max(-0.05, Math.min(0.10, rate)) + 0.05) / 0.15;
   const deg  = -90 + pct * 180; // -90=左 +90=右
-  const tip  = polarPoint(128, 72, 62, deg);
+  const tip  = polarPoint(156, 88, 92, deg);
   document.getElementById('fundingNeedle').setAttribute('x2', tip.x);
   document.getElementById('fundingNeedle').setAttribute('y2', tip.y);
   // 弧（從 -90 到 deg）
-  const arcD = arcPath(128, 72, 84, -90, deg);
+  const arcD = arcPath(156, 88, 100, -90, deg);
   document.getElementById('fundingArc').setAttribute('d', arcD);
   const color = rate > 0.03 ? '#C0392B' : rate < 0 ? '#27AE60' : '#B85C1A';
   document.getElementById('fundingArc').setAttribute('stroke', color);
@@ -413,7 +410,7 @@ function updateFundingGauge(rate) {
 function updateFgGauge(val) {
   const pct = val / 100;
   const deg = -90 + pct * 180;
-  const tip = polarPoint(128, 68, 70, deg);
+  const tip = polarPoint(156, 84, 92, deg);
   document.getElementById('fgNeedle').setAttribute('x2', tip.x);
   document.getElementById('fgNeedle').setAttribute('y2', tip.y);
   const color = val <= 25 ? '#C0392B' : val >= 75 ? '#27AE60' : '#B85C1A';
@@ -426,7 +423,7 @@ function updateFgGauge(val) {
 // ════════════════════════
 function drawSparkline(svgId, data, color, fillOpacity) {
   const svg  = document.getElementById(svgId);
-  const W    = 256, H = svgId === 'sparkSvg' ? 36 : 32;
+  const W    = 312, H = svgId === 'sparkSvg' ? 44 : 40;
   const min  = Math.min(...data), max = Math.max(...data);
   const range= max - min || 1;
   const pts  = data.map((v, i) => {
