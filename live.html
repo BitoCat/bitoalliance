@@ -227,6 +227,15 @@ body {
       <span class="src-tag src-b">Bitunix</span>
     </div>
 
+    <!-- 貓咪隧道快訊（左側底部）-->
+    <div class="card" style="flex-shrink:0;">
+      <div class="card-label">🐱 BitoCat 貓咪隧道快訊</div>
+      <div id="tunnelAlerts" style="display:flex;flex-direction:column;gap:4px;margin-top:4px;">
+        <div style="font-size:11px;color:#c9a88a;text-align:center;padding:4px;">等待快訊...</div>
+      </div>
+      <span class="src-tag src-p">TradingView Webhook</span>
+    </div>
+
     <!-- Technical Analysis Widget -->
     <div style="flex:1;min-height:0;border-radius:8px;overflow:hidden;position:relative;">
       <div style="position:absolute;top:0;left:0;width:420px;height:420px;transform:scale(0.60);transform-origin:top left;">
@@ -301,10 +310,10 @@ body {
         </div>
       </div>
 
-      <div style="background:#edd4be;border-radius:7px;padding:6px 10px;flex:1;min-width:160px;">
-        <div style="font-size:10px;color:#8B6F47;margin-bottom:2px;">🐱 BitoCat 貓咪隧道快訊</div>
-        <div id="tunnelAlerts" style="display:flex;flex-direction:column;gap:2px;overflow:hidden;max-height:56px;">
-          <div style="font-size:11px;color:#c9a88a;">等待快訊...</div>
+      <div style="background:#3D2B1F;border-radius:7px;padding:6px 14px;flex:1;display:flex;align-items:center;">
+        <div>
+          <div style="font-size:10px;color:#6B4C2A;margin-bottom:3px;">📢 今日直播主題</div>
+          <div style="font-size:15px;font-weight:500;color:#EDE0CE;" id="liveTitle">BTC 突破關鍵壓力！今晚能否站穩？</div>
         </div>
       </div>
 
