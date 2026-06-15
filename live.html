@@ -50,9 +50,10 @@ body {
 /* ── 主體三欄 ── */
 .body {
   display: grid;
-  grid-template-columns: 340px 1fr 340px;
+  grid-template-columns: 260px 1fr;
   flex: 1;
   overflow: hidden;
+  min-height: 0;
 }
 
 /* ── 面板 ── */
@@ -64,7 +65,7 @@ body {
   gap: 10px;
   overflow: hidden;
 }
-.panel.right { border-left: 1px solid #d4b896; }
+
 .panel.left  { border-right: 1px solid #d4b896; }
 .panel-title {
   font-size: 11px; font-weight: 500; color: #8B6F47;
@@ -74,7 +75,7 @@ body {
 }
 
 /* ── 卡片 ── */
-.card { background: #edd4be; border-radius: 10px; padding: 12px 14px; }
+.card { background: #edd4be; border-radius: 8px; padding: 8px 10px; }
 .card.dark { background: #3D2B1F; }
 
 .card-label { font-size: 12px; color: #8B6F47; margin-bottom: 5px; letter-spacing: .03em; }
@@ -85,7 +86,7 @@ body {
 .src-f  { background: #E6F1FB; color: #0C447C; }
 
 /* 數值 */
-.val-xl { font-size: 36px; font-weight: 500; font-variant-numeric: tabular-nums; line-height: 1.1; transition: color .5s; }
+.val-xl { font-size: 30px; font-weight: 500; font-variant-numeric: tabular-nums; line-height: 1.1; transition: color .5s; }
 .val-lg { font-size: 24px; font-weight: 500; font-variant-numeric: tabular-nums; }
 .val-md { font-size: 18px; font-weight: 500; font-variant-numeric: tabular-nums; }
 .val-sm { font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; }
@@ -105,7 +106,7 @@ body {
 .tv-sub  { font-size: 11px; color: #d4b896; }
 
 /* ── 多空比 Bar ── */
-.ratio-bar { height: 30px; border-radius: 5px; overflow: hidden; display: flex; margin-top: 6px; }
+.ratio-bar { height: 24px; border-radius: 4px; overflow: hidden; display: flex; margin-top: 4px; }
 .ratio-long  { background: #27AE60; display:flex; align-items:center; padding-left:9px; transition: width .6s; }
 .ratio-short { background: #C0392B; display:flex; align-items:center; justify-content:flex-end; padding-right:9px; transition: width .6s; }
 .ratio-label { font-size: 13px; font-weight: 500; color: white; }
@@ -310,93 +311,84 @@ body {
     </div>
   </div>
 
-  <!-- ══ 右側面板 ══ -->
-  <div class="panel right">
-    <div class="panel-title">籌碼數據</div>
 
-    <!-- 加入比特聯盟會員（移到最上方）-->
-    <div style="background:#3D2B1F;border-radius:8px;padding:10px 12px;">
-      <div style="font-size:13px;font-weight:500;color:#EDE0CE;margin-bottom:6px;">🐱 加入比特聯盟會員</div>
-      <div style="font-size:11px;color:#C4A882;line-height:1.7;">
-        ① 掃碼在 Bitunix 開戶（推薦碼 <span style="color:#B85C1A;font-weight:600;">Pooc</span>）<br>
-        ② Telegram → @Boss1688Bot → /start<br>
-        ③ 輸入 Email → 自動收到頻道邀請<br>
-        ④ 指標永久免費使用
-      </div>
-    </div>
-
-    <!-- 三個 QR code -->
-    <div style="display:flex;gap:6px;">
-      <div style="background:#3D2B1F;border-radius:8px;padding:8px 6px;text-align:center;flex:1;">
-        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAN4AAADeCAIAAADdBSngAAAE7klEQVR4nO3d260jRRRAUQYRCAEQA8ETAwGQiflFaoRKpXpsN2t9j92+462SjqsfPz6fz0/Q8/PtDwD/TppESZMoaRIlTaKkSZQ0iZImUdIkSppESZOoX0b+0e+//br5Y/yXP/78a+JVc5955FjPd5571aqj73uffUY+oVWTKGkSJU2ipEmUNIkamtCf5qbmEXOT49zUvM+qKf7kX1H7Tq2aREmTKGkSJU2ipEnU5IT+tG/Pes6qaXfk7zr5q8LJSf/ud2rVJEqaREmTKGkSJU2ilk3odz2nwud0uWreHJl/V51DPnesu+cPrGLVJEqaREmTKGkSJU2iXjKhz5mbrPfN4/yTVZMoaRIlTaKkSZQ0iVo2oZ/ct61NxHM7+Ksm/X276nf34q2aREmTKGkSJU2ipEnU5IT+jTNy7d+MOHlOe+07tWoSJU2ipEmUNImSJlE/Pp/P7c9wyMnrtfdNu/17wq9i1SRKmkRJkyhpEiVNooYm9H3PDlt13ffJe5U/rTr6qr/07v/qKlZNoqRJlDSJkiZR0iRqckIfcfLs67vz5r5fDO7eSX7fNzjyzlZNoqRJlDSJkiZR0iRq8jr0VfdGe9q3a3zSqjl636w9d/STv4RYNYmSJlHSJEqaREmTqI1PWzt5xfTJJ5KvOvrJcwxW/RVz39fcX2rVJEqaREmTKGkSJU2ihib0k08AP3n1+sir9k3fteu+n/btvI+wahIlTaKkSZQ0iZImURvPcl/1znNHP3ne+76d5X3X4J+ctV2HzqtIkyhpEiVNoqRJ1LLnoe+7D/mqneWTU2rtVXevOreHzqtIkyhpEiVNoqRJ1NCEvu8e4/vm1n3TZe0JaPu+i7vn4Vs1iZImUdIkSppESZOoyevQ5+y7pvvkc8FOPrVt7t+8g1WTKGkSJU2ipEmUNImafB567e7ld+8mt+967Tl3n8a+ilWTKGkSJU2ipEmUNIlaNqHPvar2VLKT++N3rxR4qs31Vk2ipEmUNImSJlHSJOroWe4n33nuWHd3w/vXvI+8zypWTaKkSZQ0iZImUdIkanIP/WnfM7/mnJz9T56dvmr277NqEiVNoqRJlDSJkiZRk3vo+54/vm+KX3Wm974r3PftvI8ca9/vA0/OcueLSZMoaRIlTaKkSdTk09ZG7HuW2Vuf7Hb3rIPabyxWTaKkSZQ0iZImUdIkaugs96eT9/2+ey323Kv6d3gbOdbd3z2smkRJkyhpEiVNoqRJ1Manra3aS717DfXJneWTc/0q+36ZsWoSJU2ipEmUNImSJlGTe+h33b0zW//u7ic/874n6Fk1iZImUdIkSppESZOoZfdy3+fk89D3HX3EvnvZ3b3Tvj10XkWaREmTKGkSJU2ihu4U97Rvbl11H/L+mfmrdrrnzB3r5Ce0ahIlTaKkSZQ0iZImUZMT+tPJHep9c/TJ675r9807eXRnufPFpEmUNImSJlHSJGrZhH7Svt3nfVdVP8298zfef95Z7ryKNImSJlHSJEqaRH3lhF67N9rJ9zm5877qne2h8yrSJEqaREmTKGkStexpa6ucnEn7d0ur/WJwklWTKGkSJU2ipEmUNIma3EO/e3f3u2df79vBnzv608m5foSz3HkVaRIlTaKkSZQ0ifrK56Hzf2DVJEqaREmTKGkSJU2ipEmUNImSJlHSJEqaREmTqL8BTasSkql5xTEAAAAASUVORK5CYII=" style="width:68px;height:68px;border-radius:3px;display:block;margin:0 auto 4px;">
-        <div style="font-size:11px;font-weight:500;color:#EDE0CE;">加入會員</div>
-        <div style="font-size:9px;color:#C4A882;margin-top:1px;">指標免費</div>
-      </div>
-      <div style="background:#3D2B1F;border-radius:8px;padding:8px 6px;text-align:center;flex:1;">
-        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAN4AAADeCAIAAADdBSngAAAFA0lEQVR4nO3d7Y0kJxRAUa/lQDYAx+DgHYMDcCazAZRlIfSg7rTO+T1TPR9XSDQ0/Pj6+voNen5/+weA/yZNoqRJlDSJkiZR0iRKmkRJkyhpEiVNoqRJ1B8rX/TXnz8P/xj/5+9//t34rufP/HzO3u819ZxzVv5i/f+pUZMoaRIlTaKkSZQ0iVqaoT/tzZpX7M0cV+bjU/bm/nuz5nPvTjzV/qdGTaKkSZQ0iZImUdIkanOG/jS1Hr33WnvPOTez3vuave+qzaynfh6jJlHSJEqaREmTKGkSNTZDr9mb207N2c+tmNd21J9j1CRKmkRJkyhpEiVNoj5khn5uV/nenH1q7fvcjvo+oyZR0iRKmkRJkyhpEjU2Q6/NCvdm3yvP2fuaqX34U0+eevVzjJpESZMoaRIlTaKkSdTmDL2213pvFXtqB/vUSvfNr3mq/U+NmkRJkyhpEiVNoqRJ1NIMvbY+/lQ7y/3ma9VObp9i1CRKmkRJkyhpEiVNojbvQ795J/i53elT3zX1nJsr3Tf/X3uMmkRJkyhpEiVNoqRJVG6X+7m5/80d4yvPOXfa/JSp19r7Gxo1iZImUdIkSppESZOoH19fXyMP+o6fob55G/vNE+BXnPt/Pe39zEZNoqRJlDSJkiZR0iRqaYY+9cnr/glmtbvMvuNffupvaNQkSppESZMoaRIlTaI2Z+gr3l37Pjezrs12956z4uaa/pNRkyhpEiVNoqRJlDSJGltD35vNvbuP+uYJeOd+r3N/+RXn3jEwahIlTaKkSZQ0iZImUWNr6Oc+Uf7unH3qyXuvfu49jafa5/2NmkRJkyhpEiVNoqRJ1Nh96OdO+b75/sDeq9/cUX/O1G/htjU+nDSJkiZR0iRKmkS9vIb+7llk786s392ZX/s0wZNRkyhpEiVNoqRJlDSJ2lxDP/fp7KnnTP2E786Izz3n5s+8x6hJlDSJkiZR0iRKmkSN3Yf+VJsDfsbd6ytPfvdvuPJdK4yaREmTKGkSJU2ipEnUN7gPfcq757A99WfW517LLne+MWkSJU2ipEmUNIkaW0O/uf/53d3XK25+xvzmCflP51bVjZpESZMoaRIlTaKkSdTVk+JW1PaZr7z6d1yhvrmfwRo6H0WaREmTKGkSJU2ilk6Ke5q6uezdW9JWTN22NjWvv3lf/LvnARo1iZImUdIkSppESZOozRn6itpce0X/PYSbOwFungv3ZNQkSppESZMoaRIlTaJyJ8XdvN3s3XXk2i3zK27unzdqEiVNoqRJlDSJkiZRm/eh79lba9578tQt4efWrM9919O5u97O7TowahIlTaKkSZQ0iZImUUsz9HdPSl/ZfX3utZ6mdnq/u8p/86Q4a+h8FGkSJU2ipEmUNIk6eFLcnr112xU3bzbfe/XafvWnm+/VGDWJkiZR0iRKmkRJk6ixk+LePfdsZW777oz43Plye7/7lHPv1Rg1iZImUdIkSppESZOog2e5v2vq8+xPe3P/c2e51+6dn/oUgFGTKGkSJU2ipEmUNIn6kBn6ufPKzn02fOo+9BU370x32xofTppESZMoaRIlTaLGZujndjuvvNbeuvaUqZ3nN9fHb940t8eoSZQ0iZImUdIkSppEbd6HflP//LSnm2v6e6Y+4T71ez0ZNYmSJlHSJEqaREmTqKUZOtxn1CRKmkRJkyhpEiVNoqRJlDSJkiZR0iRKmkRJk6hfmUoYjARRU38AAAAASUVORK5CYII=" style="width:68px;height:68px;border-radius:3px;display:block;margin:0 auto 4px;">
-        <div style="font-size:11px;font-weight:500;color:#EDE0CE;">指標年費</div>
-        <div style="font-size:9px;color:#C4A882;margin-top:1px;">NT$3,600</div>
-      </div>
-      <div style="background:#3D2B1F;border-radius:8px;padding:8px 6px;text-align:center;flex:1;">
-        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAN4AAADeCAIAAADdBSngAAAFCklEQVR4nO3d220tNQBAUS6iEAqgBoqnBgqgk1CAEViWHzuHtb6TmZNkayTHHvvH19fXT9Dz8+sPAP9MmkRJkyhpEiVNoqRJlDSJkiZR0iRKmkRJk6hfZr7o999+Pfwx/s0ff/618F0zn3ntyjP3Gq+89juc+YQzd5/5rptmPqGnJlHSJEqaREmTKGkSNTVCH+0a247WRo67vuvciHi0NorfdfeZz7PL2l/HU5MoaRIlTaKkSZQ0iVocoY/OzRHP3OvcrPGuUfO5n/TcaoGbf9ORpyZR0iRKmkRJkyhpErVthF5zbmx7buZ913XermDfxVOTKGkSJU2ipEmUNIn62BH6mnOr5XfN8n/qeHzkqUmUNImSJlHSJEqaRG0boZ97i/mccyvGd60Pfztmf/s39dQkSppESZMoaRIlTaIWR+ifMW+7a8X42nXOfc2a2t/UU5MoaRIlTaKkSZQ0iZoaoffnx9+Obdesjf1nvmbm5+r/TT01iZImUdIkSppESZOoH19fX//5RW93J6udAvb2Z/+On3mNpyZR0iRKmkRJkyhpErU4h37zFLBz68Nn9OeaR+dOSL957rynJlHSJEqaREmTKGkStTiHPjr3NvSuUfza3Xe5efL7zHVGb/8PM/LUJEqaREmTKGkSJU2iDr6HvjZ2e3tq+a4rj19zc4e3t+8FWOXOh5MmUdIkSppESZOoqRF6fw59dHOkv2vef+3z3LzyrutY5c43Jk2ipEmUNImSJlFTq9zXvJ3bfXuv2rnqa1e+uXZi5KlJlDSJkiZR0iRKmkRtm0Pf5dza+Lfj6M8Yj9/cbc9TkyhpEiVNoqRJlDSJmhqhj86d3nVunHhu1njXXnY318+f4z10Ppw0iZImUdIkSppEbTttbc2uUXNt5/Zzb9PP3GvtyjfXvVvlzjcmTaKkSZQ0iZImUdvm0Hc5t+PcLjdPY5+5+9rXnNtNzhw6H06aREmTKGkSJU2itp2HPjo3St1193P7mY9q+72vcR46SJMqaRIlTaKkSdTiCP3cG9M3T20793OtuTlDvXb3GebQ+XDSJEqaREmTKGkSdfC0tTXnxonn9jO/+b+Ic3vU195n99QkSppESZMoaRIlTaKuzqGfG9vePAWsvxK+/x8DI3S+MWkSJU2ipEmUNIla3CluzbmR481zys6N62+OrG+eauc9dD6KNImSJlHSJEqaRG2bQ9/1XTPXGd08JfztqeVv/xdxc62CpyZR0iRKmkRJkyhpEnV1Dv3cO9Rrdo12z+0v9/Zkt5u75I08NYmSJlHSJEqaREmTqNxOcTPejhxHN083W7v723fMvYfOR5EmUdIkSppESZOoqTn0m+eYj8bRXG1N+9p1RuOVz/3m355zN8NTkyhpEiVNoqRJlDSJWlzl/vZU7rdr0dfG7DP3OrdefXRzH/s1nppESZMoaRIlTaKkSdS299Bv7iG2dvebO5Pv2klv16ry2kh/hqcmUdIkSppESZMoaRJ1dae4m97un3bzbLWbq+5n7PrZPTWJkiZR0iRKmkRJk6gPGaGfW50+49xebed2ib/5mdd4ahIlTaKkSZQ0iZImUdtG6Dd3U7+5w/m5MfLo5r5wo7enn488NYmSJlHSJEqaREmTqMUR+tvd3c/tunZzVn30dr/3c7Pz9nLno0iTKGkSJU2ipEnUtzwPnf8DT02ipEmUNImSJlHSJEqaREmTKGkSJU2ipEmUNIn6Gy0M7gXmWibuAAAAAElFTkSuQmCC" style="width:68px;height:68px;border-radius:3px;display:block;margin:0 auto 4px;">
-        <div style="font-size:11px;font-weight:500;color:#EDE0CE;">網站註冊</div>
-        <div style="font-size:9px;color:#C4A882;margin-top:1px;">BitoAlliance</div>
-      </div>
-    </div>
-
-    <!-- 多空比 -->
-    <div class="card">
-      <div class="card-label">多空比（帳戶數）</div>
-      <div class="ratio-bar">
-        <div class="ratio-long"  id="longBar"  style="width:50%;"><span class="ratio-label" id="longPct">—</span></div>
-        <div class="ratio-short" id="shortBar" style="width:50%;"><span class="ratio-label" id="shortPct">—</span></div>
-      </div>
-      <div class="sub" id="ratioSub" style="margin-top:4px;">載入中...</div>
-      <span class="src-tag src-bn">Binance 樣本</span>
-    </div>
-
-    <!-- OI Sparkline -->
-    <div class="card">
-      <div class="card-label">未平倉量 OI</div>
-      <svg id="oiSvg" width="312" height="40" viewBox="0 0 312 40" style="display:block;margin-top:4px;">
-        <text x="156" y="24" text-anchor="middle" font-size="12" fill="#c9a88a">載入中...</text>
-      </svg>
-      <div style="display:flex;justify-content:space-between;margin-top:4px;">
-        <div class="val-sm" id="oiVal" style="color:#4a9eff;">—</div>
-        <div class="val-sm" id="oiChg">—</div>
-      </div>
-      <span class="src-tag src-bn">Binance 樣本</span>
-    </div>
-
-    <!-- 熱門合約排行 -->
-    <div class="card" style="padding:10px 14px;">
-      <div class="card-label">Bitunix 熱門合約 24h</div>
-      <div id="hotList" style="display:flex;flex-direction:column;gap:4px;margin-top:6px;">
-        <div style="font-size:11px;color:#c9a88a;">載入中...</div>
-      </div>
-      <span class="src-tag src-b">Bitunix</span>
-    </div>
-
-    <!-- 恐懼貪婪 Gauge -->
-    <div class="card">
-      <div class="card-label">恐懼貪婪指數</div>
-      <svg id="fgGauge" width="312" height="92" viewBox="0 0 312 92">
-        <path d="M 28 84 A 100 100 0 0 1 100 10"  fill="none" stroke="#C0392B" stroke-width="14" stroke-linecap="round"/>
-        <path d="M 100 10 A 100 100 0 0 1 212 10"  fill="none" stroke="#d4b896" stroke-width="14"/>
-        <path d="M 212 10 A 100 100 0 0 1 284 84" fill="none" stroke="#27AE60" stroke-width="14" stroke-linecap="round"/>
-        <line id="fgNeedle" x1="156" y1="84" x2="80" y2="40" stroke="#3D2B1F" stroke-width="3" stroke-linecap="round"/>
-        <circle cx="156" cy="84" r="6" fill="#3D2B1F"/>
-        <text id="fgVal" x="156" y="70" text-anchor="middle" font-size="24" font-weight="500" fill="#8B6F47">—</text>
-        <text x="20"  y="92" font-size="11" fill="#C0392B">恐懼</text>
-        <text x="240" y="92" font-size="11" fill="#27AE60">貪婪</text>
-      </svg>
-      <div class="sub" id="fgLabel" style="text-align:center;">—</div>
-      <span class="src-tag src-f">Alternative.me</span>
-    </div>
-
-  </div><!-- /右側 -->
 
 </div><!-- /body -->
+
+<!-- 下方數據橫列 -->
+<div id="dataBar" style="background:#f5e8d8;border-top:1px solid #d4b896;padding:8px 16px;display:flex;align-items:stretch;gap:10px;flex-shrink:0;">
+
+  <!-- 加入會員 + QR code -->
+  <div style="background:#3D2B1F;border-radius:8px;padding:10px 14px;display:flex;gap:12px;align-items:center;flex-shrink:0;">
+    <div>
+      <div style="font-size:13px;font-weight:500;color:#EDE0CE;margin-bottom:5px;">🐱 加入比特聯盟會員</div>
+      <div style="font-size:10px;color:#C4A882;line-height:1.8;">
+        ① 掃碼在 Bitunix 開戶（推薦碼 <span style="color:#B85C1A;font-weight:600;">Pooc</span>）<br>
+        ② Telegram → @Boss1688Bot → /start → 輸入 Email<br>
+        ③ 自動收到頻道邀請 · BitoCat 指標永久免費
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <div style="text-align:center;">
+        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAN4AAADeCAIAAADdBSngAAAE7klEQVR4nO3d260jRRRAUQYRCAEQA8ETAwGQiflFaoRKpXpsN2t9j92+462SjqsfPz6fz0/Q8/PtDwD/TppESZMoaRIlTaKkSZQ0iZImUdIkSppESZOoX0b+0e+//br5Y/yXP/78a+JVc5955FjPd5571aqj73uffUY+oVWTKGkSJU2ipEmUNIkamtCf5qbmEXOT49zUvM+qKf7kX1H7Tq2aREmTKGkSJU2ipEnU5IT+tG/Pes6qaXfk7zr5q8LJSf/ud2rVJEqaREmTKGkSJU2ilk3odz2nwud0uWreHJl/V51DPnesu+cPrGLVJEqaREmTKGkSJU2iXjKhz5mbrPfN4/yTVZMoaRIlTaKkSZQ0iVo2oZ/ct61NxHM7+Ksm/X276nf34q2aREmTKGkSJU2ipEnU5IT+jTNy7d+MOHlOe+07tWoSJU2ipEmUNImSJlE/Pp/P7c9wyMnrtfdNu/17wq9i1SRKmkRJkyhpEiVNooYm9H3PDlt13ffJe5U/rTr6qr/07v/qKlZNoqRJlDSJkiZR0iRqckIfcfLs67vz5r5fDO7eSX7fNzjyzlZNoqRJlDSJkiZR0iRq8jr0VfdGe9q3a3zSqjl636w9d/STv4RYNYmSJlHSJEqaREmTqI1PWzt5xfTJJ5KvOvrJcwxW/RVz39fcX2rVJEqaREmTKGkSJU2ihib0k08AP3n1+sir9k3fteu+n/btvI+wahIlTaKkSZQ0iZImURvPcl/1znNHP3ne+76d5X3X4J+ctV2HzqtIkyhpEiVNoqRJ1LLnoe+7D/mqneWTU2rtVXevOreHzqtIkyhpEiVNoqRJ1NCEvu8e4/vm1n3TZe0JaPu+i7vn4Vs1iZImUdIkSppESZOoyevQ5+y7pvvkc8FOPrVt7t+8g1WTKGkSJU2ipEmUNImafB567e7ld+8mt+967Tl3n8a+ilWTKGkSJU2ipEmUNIlaNqHPvar2VLKT++N3rxR4qs31Vk2ipEmUNImSJlHSJOroWe4n33nuWHd3w/vXvI+8zypWTaKkSZQ0iZImUdIkanIP/WnfM7/mnJz9T56dvmr277NqEiVNoqRJlDSJkiZRk3vo+54/vm+KX3Wm974r3PftvI8ca9/vA0/OcueLSZMoaRIlTaKkSdTk09ZG7HuW2Vuf7Hb3rIPabyxWTaKkSZQ0iZImUdIkaugs96eT9/2+ey323Kv6d3gbOdbd3z2smkRJkyhpEiVNoqRJ1Manra3aS717DfXJneWTc/0q+36ZsWoSJU2ipEmUNImSJlGTe+h33b0zW//u7ic/874n6Fk1iZImUdIkSppESZOoZfdy3+fk89D3HX3EvnvZ3b3Tvj10XkWaREmTKGkSJU2ihu4U97Rvbl11H/L+mfmrdrrnzB3r5Ce0ahIlTaKkSZQ0iZImUZMT+tPJHep9c/TJ675r9807eXRnufPFpEmUNImSJlHSJGrZhH7Svt3nfVdVP8298zfef95Z7ryKNImSJlHSJEqaRH3lhF67N9rJ9zm5877qne2h8yrSJEqaREmTKGkStexpa6ucnEn7d0ur/WJwklWTKGkSJU2ipEmUNIma3EO/e3f3u2df79vBnzv608m5foSz3HkVaRIlTaKkSZQ0ifrK56Hzf2DVJEqaREmTKGkSJU2ipEmUNImSJlHSJEqaREmTqL8BTasSkql5xTEAAAAASUVORK5CYII=" style="width:88px;height:88px;border-radius:4px;display:block;">
+        <div style="font-size:10px;color:#EDE0CE;margin-top:3px;">加入會員</div>
+      </div>
+      <div style="text-align:center;">
+        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAN4AAADeCAIAAADdBSngAAAFA0lEQVR4nO3d7Y0kJxRAUa/lQDYAx+DgHYMDcCazAZRlIfSg7rTO+T1TPR9XSDQ0/Pj6+voNen5/+weA/yZNoqRJlDSJkiZR0iRKmkRJkyhpEiVNoqRJ1B8rX/TXnz8P/xj/5+9//t34rufP/HzO3u819ZxzVv5i/f+pUZMoaRIlTaKkSZQ0iVqaoT/tzZpX7M0cV+bjU/bm/nuz5nPvTjzV/qdGTaKkSZQ0iZImUdIkanOG/jS1Hr33WnvPOTez3vuave+qzaynfh6jJlHSJEqaREmTKGkSNTZDr9mb207N2c+tmNd21J9j1CRKmkRJkyhpEiVNoj5khn5uV/nenH1q7fvcjvo+oyZR0iRKmkRJkyhpEjU2Q6/NCvdm3yvP2fuaqX34U0+eevVzjJpESZMoaRIlTaKkSdTmDL2213pvFXtqB/vUSvfNr3mq/U+NmkRJkyhpEiVNoqRJ1NIMvbY+/lQ7y/3ma9VObp9i1CRKmkRJkyhpEiVNojbvQ795J/i53elT3zX1nJsr3Tf/X3uMmkRJkyhpEiVNoqRJVG6X+7m5/80d4yvPOXfa/JSp19r7Gxo1iZImUdIkSppESZOoH19fXyMP+o6fob55G/vNE+BXnPt/Pe39zEZNoqRJlDSJkiZR0iRqaYY+9cnr/glmtbvMvuNffupvaNQkSppESZMoaRIlTaI2Z+gr3l37Pjezrs12956z4uaa/pNRkyhpEiVNoqRJlDSJGltD35vNvbuP+uYJeOd+r3N/+RXn3jEwahIlTaKkSZQ0iZImUWNr6Oc+Uf7unH3qyXuvfu49jafa5/2NmkRJkyhpEiVNoqRJ1Nh96OdO+b75/sDeq9/cUX/O1G/htjU+nDSJkiZR0iRKmkS9vIb+7llk786s392ZX/s0wZNRkyhpEiVNoqRJlDSJ2lxDP/fp7KnnTP2E786Izz3n5s+8x6hJlDSJkiZR0iRKmkSN3Yf+VJsDfsbd6ytPfvdvuPJdK4yaREmTKGkSJU2ipEnUN7gPfcq757A99WfW517LLne+MWkSJU2ipEmUNIkaW0O/uf/53d3XK25+xvzmCflP51bVjZpESZMoaRIlTaKkSdTVk+JW1PaZr7z6d1yhvrmfwRo6H0WaREmTKGkSJU2ilk6Ke5q6uezdW9JWTN22NjWvv3lf/LvnARo1iZImUdIkSppESZOozRn6itpce0X/PYSbOwFungv3ZNQkSppESZMoaRIlTaJyJ8XdvN3s3XXk2i3zK27unzdqEiVNoqRJlDSJkiZRm/eh79lba9578tQt4efWrM9919O5u97O7TowahIlTaKkSZQ0iZImUUsz9HdPSl/ZfX3utZ6mdnq/u8p/86Q4a+h8FGkSJU2ipEmUNIk6eFLcnr112xU3bzbfe/XafvWnm+/VGDWJkiZR0iRKmkRJk6ixk+LePfdsZW777oz43Plye7/7lHPv1Rg1iZImUdIkSppESZOog2e5v2vq8+xPe3P/c2e51+6dn/oUgFGTKGkSJU2ipEmUNIn6kBn6ufPKzn02fOo+9BU370x32xofTppESZMoaRIlTaLGZujndjuvvNbeuvaUqZ3nN9fHb940t8eoSZQ0iZImUdIkSppEbd6HflP//LSnm2v6e6Y+4T71ez0ZNYmSJlHSJEqaREmTqKUZOtxn1CRKmkRJkyhpEiVNoqRJlDSJkiZR0iRKmkRJk6hfmUoYjARRU38AAAAASUVORK5CYII=" style="width:88px;height:88px;border-radius:4px;display:block;">
+        <div style="font-size:10px;color:#EDE0CE;margin-top:3px;">指標年費</div>
+      </div>
+      <div style="text-align:center;">
+        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAN4AAADeCAIAAADdBSngAAAFCklEQVR4nO3d220tNQBAUS6iEAqgBoqnBgqgk1CAEViWHzuHtb6TmZNkayTHHvvH19fXT9Dz8+sPAP9MmkRJkyhpEiVNoqRJlDSJkiZR0iRKmkRJk6hfZr7o999+Pfwx/s0ff/618F0zn3ntyjP3Gq+89juc+YQzd5/5rptmPqGnJlHSJEqaREmTKGkSNTVCH+0a247WRo67vuvciHi0NorfdfeZz7PL2l/HU5MoaRIlTaKkSZQ0iVocoY/OzRHP3OvcrPGuUfO5n/TcaoGbf9ORpyZR0iRKmkRJkyhpErVthF5zbmx7buZ913XermDfxVOTKGkSJU2ipEmUNIn62BH6mnOr5XfN8n/qeHzkqUmUNImSJlHSJEqaRG0boZ97i/mccyvGd60Pfztmf/s39dQkSppESZMoaRIlTaIWR+ifMW+7a8X42nXOfc2a2t/UU5MoaRIlTaKkSZQ0iZoaoffnx9+Obdesjf1nvmbm5+r/TT01iZImUdIkSppESZOoH19fX//5RW93J6udAvb2Z/+On3mNpyZR0iRKmkRJkyhpErU4h37zFLBz68Nn9OeaR+dOSL957rynJlHSJEqaREmTKGkStTiHPjr3NvSuUfza3Xe5efL7zHVGb/8PM/LUJEqaREmTKGkSJU2iDr6HvjZ2e3tq+a4rj19zc4e3t+8FWOXOh5MmUdIkSppESZOoqRF6fw59dHOkv2vef+3z3LzyrutY5c43Jk2ipEmUNImSJlFTq9zXvJ3bfXuv2rnqa1e+uXZi5KlJlDSJkiZR0iRKmkRtm0Pf5dza+Lfj6M8Yj9/cbc9TkyhpEiVNoqRJlDSJmhqhj86d3nVunHhu1njXXnY318+f4z10Ppw0iZImUdIkSppEbTttbc2uUXNt5/Zzb9PP3GvtyjfXvVvlzjcmTaKkSZQ0iZImUdvm0Hc5t+PcLjdPY5+5+9rXnNtNzhw6H06aREmTKGkSJU2itp2HPjo3St1193P7mY9q+72vcR46SJMqaRIlTaKkSdTiCP3cG9M3T20793OtuTlDvXb3GebQ+XDSJEqaREmTKGkSdfC0tTXnxonn9jO/+b+Ic3vU195n99QkSppESZMoaRIlTaKuzqGfG9vePAWsvxK+/x8DI3S+MWkSJU2ipEmUNIla3CluzbmR481zys6N62+OrG+eauc9dD6KNImSJlHSJEqaRG2bQ9/1XTPXGd08JfztqeVv/xdxc62CpyZR0iRKmkRJkyhpEnV1Dv3cO9Rrdo12z+0v9/Zkt5u75I08NYmSJlHSJEqaREmTqNxOcTPejhxHN083W7v723fMvYfOR5EmUdIkSppESZOoqTn0m+eYj8bRXG1N+9p1RuOVz/3m355zN8NTkyhpEiVNoqRJlDSJWlzl/vZU7rdr0dfG7DP3OrdefXRzH/s1nppESZMoaRIlTaKkSdS299Bv7iG2dvebO5Pv2klv16ry2kh/hqcmUdIkSppESZMoaRJ1dae4m97un3bzbLWbq+5n7PrZPTWJkiZR0iRKmkRJk6gPGaGfW50+49xebed2ib/5mdd4ahIlTaKkSZQ0iZImUdtG6Dd3U7+5w/m5MfLo5r5wo7enn488NYmSJlHSJEqaREmTqMUR+tvd3c/tunZzVn30dr/3c7Pz9nLno0iTKGkSJU2ipEnUtzwPnf8DT02ipEmUNImSJlHSJEqaREmTKGkSJU2ipEmUNIn6Gy0M7gXmWibuAAAAAElFTkSuQmCC" style="width:88px;height:88px;border-radius:4px;display:block;">
+        <div style="font-size:10px;color:#EDE0CE;margin-top:3px;">網站註冊</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 多空比 -->
+  <div style="background:#edd4be;border-radius:8px;padding:10px 12px;min-width:180px;">
+    <div style="font-size:10px;color:#8B6F47;margin-bottom:4px;">多空比（Binance）</div>
+    <div class="ratio-bar" style="height:22px;">
+      <div class="ratio-long"  id="longBar"  style="width:50%;"><span class="ratio-label" id="longPct">—</span></div>
+      <div class="ratio-short" id="shortBar" style="width:50%;"><span class="ratio-label" id="shortPct">—</span></div>
+    </div>
+    <div style="font-size:10px;color:#8B6F47;margin-top:3px;" id="ratioSub">—</div>
+  </div>
+
+  <!-- OI -->
+  <div style="background:#edd4be;border-radius:8px;padding:10px 12px;min-width:200px;">
+    <div style="font-size:10px;color:#8B6F47;margin-bottom:4px;">未平倉量 OI</div>
+    <svg id="oiSvg" width="176" height="36" viewBox="0 0 176 36" style="display:block;">
+      <text x="88" y="22" text-anchor="middle" font-size="10" fill="#c9a88a">載入中...</text>
+    </svg>
+    <div style="display:flex;justify-content:space-between;margin-top:2px;">
+      <span style="font-size:11px;font-weight:500;color:#4a9eff;" id="oiVal">—</span>
+      <span style="font-size:11px;font-weight:500;" id="oiChg">—</span>
+    </div>
+  </div>
+
+  <!-- 資金費率 -->
+  <div style="background:#edd4be;border-radius:8px;padding:10px 12px;min-width:160px;">
+    <div style="font-size:10px;color:#8B6F47;margin-bottom:4px;">資金費率</div>
+    <div style="font-size:22px;font-weight:500;color:#B85C1A;" id="fundingRateBar">—</div>
+    <div style="font-size:10px;color:#8B6F47;margin-top:2px;" id="fundingCountdownBar">下次結算 —</div>
+  </div>
+
+  <!-- 熱門合約 -->
+  <div style="background:#edd4be;border-radius:8px;padding:10px 12px;flex:1;">
+    <div style="font-size:10px;color:#8B6F47;margin-bottom:4px;">Bitunix 熱門合約 24h</div>
+    <div id="hotList" style="display:flex;gap:16px;align-items:center;">
+      <div style="font-size:11px;color:#c9a88a;">載入中...</div>
+    </div>
+  </div>
+
+  <!-- 恐懼貪婪 -->
+  <div style="background:#edd4be;border-radius:8px;padding:10px 12px;min-width:140px;text-align:center;">
+    <div style="font-size:10px;color:#8B6F47;margin-bottom:2px;">恐懼貪婪</div>
+    <div style="font-size:32px;font-weight:500;" id="fgNum">—</div>
+    <div style="font-size:10px;" id="fgLabel">—</div>
+  </div>
+
+</div>
 
 <script>
 // ════════════════════
@@ -498,7 +490,8 @@ function updateFgGauge(v) {
 function drawSparkline(svgId, data, color, opacity) {
   const svg = document.getElementById(svgId);
   if (!svg) return;
-  const W=312, H=svgId==='sparkSvg'?44:40;
+  const W = svgId==='sparkSvg' ? 220 : svgId==='oiSvg' ? 176 : 312;
+  const H = svgId==='sparkSvg' ? 36 : 32;
   const min=Math.min(...data), max=Math.max(...data), range=max-min||1;
   const pts = data.map((v,i)=>`${(i/(data.length-1))*W},${H-((v-min)/range)*(H-4)-2}`).join(' ');
   const last = pts.split(' ').pop().split(',');
@@ -546,6 +539,9 @@ function processLiveData(d) {
     updateFundingGauge(rate);
     if (f.nextFundingTime) nextFunding=parseInt(f.nextFundingTime);
     if (f.fundingInterval) { fundingPeriod=parseInt(f.fundingInterval)*3600000; const fi=document.getElementById('fundingInterval'); if(fi) fi.textContent=`結算週期 ${f.fundingInterval} 小時`; }
+    // 下方 bar 顯示
+    const fbEl=document.getElementById('fundingRateBar');
+    if(fbEl) { fbEl.textContent=(rate>=0?'+':'')+( rate*100).toFixed(4)+'%'; fbEl.style.color=rate>0.03?'#C0392B':rate<0?'#27AE60':'#B85C1A'; }
   }
 
   // Depth
@@ -566,9 +562,11 @@ function processLiveData(d) {
   // Fear & Greed
   const fg=d.fg||{};
   if (fg.value) {
-    const v=parseInt(fg.value); updateFgGauge(v);
-    const lbl=document.getElementById('fgLabel');
-    if(lbl) { lbl.textContent=fg.value_classification||''; lbl.style.color=v<=25?'#C0392B':v>=75?'#27AE60':'#B85C1A'; }
+    const v=parseInt(fg.value);
+    const num=document.getElementById('fgNum'), lbl=document.getElementById('fgLabel');
+    const col=v<=25?'#C0392B':v>=75?'#27AE60':'#B85C1A';
+    if(num) { num.textContent=v; num.style.color=col; }
+    if(lbl) { lbl.textContent=fg.value_classification||''; lbl.style.color=col; }
   }
 
   // Alt coins
@@ -589,10 +587,11 @@ function processLiveData(d) {
     hotEl.innerHTML = hot.map(item => {
       const sym=(item.symbol||'').replace('USDT',''), pr=parseFloat(item.lastPrice), op=parseFloat(item.open);
       const chg=op>0?((pr-op)/op*100):0, sign=chg>=0?'+':'', col=chg>=0?'#27AE60':'#C0392B';
-      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-top:0.5px solid #d4b896;">
-        <span style="font-size:13px;font-weight:500;color:#3D2B1F;">${sym}</span>
-        <span style="font-size:12px;color:#8B6F47;font-variant-numeric:tabular-nums;">${pr>=100?fmt1(pr):pr.toLocaleString('en-US',{minimumFractionDigits:3,maximumFractionDigits:4})}</span>
-        <span style="font-size:13px;font-weight:500;color:${col};">${sign}${Math.abs(chg).toFixed(2)}%</span>
+      const prStr=pr>=100?fmt1(pr):pr.toLocaleString('en-US',{minimumFractionDigits:3,maximumFractionDigits:4});
+      return `<div style="text-align:center;padding:0 12px;border-right:1px solid #d4b896;">
+        <div style="font-size:13px;font-weight:500;color:#3D2B1F;">${sym}</div>
+        <div style="font-size:11px;color:#8B6F47;font-variant-numeric:tabular-nums;">${prStr}</div>
+        <div style="font-size:13px;font-weight:600;color:${col};">${sign}${Math.abs(chg).toFixed(2)}%</div>
       </div>`;
     }).join('');
   }
