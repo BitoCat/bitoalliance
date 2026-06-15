@@ -427,7 +427,7 @@ function setConn(ok) {
   const dot = document.getElementById('dot');
   const lbl = document.getElementById('connLabel');
   if (dot) dot.className = 'conn-dot ' + (ok ? 'ok' : 'err');
-  if (lbl) lbl.textContent = ok ? '即時連線中' : '連線失敗';
+  if (lbl) lbl.textContent = ok ? '即時連線中' : '重新連線中...';
 }
 
 function updateClock() {
@@ -560,26 +560,7 @@ function processLiveData(d) {
     if(ds)  ds.textContent=`買方 ${fmtB(bv)} vs 賣方 ${fmtB(av)}`;
   }
 
-  // Long/Short
-  const ls=d.ls||{}, lp=parseFloat(ls.longAccount||ls.longRatio||0)*100, sp=parseFloat(ls.shortAccount||ls.shortRatio||0)*100;
-  if (lp>0&&sp>0) {
-    const lb=document.getElementById('longBar'), sb=document.getElementById('shortBar');
-    const lpt=document.getElementById('longPct'), spt=document.getElementById('shortPct'), rs=document.getElementById('ratioSub');
-    if(lb) lb.style.width=lp.toFixed(0)+'%'; if(sb) sb.style.width=sp.toFixed(0)+'%';
-    if(lpt) lpt.textContent=`多 ${lp.toFixed(0)}%`; if(spt) spt.textContent=`空 ${sp.toFixed(0)}%`;
-    if(rs)  rs.textContent=`比例 ${(lp/sp).toFixed(2)} · ${lp>sp?'多方佔優':'空方佔優'}`;
-  }
-
-  // OI
-  const oi=d.oi||[];
-  if (oi.length>=2) {
-    const vals=oi.map(x=>parseFloat(x.sumOpenInterestValue));
-    drawSparkline('oiSvg',vals,'#4a9eff',0.15);
-    const latest=vals[vals.length-1], prev=vals[0], chg=((latest-prev)/prev)*100;
-    const ov=document.getElementById('oiVal'), oc=document.getElementById('oiChg');
-    if(ov) ov.textContent=fmtB(latest);
-    if(oc) { oc.textContent=(chg>=0?'▲ +':'▼ ')+Math.abs(chg).toFixed(2)+'%（24h）'; oc.className='val-sm '+(chg>=0?'up':'down'); }
-  }
+  // OI 和多空比由 fetchOI() / fetchLongShort() 處理（前端直打 Binance）
 
   // Fear & Greed
   const fg=d.fg||{};
@@ -629,6 +610,45 @@ async function fetchLiveData() {
 
 
 // ════════════════════
+// OI 和多空比（前端直接打 Binance，不經後端）
+// ════════════════════
+const BINANCE_FAPI = 'https://fapi.binance.com';
+
+async function fetchOI() {
+  try {
+    const r = await fetch(`${BINANCE_FAPI}/futures/data/openInterestHist?symbol=BTCUSDT&period=1h&limit=24`);
+    const data = await r.json();
+    if (!Array.isArray(data) || data.length < 2) return;
+    const vals = data.map(x => parseFloat(x.sumOpenInterestValue));
+    drawSparkline('oiSvg', vals, '#4a9eff', 0.15);
+    const latest = vals[vals.length-1], prev = vals[0];
+    const chg = ((latest-prev)/prev)*100;
+    const ov = document.getElementById('oiVal'), oc = document.getElementById('oiChg');
+    if (ov) ov.textContent = fmtB(latest);
+    if (oc) { oc.textContent = (chg>=0?'▲ +':'▼ ')+Math.abs(chg).toFixed(2)+'%（24h）'; oc.className='val-sm '+(chg>=0?'up':'down'); }
+  } catch(e) {}
+}
+
+async function fetchLongShort() {
+  try {
+    const r = await fetch(`${BINANCE_FAPI}/futures/data/globalLongShortAccountRatio?symbol=BTCUSDT&period=5m&limit=1`);
+    const data = await r.json();
+    const d = Array.isArray(data) ? data[0] : data;
+    if (!d) return;
+    const lp = parseFloat(d.longAccount||d.longRatio||0)*100;
+    const sp = parseFloat(d.shortAccount||d.shortRatio||0)*100;
+    if (lp<=0||sp<=0) return;
+    const lb=document.getElementById('longBar'), sb=document.getElementById('shortBar');
+    const lpt=document.getElementById('longPct'), spt=document.getElementById('shortPct'), rs=document.getElementById('ratioSub');
+    if(lb) lb.style.width=lp.toFixed(0)+'%';
+    if(sb) sb.style.width=sp.toFixed(0)+'%';
+    if(lpt) lpt.textContent=`多 ${lp.toFixed(0)}%`;
+    if(spt) spt.textContent=`空 ${sp.toFixed(0)}%`;
+    if(rs)  rs.textContent=`比例 ${(lp/sp).toFixed(2)} · ${lp>sp?'多方佔優':'空方佔優'}`;
+  } catch(e) {}
+}
+
+// ════════════════════
 // 貓咪隧道快訊
 // ════════════════════
 let lastTunnelId = null;
@@ -661,9 +681,13 @@ async function fetchTunnelAlerts() {
 // 啟動
 // ════════════════════
 fetchLiveData();
+fetchOI();
+fetchLongShort();
 fetchTunnelAlerts();
 
 setInterval(fetchLiveData,      8000);
+setInterval(fetchOI,           60000);
+setInterval(fetchLongShort,    30000);
 setInterval(fetchTunnelAlerts, 15000);
 </script>
 <!-- 下方警語列 -->
