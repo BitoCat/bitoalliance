@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -157,7 +156,7 @@ body {
 <body>
 
 <!-- 標題列（全寬）-->
-<div style="background:#f5e8d8;padding:3px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #d4b896;flex-shrink:0;height:28px;">
+<div style="background:#f5e8d8;padding:3px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #d4b896;flex-shrink:0;height:32px;">
   <div style="font-size:13px;font-weight:500;color:#3D2B1F;">🐱 BitoCat 加密貨幣交易分析直播</div>
   <div style="font-size:12px;color:#C0392B;font-weight:500;">⚠️ 本直播內容僅供教育參考，不構成任何投資建議，投資有風險，請自行判斷</div>
   <div style="font-size:12px;color:#8B6F47;">Bitunix 推薦碼：<span style="color:#B85C1A;font-weight:600;">Pooc</span></div>
@@ -276,36 +275,36 @@ body {
     </div>
 
     <!-- 數據橫列 -->
-    <div style="background:#f5e8d8;border-bottom:1px solid #d4b896;padding:14px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;">
+    <div style="background:#f5e8d8;border-bottom:1px solid #d4b896;padding:18px 20px;display:flex;align-items:center;gap:16px;flex-shrink:0;">
 
       <div style="background:#edd4be;border-radius:8px;padding:12px 16px;min-width:220px;">
-        <div style="font-size:13px;color:#8B6F47;margin-bottom:5px;">多空比（Binance）</div>
-        <div class="ratio-bar" style="height:28px;">
-          <div class="ratio-long" id="longBar" style="width:50%;"><span class="ratio-label" style="font-size:14px;" id="longPct">—</span></div>
-          <div class="ratio-short" id="shortBar" style="width:50%;"><span class="ratio-label" style="font-size:14px;" id="shortPct">—</span></div>
+        <div style="font-size:14px;color:#8B6F47;margin-bottom:6px;">多空比（Binance）</div>
+        <div class="ratio-bar" style="height:32px;">
+          <div class="ratio-long" id="longBar" style="width:50%;"><span class="ratio-label" style="font-size:16px;" id="longPct">—</span></div>
+          <div class="ratio-short" id="shortBar" style="width:50%;"><span class="ratio-label" style="font-size:16px;" id="shortPct">—</span></div>
         </div>
-        <div style="font-size:12px;color:#8B6F47;margin-top:4px;" id="ratioSub">—</div>
+        <div style="font-size:13px;color:#8B6F47;margin-top:5px;" id="ratioSub">—</div>
       </div>
 
       <div style="background:#edd4be;border-radius:8px;padding:12px 16px;min-width:220px;">
-        <div style="font-size:12px;color:#8B6F47;margin-bottom:3px;">未平倉量 OI</div>
-        <svg id="oiSvg" width="178" height="32" viewBox="0 0 178 32" style="display:block;">
-          <text x="89" y="20" text-anchor="middle" font-size="11" fill="#c9a88a">載入中...</text>
+        <div style="font-size:14px;color:#8B6F47;margin-bottom:4px;">未平倉量 OI</div>
+        <svg id="oiSvg" width="178" height="38" viewBox="0 0 178 38" style="display:block;">
+          <text x="89" y="23" text-anchor="middle" font-size="11" fill="#c9a88a">載入中...</text>
         </svg>
         <div style="display:flex;justify-content:space-between;margin-top:2px;">
-          <span style="font-size:13px;font-weight:500;color:#4a9eff;" id="oiVal">—</span>
-          <span style="font-size:13px;font-weight:500;" id="oiChg">—</span>
+          <span style="font-size:16px;font-weight:500;color:#4a9eff;" id="oiVal">—</span>
+          <span style="font-size:16px;font-weight:500;" id="oiChg">—</span>
         </div>
       </div>
 
       <div style="background:#edd4be;border-radius:8px;padding:10px 14px;min-width:150px;">
-        <div style="font-size:12px;color:#8B6F47;margin-bottom:3px;">資金費率</div>
-        <div style="font-size:28px;font-weight:500;color:#B85C1A;" id="fundingRateBar">—</div>
-        <div style="font-size:12px;color:#8B6F47;margin-top:3px;" id="fundingCountdownBar">下次結算 —</div>
+        <div style="font-size:14px;color:#8B6F47;margin-bottom:4px;">資金費率</div>
+        <div style="font-size:32px;font-weight:500;color:#B85C1A;" id="fundingRateBar">—</div>
+        <div style="font-size:13px;color:#8B6F47;margin-top:4px;" id="fundingCountdownBar">下次結算 —</div>
       </div>
 
       <div style="background:#edd4be;border-radius:8px;padding:10px 14px;flex:1;">
-        <div style="font-size:13px;color:#8B6F47;margin-bottom:5px;">Bitunix 熱門合約 24h</div>
+        <div style="font-size:14px;color:#8B6F47;margin-bottom:6px;">Bitunix 熱門合約 24h</div>
         <div id="hotList" style="display:flex;gap:0;align-items:center;">
           <div style="font-size:12px;color:#c9a88a;">載入中...</div>
         </div>
@@ -314,18 +313,18 @@ body {
 
 
       <div style="background:#edd4be;border-radius:8px;padding:10px 12px;min-width:168px;text-align:center;">
-        <div style="font-size:12px;color:#8B6F47;">恐懼貪婪指數</div>
-        <svg id="fgGauge" width="152" height="76" viewBox="0 0 152 76">
-          <path d="M 10 68 A 58 58 0 0 1 46 12" fill="none" stroke="#C0392B" stroke-width="10" stroke-linecap="round"/>
-          <path d="M 46 12 A 58 58 0 0 1 106 12" fill="none" stroke="#d4b896" stroke-width="10"/>
-          <path d="M 106 12 A 58 58 0 0 1 142 68" fill="none" stroke="#27AE60" stroke-width="10" stroke-linecap="round"/>
-          <line id="fgNeedle" x1="76" y1="68" x2="34" y2="32" stroke="#3D2B1F" stroke-width="2.5" stroke-linecap="round"/>
-          <circle cx="76" cy="68" r="5" fill="#3D2B1F"/>
-          <text id="fgVal" x="76" y="56" text-anchor="middle" font-size="20" font-weight="500" fill="#8B6F47">—</text>
-          <text x="4" y="76" font-size="9" fill="#C0392B">恐懼</text>
-          <text x="112" y="76" font-size="9" fill="#27AE60">貪婪</text>
+        <div style="font-size:14px;color:#8B6F47;margin-bottom:2px;">恐懼貪婪指數</div>
+        <svg id="fgGauge" width="168" height="84" viewBox="0 0 168 84">
+          <path d="M 10 76 A 64 64 0 0 1 50 14" fill="none" stroke="#C0392B" stroke-width="11" stroke-linecap="round"/>
+          <path d="M 50 14 A 64 64 0 0 1 118 14" fill="none" stroke="#d4b896" stroke-width="11"/>
+          <path d="M 118 14 A 64 64 0 0 1 158 76" fill="none" stroke="#27AE60" stroke-width="11" stroke-linecap="round"/>
+          <line id="fgNeedle" x1="84" y1="76" x2="38" y2="36" stroke="#3D2B1F" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="84" cy="76" r="5" fill="#3D2B1F"/>
+          <text id="fgVal" x="84" y="62" text-anchor="middle" font-size="22" font-weight="500" fill="#8B6F47">—</text>
+          <text x="4" y="84" font-size="10" fill="#C0392B">恐懼</text>
+          <text x="124" y="84" font-size="10" fill="#27AE60">貪婪</text>
         </svg>
-        <div style="font-size:11px;margin-top:-2px;" id="fgLabel">—</div>
+        <div style="font-size:13px;margin-top:0px;" id="fgLabel">—</div>
       </div>
 
     </div>
@@ -475,7 +474,7 @@ function updateFundingGauge(rate) {
 
 function updateFgGauge(v) {
   const deg = -90+(v/100)*180;
-  const tip = polarPoint(76,68,54,deg);
+  const tip = polarPoint(84,76,60,deg);
   const needle = document.getElementById('fgNeedle');
   const val    = document.getElementById('fgVal');
   const num    = document.getElementById('fgNum');
@@ -491,7 +490,7 @@ function drawSparkline(svgId, data, color, opacity) {
   const svg = document.getElementById(svgId);
   if (!svg) return;
   const W = svgId==='sparkSvg' ? 236 : svgId==='oiSvg' ? 178 : 312;
-  const H = svgId==='sparkSvg' ? 36 : 32;
+  const H = svgId==='sparkSvg' ? 36 : 38;
   const min=Math.min(...data), max=Math.max(...data), range=max-min||1;
   const pts = data.map((v,i)=>`${(i/(data.length-1))*W},${H-((v-min)/range)*(H-4)-2}`).join(' ');
   const last = pts.split(' ').pop().split(',');
@@ -586,10 +585,10 @@ function processLiveData(d) {
       const sym=(item.symbol||'').replace('USDT',''), pr=parseFloat(item.lastPrice), op=parseFloat(item.open);
       const chg=op>0?((pr-op)/op*100):0, sign=chg>=0?'+':'', col=chg>=0?'#27AE60':'#C0392B';
       const prStr=pr>=100?fmt1(pr):pr.toLocaleString('en-US',{minimumFractionDigits:3,maximumFractionDigits:4});
-      return `<div style="text-align:center;padding:0 20px;border-right:1px solid #d4b896;">
-        <div style="font-size:17px;font-weight:500;color:#3D2B1F;">${sym}</div>
-        <div style="font-size:13px;color:#8B6F47;font-variant-numeric:tabular-nums;">${prStr}</div>
-        <div style="font-size:17px;font-weight:600;color:${col};">${sign}${Math.abs(chg).toFixed(2)}%</div>
+      return `<div style="text-align:center;padding:0 24px;border-right:1px solid #d4b896;">
+        <div style="font-size:20px;font-weight:500;color:#3D2B1F;">${sym}</div>
+        <div style="font-size:14px;color:#8B6F47;font-variant-numeric:tabular-nums;">${prStr}</div>
+        <div style="font-size:20px;font-weight:600;color:${col};">${sign}${Math.abs(chg).toFixed(2)}%</div>
       </div>`;
     }).join('');
   }
