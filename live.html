@@ -50,8 +50,14 @@ body {
 /* ── 主體三欄 ── */
 .body {
   display: grid;
-  grid-template-columns: 520px 1fr;
+  grid-template-columns: 270px 1fr;
   flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+.right-col {
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   min-height: 0;
 }
@@ -177,64 +183,6 @@ body {
   </div>
 </div>
 
-<!-- 數據橫列（Header 下方）-->
-<div style="background:#f5e8d8;border-bottom:1px solid #d4b896;padding:6px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;">
-
-  <!-- 多空比 -->
-  <div style="background:#edd4be;border-radius:7px;padding:7px 12px;min-width:200px;">
-    <div style="font-size:10px;color:#8B6F47;margin-bottom:3px;">多空比（Binance）</div>
-    <div class="ratio-bar" style="height:20px;">
-      <div class="ratio-long"  id="longBar"  style="width:50%;"><span class="ratio-label" style="font-size:11px;" id="longPct">—</span></div>
-      <div class="ratio-short" id="shortBar" style="width:50%;"><span class="ratio-label" style="font-size:11px;" id="shortPct">—</span></div>
-    </div>
-    <div style="font-size:10px;color:#8B6F47;margin-top:2px;" id="ratioSub">—</div>
-  </div>
-
-  <!-- OI Sparkline -->
-  <div style="background:#edd4be;border-radius:7px;padding:7px 12px;min-width:210px;">
-    <div style="font-size:10px;color:#8B6F47;margin-bottom:2px;">未平倉量 OI</div>
-    <svg id="oiSvg" width="186" height="30" viewBox="0 0 186 30" style="display:block;">
-      <text x="93" y="18" text-anchor="middle" font-size="10" fill="#c9a88a">載入中...</text>
-    </svg>
-    <div style="display:flex;justify-content:space-between;margin-top:1px;">
-      <span style="font-size:11px;font-weight:500;color:#4a9eff;" id="oiVal">—</span>
-      <span style="font-size:11px;font-weight:500;" id="oiChg">—</span>
-    </div>
-  </div>
-
-  <!-- 資金費率 -->
-  <div style="background:#edd4be;border-radius:7px;padding:7px 14px;min-width:150px;">
-    <div style="font-size:10px;color:#8B6F47;margin-bottom:2px;">資金費率</div>
-    <div style="font-size:22px;font-weight:500;color:#B85C1A;" id="fundingRateBar">—</div>
-    <div style="font-size:10px;color:#8B6F47;" id="fundingCountdownBar">下次結算 —</div>
-  </div>
-
-  <!-- 熱門合約 -->
-  <div style="background:#edd4be;border-radius:7px;padding:7px 12px;flex:1;">
-    <div style="font-size:10px;color:#8B6F47;margin-bottom:3px;">Bitunix 熱門合約 24h</div>
-    <div id="hotList" style="display:flex;gap:0;align-items:center;">
-      <div style="font-size:11px;color:#c9a88a;">載入中...</div>
-    </div>
-  </div>
-
-  <!-- 恐懼貪婪 Gauge -->
-  <div style="background:#edd4be;border-radius:7px;padding:7px 10px;min-width:160px;text-align:center;">
-    <div style="font-size:10px;color:#8B6F47;margin-bottom:0;">恐懼貪婪指數</div>
-    <svg id="fgGauge" width="150" height="72" viewBox="0 0 150 72">
-      <path d="M 12 64 A 56 56 0 0 1 46 12"  fill="none" stroke="#C0392B" stroke-width="10" stroke-linecap="round"/>
-      <path d="M 46 12 A 56 56 0 0 1 104 12" fill="none" stroke="#d4b896" stroke-width="10"/>
-      <path d="M 104 12 A 56 56 0 0 1 138 64" fill="none" stroke="#27AE60" stroke-width="10" stroke-linecap="round"/>
-      <line id="fgNeedle" x1="75" y1="64" x2="35" y2="34" stroke="#3D2B1F" stroke-width="2.5" stroke-linecap="round"/>
-      <circle cx="75" cy="64" r="5" fill="#3D2B1F"/>
-      <text id="fgVal" x="75" y="54" text-anchor="middle" font-size="18" font-weight="500" fill="#8B6F47">—</text>
-      <text x="8"   y="72" font-size="8" fill="#C0392B">恐懼</text>
-      <text x="112" y="72" font-size="8" fill="#27AE60">貪婪</text>
-    </svg>
-    <div style="font-size:10px;margin-top:-4px;" id="fgLabel">—</div>
-  </div>
-
-</div>
-
 <!-- 主體：左側 + TradingView -->
 <div class="body">
 
@@ -345,11 +293,71 @@ body {
 
   </div><!-- /左側 -->
 
-  <!-- 中間 TradingView -->
-  <div class="tv-area">
-    <div style="font-size:14px;color:#c9a88a;">← 左側面板由 OBS 瀏覽器來源載入</div>
-    <div style="font-size:12px;color:#d4b896;">中間由 OBS 視窗捕捉 TradingView</div>
-    <div style="font-size:12px;color:#d4b896;margin-top:4px;">下方空間可放圖卡或交易實況</div>
+  <!-- 右側：數據列 + TradingView -->
+  <div class="right-col">
+    <!-- 數據橫列（Header 下方）-->
+<div style="background:#f5e8d8;border-bottom:1px solid #d4b896;padding:6px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;">
+
+  <!-- 多空比 -->
+  <div style="background:#edd4be;border-radius:7px;padding:7px 12px;min-width:200px;">
+    <div style="font-size:10px;color:#8B6F47;margin-bottom:3px;">多空比（Binance）</div>
+    <div class="ratio-bar" style="height:20px;">
+      <div class="ratio-long"  id="longBar"  style="width:50%;"><span class="ratio-label" style="font-size:11px;" id="longPct">—</span></div>
+      <div class="ratio-short" id="shortBar" style="width:50%;"><span class="ratio-label" style="font-size:11px;" id="shortPct">—</span></div>
+    </div>
+    <div style="font-size:10px;color:#8B6F47;margin-top:2px;" id="ratioSub">—</div>
+  </div>
+
+  <!-- OI Sparkline -->
+  <div style="background:#edd4be;border-radius:7px;padding:7px 12px;min-width:210px;">
+    <div style="font-size:10px;color:#8B6F47;margin-bottom:2px;">未平倉量 OI</div>
+    <svg id="oiSvg" width="186" height="30" viewBox="0 0 186 30" style="display:block;">
+      <text x="93" y="18" text-anchor="middle" font-size="10" fill="#c9a88a">載入中...</text>
+    </svg>
+    <div style="display:flex;justify-content:space-between;margin-top:1px;">
+      <span style="font-size:11px;font-weight:500;color:#4a9eff;" id="oiVal">—</span>
+      <span style="font-size:11px;font-weight:500;" id="oiChg">—</span>
+    </div>
+  </div>
+
+  <!-- 資金費率 -->
+  <div style="background:#edd4be;border-radius:7px;padding:7px 14px;min-width:150px;">
+    <div style="font-size:10px;color:#8B6F47;margin-bottom:2px;">資金費率</div>
+    <div style="font-size:22px;font-weight:500;color:#B85C1A;" id="fundingRateBar">—</div>
+    <div style="font-size:10px;color:#8B6F47;" id="fundingCountdownBar">下次結算 —</div>
+  </div>
+
+  <!-- 熱門合約 -->
+  <div style="background:#edd4be;border-radius:7px;padding:7px 12px;flex:1;">
+    <div style="font-size:10px;color:#8B6F47;margin-bottom:3px;">Bitunix 熱門合約 24h</div>
+    <div id="hotList" style="display:flex;gap:0;align-items:center;">
+      <div style="font-size:11px;color:#c9a88a;">載入中...</div>
+    </div>
+  </div>
+
+  <!-- 恐懼貪婪 Gauge -->
+  <div style="background:#edd4be;border-radius:7px;padding:7px 10px;min-width:160px;text-align:center;">
+    <div style="font-size:10px;color:#8B6F47;margin-bottom:0;">恐懼貪婪指數</div>
+    <svg id="fgGauge" width="150" height="72" viewBox="0 0 150 72">
+      <path d="M 12 64 A 56 56 0 0 1 46 12"  fill="none" stroke="#C0392B" stroke-width="10" stroke-linecap="round"/>
+      <path d="M 46 12 A 56 56 0 0 1 104 12" fill="none" stroke="#d4b896" stroke-width="10"/>
+      <path d="M 104 12 A 56 56 0 0 1 138 64" fill="none" stroke="#27AE60" stroke-width="10" stroke-linecap="round"/>
+      <line id="fgNeedle" x1="75" y1="64" x2="35" y2="34" stroke="#3D2B1F" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="75" cy="64" r="5" fill="#3D2B1F"/>
+      <text id="fgVal" x="75" y="54" text-anchor="middle" font-size="18" font-weight="500" fill="#8B6F47">—</text>
+      <text x="8"   y="72" font-size="8" fill="#C0392B">恐懼</text>
+      <text x="112" y="72" font-size="8" fill="#27AE60">貪婪</text>
+    </svg>
+    <div style="font-size:10px;margin-top:-4px;" id="fgLabel">—</div>
+  </div>
+
+</div>
+    <!-- 中間 TradingView -->
+    <div class="tv-area" style="flex:1;">
+      <div style="font-size:14px;color:#c9a88a;">← 左側面板由 OBS 瀏覽器來源載入</div>
+      <div style="font-size:12px;color:#d4b896;">中間由 OBS 視窗捕捉 TradingView</div>
+      <div style="font-size:12px;color:#d4b896;margin-top:4px;">下方空間可放圖卡或交易實況</div>
+    </div>
   </div>
 
 </div><!-- /body -->
