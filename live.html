@@ -227,14 +227,6 @@ body {
       <span class="src-tag src-b">Bitunix</span>
     </div>
 
-    <div class="card" style="flex:1;display:flex;flex-direction:column;min-height:80px;">
-      <div class="card-label">🐱 BitoCat 貓咪隧道快訊</div>
-      <div id="tunnelAlerts" style="flex:1;display:flex;flex-direction:column;gap:5px;overflow:hidden;margin-top:4px;">
-        <div style="font-size:11px;color:#c9a88a;text-align:center;padding:8px;">等待快訊...</div>
-      </div>
-      <span class="src-tag src-p">TradingView Webhook</span>
-    </div>
-
   </div><!-- /左側 -->
 
   <!-- 右側欄 -->
@@ -297,6 +289,26 @@ body {
         </div>
       </div>
 
+      <!-- Technical Analysis Widget -->
+      <div style="border-radius:7px;overflow:hidden;width:200px;flex-shrink:0;">
+        <div class="tradingview-widget-container" style="height:110px;">
+          <div class="tradingview-widget-container__widget" style="height:110px;"></div>
+          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js" async>
+          {
+            "interval": "1h",
+            "width": 200,
+            "height": 110,
+            "symbol": "BINANCE:BTCUSDT",
+            "showIntervalTabs": false,
+            "displayMode": "single",
+            "locale": "zh_TW",
+            "colorTheme": "light",
+            "isTransparent": true
+          }
+          <\/script>
+        </div>
+      </div>
+
       <div style="background:#edd4be;border-radius:7px;padding:7px 10px;min-width:150px;text-align:center;">
         <div style="font-size:10px;color:#8B6F47;">恐懼貪婪指數</div>
         <svg id="fgGauge" width="140" height="68" viewBox="0 0 140 68">
@@ -310,6 +322,14 @@ body {
           <text x="104" y="68" font-size="8" fill="#27AE60">貪婪</text>
         </svg>
         <div style="font-size:10px;margin-top:-2px;" id="fgLabel">—</div>
+      </div>
+
+      <!-- 貓咪隧道快訊（數據列）-->
+      <div style="background:#edd4be;border-radius:7px;padding:7px 10px;min-width:200px;flex:1;">
+        <div style="font-size:10px;color:#8B6F47;margin-bottom:3px;">🐱 BitoCat 貓咪隧道快訊</div>
+        <div id="tunnelAlerts" style="display:flex;flex-direction:column;gap:3px;">
+          <div style="font-size:11px;color:#c9a88a;">等待快訊...</div>
+        </div>
       </div>
 
     </div>
