@@ -227,9 +227,9 @@ body {
       <span class="src-tag src-b">Bitunix</span>
     </div>
 
-    <!-- Technical Analysis Widget（左側底部）-->
-    <div style="flex:1;border-radius:8px;overflow:hidden;min-height:100px;position:relative;">
-      <div style="position:absolute;top:0;left:0;width:420px;height:420px;transform:scale(0.60);transform-origin:top left;pointer-events:auto;">
+    <!-- Technical Analysis Widget（左側底部，固定高度）-->
+    <div style="height:252px;flex-shrink:0;border-radius:8px;overflow:hidden;position:relative;">
+      <div style="position:absolute;top:0;left:0;width:420px;height:420px;transform:scale(0.60);transform-origin:top left;">
         <div class="tradingview-widget-container" style="width:420px;height:420px;">
           <div class="tradingview-widget-container__widget" style="width:420px;height:420px;"></div>
           <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js" async>
