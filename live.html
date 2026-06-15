@@ -156,79 +156,79 @@ body {
 <body>
 
 <!-- 標題列（全寬）-->
-<div style="background:#f5e8d8;padding:3px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #d4b896;flex-shrink:0;">
+<div style="background:#f5e8d8;padding:3px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #d4b896;flex-shrink:0;height:28px;">
   <div style="font-size:13px;font-weight:500;color:#3D2B1F;">🐱 BitoCat 加密貨幣交易分析直播</div>
   <div style="font-size:12px;color:#C0392B;font-weight:500;">⚠️ 本直播內容僅供教育參考，不構成任何投資建議，投資有風險，請自行判斷</div>
   <div style="font-size:12px;color:#8B6F47;">Bitunix 推薦碼：<span style="color:#B85C1A;font-weight:600;">Pooc</span></div>
 </div>
 
-<!-- 主體：左側全高 + 右側 -->
-<div style="display:grid;grid-template-columns:270px 1fr;flex:1;overflow:hidden;min-height:0;">
+<!-- 主體（左側全高 + 右側）-->
+<div style="display:flex;flex:1;overflow:hidden;min-height:0;">
 
-  <!-- 左側面板（標題列到警語列，全高）-->
-  <div class="panel left" style="overflow:hidden;display:flex;flex-direction:column;gap:8px;">
+  <!-- 左側面板 -->
+  <div style="width:270px;flex-shrink:0;background:#f5e8d8;border-right:1px solid #d4b896;padding:8px;display:flex;flex-direction:column;gap:5px;overflow:hidden;">
     <div class="panel-title">BITUNIX 市場數據</div>
 
     <div class="card dark">
       <div class="card-label" style="color:#6B4C2A;">BTC / USDT 永續合約</div>
       <div class="val-xl lite" id="btcPrice">—</div>
-      <div class="val-sm" id="btcChange" style="margin-top:4px;">—</div>
+      <div class="val-sm" id="btcChange" style="margin-top:3px;">—</div>
       <span class="src-tag src-b">Bitunix 即時</span>
     </div>
 
     <div class="card">
       <div class="card-label">近24根 1h K線走勢</div>
-      <svg id="sparkSvg" width="236" height="38" viewBox="0 0 236 38" style="display:block;margin-top:4px;">
-        <text x="118" y="22" text-anchor="middle" font-size="10" fill="#c9a88a">載入中...</text>
+      <svg id="sparkSvg" width="236" height="36" viewBox="0 0 236 36" style="display:block;margin-top:3px;">
+        <text x="118" y="20" text-anchor="middle" font-size="10" fill="#c9a88a">載入中...</text>
       </svg>
       <span class="src-tag src-b">Bitunix</span>
     </div>
 
     <div class="card">
       <div class="card-label">資金費率</div>
-      <svg id="fundingGauge" width="236" height="82" viewBox="0 0 236 82">
-        <path d="M 18 74 A 82 82 0 0 1 218 74" fill="none" stroke="#d4b896" stroke-width="12" stroke-linecap="round"/>
-        <path id="fundingArc" d="M 18 74 A 82 82 0 0 1 118 0" fill="none" stroke="#B85C1A" stroke-width="12" stroke-linecap="round"/>
-        <line id="fundingNeedle" x1="118" y1="74" x2="118" y2="4" stroke="#3D2B1F" stroke-width="2.5" stroke-linecap="round"/>
-        <circle cx="118" cy="74" r="5" fill="#3D2B1F"/>
-        <text x="12" y="82" font-size="9" fill="#27AE60">負費率</text>
-        <text x="162" y="82" font-size="9" fill="#C0392B">高費率</text>
-        <text id="fundingVal" x="118" y="58" text-anchor="middle" font-size="16" font-weight="500" fill="#B85C1A">—</text>
+      <svg id="fundingGauge" width="236" height="78" viewBox="0 0 236 78">
+        <path d="M 18 70 A 78 78 0 0 1 218 70" fill="none" stroke="#d4b896" stroke-width="11" stroke-linecap="round"/>
+        <path id="fundingArc" d="M 18 70 A 78 78 0 0 1 118 0" fill="none" stroke="#B85C1A" stroke-width="11" stroke-linecap="round"/>
+        <line id="fundingNeedle" x1="118" y1="70" x2="118" y2="4" stroke="#3D2B1F" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="118" cy="70" r="5" fill="#3D2B1F"/>
+        <text x="12" y="78" font-size="9" fill="#27AE60">負費率</text>
+        <text x="162" y="78" font-size="9" fill="#C0392B">高費率</text>
+        <text id="fundingVal" x="118" y="55" text-anchor="middle" font-size="15" font-weight="500" fill="#B85C1A">—</text>
       </svg>
       <div style="display:flex;align-items:center;gap:8px;margin-top:2px;">
-        <svg id="countdownRing" width="36" height="36" viewBox="0 0 36 36">
-          <circle cx="18" cy="18" r="14" fill="none" stroke="#d4b896" stroke-width="4"/>
-          <circle id="countdownArc" cx="18" cy="18" r="14" fill="none" stroke="#B85C1A" stroke-width="4"
-            stroke-dasharray="88 0" stroke-linecap="round" transform="rotate(-90 18 18)"/>
-          <text id="countdownText" x="18" y="22" text-anchor="middle" font-size="7" font-weight="500" fill="#3D2B1F">--:--</text>
+        <svg id="countdownRing" width="34" height="34" viewBox="0 0 34 34">
+          <circle cx="17" cy="17" r="13" fill="none" stroke="#d4b896" stroke-width="4"/>
+          <circle id="countdownArc" cx="17" cy="17" r="13" fill="none" stroke="#B85C1A" stroke-width="4"
+            stroke-dasharray="82 0" stroke-linecap="round" transform="rotate(-90 17 17)"/>
+          <text id="countdownText" x="17" y="21" text-anchor="middle" font-size="7" font-weight="500" fill="#3D2B1F">--:--</text>
         </svg>
-        <div style="font-size:11px;color:#3D2B1F;" id="countdownLabel">下次費率結算</div>
+        <div style="font-size:10px;color:#3D2B1F;" id="countdownLabel">下次費率結算</div>
       </div>
       <span class="src-tag src-b">Bitunix</span>
     </div>
 
     <div class="card">
       <div class="card-label">買賣掛單深度</div>
-      <div class="depth-bar" style="height:22px;margin-top:4px;">
+      <div class="depth-bar" style="height:20px;margin-top:3px;">
         <div class="ratio-long" id="depthBid" style="width:50%;"><span class="ratio-label" style="font-size:11px;" id="depthBidVal">買 —</span></div>
         <div class="ratio-short" id="depthAsk" style="width:50%;"><span class="ratio-label" style="font-size:11px;" id="depthAskVal">賣 —</span></div>
       </div>
-      <div class="sub" id="depthSub" style="margin-top:3px;font-size:10px;">載入中...</div>
+      <div class="sub" id="depthSub" style="margin-top:2px;font-size:10px;">載入中...</div>
       <span class="src-tag src-b">Bitunix</span>
     </div>
 
     <div class="card">
       <div class="card-label">日內高低區間</div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
         <div><div style="font-size:9px;color:#27AE60;">日高</div><div class="val-md up" id="dayHigh">—</div></div>
-        <div style="font-size:14px;color:#d4b896;">↔</div>
+        <div style="font-size:12px;color:#d4b896;">↔</div>
         <div style="text-align:right;"><div style="font-size:9px;color:#C0392B;">日低</div><div class="val-md down" id="dayLow">—</div></div>
       </div>
       <span class="src-tag src-b">Bitunix</span>
     </div>
 
-    <!-- Technical Analysis Widget（左側底部，固定高度）-->
-    <div style="height:252px;flex-shrink:0;border-radius:8px;overflow:hidden;position:relative;">
+    <!-- Technical Analysis Widget -->
+    <div style="flex:1;min-height:0;border-radius:8px;overflow:hidden;position:relative;">
       <div style="position:absolute;top:0;left:0;width:420px;height:420px;transform:scale(0.60);transform-origin:top left;">
         <div class="tradingview-widget-container" style="width:420px;height:420px;">
           <div class="tradingview-widget-container__widget" style="width:420px;height:420px;"></div>
@@ -239,12 +239,10 @@ body {
       </div>
     </div>
 
-    </div>
-
   </div><!-- /左側 -->
 
-  <!-- 右側欄 -->
-  <div style="display:flex;flex-direction:column;overflow:hidden;min-height:0;">
+  <!-- 右側 -->
+  <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;">
 
     <!-- Header -->
     <div class="header" style="flex-shrink:0;">
@@ -270,65 +268,64 @@ body {
     <!-- 數據橫列 -->
     <div style="background:#f5e8d8;border-bottom:1px solid #d4b896;padding:4px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;">
 
-      <div style="background:#edd4be;border-radius:7px;padding:7px 10px;min-width:190px;">
-        <div style="font-size:10px;color:#8B6F47;margin-bottom:3px;">多空比（Binance）</div>
-        <div class="ratio-bar" style="height:20px;">
-          <div class="ratio-long" id="longBar" style="width:50%;"><span class="ratio-label" style="font-size:11px;" id="longPct">—</span></div>
-          <div class="ratio-short" id="shortBar" style="width:50%;"><span class="ratio-label" style="font-size:11px;" id="shortPct">—</span></div>
+      <div style="background:#edd4be;border-radius:7px;padding:6px 10px;min-width:180px;">
+        <div style="font-size:10px;color:#8B6F47;margin-bottom:2px;">多空比（Binance）</div>
+        <div class="ratio-bar" style="height:18px;">
+          <div class="ratio-long" id="longBar" style="width:50%;"><span class="ratio-label" style="font-size:10px;" id="longPct">—</span></div>
+          <div class="ratio-short" id="shortBar" style="width:50%;"><span class="ratio-label" style="font-size:10px;" id="shortPct">—</span></div>
         </div>
-        <div style="font-size:10px;color:#8B6F47;margin-top:2px;" id="ratioSub">—</div>
+        <div style="font-size:9px;color:#8B6F47;margin-top:2px;" id="ratioSub">—</div>
       </div>
 
-      <div style="background:#edd4be;border-radius:7px;padding:7px 10px;min-width:190px;">
-        <div style="font-size:10px;color:#8B6F47;margin-bottom:2px;">未平倉量 OI</div>
-        <svg id="oiSvg" width="166" height="26" viewBox="0 0 166 26" style="display:block;">
-          <text x="83" y="16" text-anchor="middle" font-size="10" fill="#c9a88a">載入中...</text>
+      <div style="background:#edd4be;border-radius:7px;padding:6px 10px;min-width:185px;">
+        <div style="font-size:10px;color:#8B6F47;margin-bottom:1px;">未平倉量 OI</div>
+        <svg id="oiSvg" width="160" height="24" viewBox="0 0 160 24" style="display:block;">
+          <text x="80" y="15" text-anchor="middle" font-size="10" fill="#c9a88a">載入中...</text>
         </svg>
-        <div style="display:flex;justify-content:space-between;margin-top:1px;">
-          <span style="font-size:11px;font-weight:500;color:#4a9eff;" id="oiVal">—</span>
-          <span style="font-size:11px;font-weight:500;" id="oiChg">—</span>
+        <div style="display:flex;justify-content:space-between;">
+          <span style="font-size:10px;font-weight:500;color:#4a9eff;" id="oiVal">—</span>
+          <span style="font-size:10px;font-weight:500;" id="oiChg">—</span>
         </div>
       </div>
 
-      <div style="background:#edd4be;border-radius:7px;padding:7px 12px;min-width:130px;">
-        <div style="font-size:10px;color:#8B6F47;margin-bottom:2px;">資金費率</div>
-        <div style="font-size:20px;font-weight:500;color:#B85C1A;" id="fundingRateBar">—</div>
-        <div style="font-size:10px;color:#8B6F47;" id="fundingCountdownBar">下次結算 —</div>
+      <div style="background:#edd4be;border-radius:7px;padding:6px 10px;min-width:125px;">
+        <div style="font-size:10px;color:#8B6F47;margin-bottom:1px;">資金費率</div>
+        <div style="font-size:18px;font-weight:500;color:#B85C1A;" id="fundingRateBar">—</div>
+        <div style="font-size:9px;color:#8B6F47;" id="fundingCountdownBar">下次結算 —</div>
       </div>
 
-      <div style="background:#edd4be;border-radius:7px;padding:7px 10px;min-width:240px;">
-        <div style="font-size:10px;color:#8B6F47;margin-bottom:3px;">Bitunix 熱門合約 24h</div>
+      <div style="background:#edd4be;border-radius:7px;padding:6px 10px;min-width:230px;">
+        <div style="font-size:10px;color:#8B6F47;margin-bottom:2px;">Bitunix 熱門合約 24h</div>
         <div id="hotList" style="display:flex;gap:0;align-items:center;">
           <div style="font-size:11px;color:#c9a88a;">載入中...</div>
         </div>
       </div>
 
-      <!-- 貓咪隧道快訊（上方數據列）-->
-      <div style="background:#edd4be;border-radius:7px;padding:7px 10px;flex:1;min-width:180px;">
-        <div style="font-size:10px;color:#8B6F47;margin-bottom:3px;">🐱 BitoCat 貓咪隧道快訊</div>
-        <div id="tunnelAlerts" style="display:flex;flex-direction:column;gap:3px;overflow:hidden;max-height:60px;">
+      <div style="background:#edd4be;border-radius:7px;padding:6px 10px;flex:1;min-width:160px;">
+        <div style="font-size:10px;color:#8B6F47;margin-bottom:2px;">🐱 BitoCat 貓咪隧道快訊</div>
+        <div id="tunnelAlerts" style="display:flex;flex-direction:column;gap:2px;overflow:hidden;max-height:56px;">
           <div style="font-size:11px;color:#c9a88a;">等待快訊...</div>
         </div>
       </div>
 
-      <div style="background:#edd4be;border-radius:7px;padding:7px 10px;min-width:150px;text-align:center;">
+      <div style="background:#edd4be;border-radius:7px;padding:6px 10px;min-width:148px;text-align:center;">
         <div style="font-size:10px;color:#8B6F47;">恐懼貪婪指數</div>
-        <svg id="fgGauge" width="140" height="66" viewBox="0 0 140 66">
-          <path d="M 10 58 A 52 52 0 0 1 42 10" fill="none" stroke="#C0392B" stroke-width="9" stroke-linecap="round"/>
-          <path d="M 42 10 A 52 52 0 0 1 98 10" fill="none" stroke="#d4b896" stroke-width="9"/>
-          <path d="M 98 10 A 52 52 0 0 1 130 58" fill="none" stroke="#27AE60" stroke-width="9" stroke-linecap="round"/>
-          <line id="fgNeedle" x1="70" y1="58" x2="32" y2="28" stroke="#3D2B1F" stroke-width="2.5" stroke-linecap="round"/>
-          <circle cx="70" cy="58" r="4" fill="#3D2B1F"/>
-          <text id="fgVal" x="70" y="48" text-anchor="middle" font-size="17" font-weight="500" fill="#8B6F47">—</text>
-          <text x="5" y="66" font-size="8" fill="#C0392B">恐懼</text>
-          <text x="104" y="66" font-size="8" fill="#27AE60">貪婪</text>
+        <svg id="fgGauge" width="136" height="62" viewBox="0 0 136 62">
+          <path d="M 8 56 A 50 50 0 0 1 40 9" fill="none" stroke="#C0392B" stroke-width="8" stroke-linecap="round"/>
+          <path d="M 40 9 A 50 50 0 0 1 96 9" fill="none" stroke="#d4b896" stroke-width="8"/>
+          <path d="M 96 9 A 50 50 0 0 1 128 56" fill="none" stroke="#27AE60" stroke-width="8" stroke-linecap="round"/>
+          <line id="fgNeedle" x1="68" y1="56" x2="30" y2="26" stroke="#3D2B1F" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="68" cy="56" r="4" fill="#3D2B1F"/>
+          <text id="fgVal" x="68" y="46" text-anchor="middle" font-size="16" font-weight="500" fill="#8B6F47">—</text>
+          <text x="3" y="62" font-size="8" fill="#C0392B">恐懼</text>
+          <text x="100" y="62" font-size="8" fill="#27AE60">貪婪</text>
         </svg>
-        <div style="font-size:10px;margin-top:-2px;" id="fgLabel">—</div>
+        <div style="font-size:9px;margin-top:-2px;" id="fgLabel">—</div>
       </div>
 
     </div>
 
-    <!-- TradingView 區 -->
+    <!-- TradingView -->
     <div class="tv-area" style="flex:1;">
       <div style="font-size:14px;color:#c9a88a;">OBS 視窗捕捉 TradingView</div>
       <div style="font-size:12px;color:#d4b896;margin-top:4px;">下方可放圖卡或交易實況</div>
@@ -344,20 +341,20 @@ body {
           ③ 自動收到頻道邀請，BitoCat 指標免費使用
         </div>
       </div>
-      <div style="display:flex;gap:16px;align-items:center;flex-shrink:0;">
+      <div style="display:flex;gap:14px;align-items:center;flex-shrink:0;">
         <div style="text-align:center;">
           <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAN4AAADeCAIAAADdBSngAAAE7klEQVR4nO3d260jRRRAUQYRCAEQA8ETAwGQiflFaoRKpXpsN2t9j92+462SjqsfPz6fz0/Q8/PtDwD/TppESZMoaRIlTaKkSZQ0iZImUdIkSppESZOoX0b+0e+//br5Y/yXP/78a+JVc5955FjPd5571aqj73uffUY+oVWTKGkSJU2ipEmUNIkamtCf5qbmEXOT49zUvM+qKf7kX1H7Tq2aREmTKGkSJU2ipEnU5IT+tG/Pes6qaXfk7zr5q8LJSf/ud2rVJEqaREmTKGkSJU2ilk3odz2nwud0uWreHJl/V51DPnesu+cPrGLVJEqaREmTKGkSJU2iXjKhz5mbrPfN4/yTVZMoaRIlTaKkSZQ0iVo2oZ/ct61NxHM7+Ksm/X276nf34q2aREmTKGkSJU2ipEnU5IT+jTNy7d+MOHlOe+07tWoSJU2ipEmUNImSJlE/Pp/P7c9wyMnrtfdNu/17wq9i1SRKmkRJkyhpEiVNooYm9H3PDlt13ffJe5U/rTr6qr/07v/qKlZNoqRJlDSJkiZR0iRqckIfcfLs67vz5r5fDO7eSX7fNzjyzlZNoqRJlDSJkiZR0iRq8jr0VfdGe9q3a3zSqjl636w9d/STv4RYNYmSJlHSJEqaREmTqI1PWzt5xfTJJ5KvOvrJcwxW/RVz39fcX2rVJEqaREmTKGkSJU2ihib0k08AP3n1+sir9k3fteu+n/btvI+wahIlTaKkSZQ0iZImURvPcl/1znNHP3ne+76d5X3X4J+ctV2HzqtIkyhpEiVNoqRJ1LLnoe+7D/mqneWTU2rtVXevOreHzqtIkyhpEiVNoqRJ1NCEvu8e4/vm1n3TZe0JaPu+i7vn4Vs1iZImUdIkSppESZOoyevQ5+y7pvvkc8FOPrVt7t+8g1WTKGkSJU2ipEmUNImafB567e7ld+8mt+967Tl3n8a+ilWTKGkSJU2ipEmUNIlaNqHPvar2VLKT++N3rxR4qs31Vk2ipEmUNImSJlHSJOroWe4n33nuWHd3w/vXvI+8zypWTaKkSZQ0iZImUdIkanIP/WnfM7/mnJz9T56dvmr277NqEiVNoqRJlDSJkiZRk3vo+54/vm+KX3Wm974r3PftvI8ca9/vA0/OcueLSZMoaRIlTaKkSdTk09ZG7HuW2Vuf7Hb3rIPabyxWTaKkSZQ0iZImUdIkaugs96eT9/2+ey323Kv6d3gbOdbd3z2smkRJkyhpEiVNoqRJ1Manra3aS717DfXJneWTc/0q+36ZsWoSJU2ipEmUNImSJlGTe+h33b0zW//u7ic/874n6Fk1iZImUdIkSppESZOoZfdy3+fk89D3HX3EvnvZ3b3Tvj10XkWaREmTKGkSJU2ihu4U97Rvbl11H/L+mfmrdrrnzB3r5Ce0ahIlTaKkSZQ0iZImUZMT+tPJHep9c/TJ675r9807eXRnufPFpEmUNImSJlHSJGrZhH7Svt3nfVdVP8298zfef95Z7ryKNImSJlHSJEqaRH3lhF67N9rJ9zm5877qne2h8yrSJEqaREmTKGkStexpa6ucnEn7d0ur/WJwklWTKGkSJU2ipEmUNIma3EO/e3f3u2df79vBnzv608m5foSz3HkVaRIlTaKkSZQ0ifrK56Hzf2DVJEqaREmTKGkSJU2ipEmUNImSJlHSJEqaREmTqL8BTasSkql5xTEAAAAASUVORK5CYII=" style="width:90px;height:90px;border-radius:5px;display:block;">
-          <div style="font-size:11px;color:#EDE0CE;margin-top:4px;font-weight:500;">加入會員</div>
+          <div style="font-size:10px;color:#EDE0CE;margin-top:3px;font-weight:500;">加入會員</div>
           <div style="font-size:9px;color:#6B4C2A;">Bitunix 開戶</div>
         </div>
         <div style="text-align:center;">
           <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAN4AAADeCAIAAADdBSngAAAFA0lEQVR4nO3d7Y0kJxRAUa/lQDYAx+DgHYMDcCazAZRlIfSg7rTO+T1TPR9XSDQ0/Pj6+voNen5/+weA/yZNoqRJlDSJkiZR0iRKmkRJkyhpEiVNoqRJ1B8rX/TXnz8P/xj/5+9//t34rufP/HzO3u819ZxzVv5i/f+pUZMoaRIlTaKkSZQ0iVqaoT/tzZpX7M0cV+bjU/bm/nuz5nPvTjzV/qdGTaKkSZQ0iZImUdIkanOG/jS1Hr33WnvPOTez3vuave+qzaynfh6jJlHSJEqaREmTKGkSNTZDr9mb207N2c+tmNd21J9j1CRKmkRJkyhpEiVNoj5khn5uV/nenH1q7fvcjvo+oyZR0iRKmkRJkyhpEjU2Q6/NCvdm3yvP2fuaqX34U0+eevVzjJpESZMoaRIlTaKkSdTmDL2213pvFXtqB/vUSvfNr3mq/U+NmkRJkyhpEiVNoqRJ1NIMvbY+/lQ7y/3ma9VObp9i1CRKmkRJkyhpEiVNojbvQ795J/i53elT3zX1nJsr3Tf/X3uMmkRJkyhpEiVNoqRJVG6X+7m5/80d4yvPOXfa/JSp19r7Gxo1iZImUdIkSppESZOoH19fXyMP+o6fob55G/vNE+BXnPt/Pe39zEZNoqRJlDSJkiZR0iRqaYY+9cnr/glmtbvMvuNffupvaNQkSppESZMoaRIlTaI2Z+gr3l37Pjezrs12956z4uaa/pNRkyhpEiVNoqRJlDSJGltD35vNvbuP+uYJeOd+r3N/+RXn3jEwahIlTaKkSZQ0iZImUWNr6Oc+Uf7unH3qyXuvfu49jafa5/2NmkRJkyhpEiVNoqRJ1Nh96OdO+b75/sDeq9/cUX/O1G/htjU+nDSJkiZR0iRKmkS9vIb+7llk786s392ZX/s0wZNRkyhpEiVNoqRJlDSJ2lxDP/fp7KnnTP2E786Izz3n5s+8x6hJlDSJkiZR0iRKmkSN3Yf+VJsDfsbd6ytPfvdvuPJdK4yaREmTKGkSJU2ipEnUN7gPfcq757A99WfW517LLne+MWkSJU2ipEmUNIkaW0O/uf/53d3XK25+xvzmCflP51bVjZpESZMoaRIlTaKkSdTVk+JW1PaZr7z6d1yhvrmfwRo6H0WaREmTKGkSJU2ilk6Ke5q6uezdW9JWTN22NjWvv3lf/LvnARo1iZImUdIkSppESZOozRn6itpce0X/PYSbOwFungv3ZNQkSppESZMoaRIlTaJyJ8XdvN3s3XXk2i3zK27unzdqEiVNoqRJlDSJkiZRm/eh79lba9578tQt4efWrM9919O5u97O7TowahIlTaKkSZQ0iZImUUsz9HdPSl/ZfX3utZ6mdnq/u8p/86Q4a+h8FGkSJU2ipEmUNIk6eFLcnr112xU3bzbfe/XafvWnm+/VGDWJkiZR0iRKmkRJk6ixk+LePfdsZW777oz43Plye7/7lHPv1Rg1iZImUdIkSppESZOog2e5v2vq8+xPe3P/c2e51+6dn/oUgFGTKGkSJU2ipEmUNIn6kBn6ufPKzn02fOo+9BU370x32xofTppESZMoaRIlTaLGZujndjuvvNbeuvaUqZ3nN9fHb940t8eoSZQ0iZImUdIkSppEbd6HflP//LSnm2v6e6Y+4T71ez0ZNYmSJlHSJEqaREmTqKUZOtxn1CRKmkRJkyhpEiVNoqRJlDSJkiZR0iRKmkRJk6hfmUoYjARRU38AAAAASUVORK5CYII=" style="width:90px;height:90px;border-radius:5px;display:block;">
-          <div style="font-size:11px;color:#EDE0CE;margin-top:4px;font-weight:500;">指標年費</div>
+          <div style="font-size:10px;color:#EDE0CE;margin-top:3px;font-weight:500;">指標年費</div>
           <div style="font-size:9px;color:#6B4C2A;">NT$3,600/年</div>
         </div>
         <div style="text-align:center;">
           <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAN4AAADeCAIAAADdBSngAAAFCklEQVR4nO3d220tNQBAUS6iEAqgBoqnBgqgk1CAEViWHzuHtb6TmZNkayTHHvvH19fXT9Dz8+sPAP9MmkRJkyhpEiVNoqRJlDSJkiZR0iRKmkRJk6hfZr7o999+Pfwx/s0ff/618F0zn3ntyjP3Gq+89juc+YQzd5/5rptmPqGnJlHSJEqaREmTKGkSNTVCH+0a247WRo67vuvciHi0NorfdfeZz7PL2l/HU5MoaRIlTaKkSZQ0iVocoY/OzRHP3OvcrPGuUfO5n/TcaoGbf9ORpyZR0iRKmkRJkyhpErVthF5zbmx7buZ913XermDfxVOTKGkSJU2ipEmUNIn62BH6mnOr5XfN8n/qeHzkqUmUNImSJlHSJEqaRG0boZ97i/mccyvGd60Pfztmf/s39dQkSppESZMoaRIlTaIWR+ifMW+7a8X42nXOfc2a2t/UU5MoaRIlTaKkSZQ0iZoaoffnx9+Obdesjf1nvmbm5+r/TT01iZImUdIkSppESZOoH19fX//5RW93J6udAvb2Z/+On3mNpyZR0iRKmkRJkyhpErU4h37zFLBz68Nn9OeaR+dOSL957rynJlHSJEqaREmTKGkStTiHPjr3NvSuUfza3Xe5efL7zHVGb/8PM/LUJEqaREmTKGkSJU2iDr6HvjZ2e3tq+a4rj19zc4e3t+8FWOXOh5MmUdIkSppESZOoqRF6fw59dHOkv2vef+3z3LzyrutY5c43Jk2ipEmUNImSJlFTq9zXvJ3bfXuv2rnqa1e+uXZi5KlJlDSJkiZR0iRKmkRtm0Pf5dza+Lfj6M8Yj9/cbc9TkyhpEiVNoqRJlDSJmhqhj86d3nVunHhu1njXXnY318+f4z10Ppw0iZImUdIkSppEbTttbc2uUXNt5/Zzb9PP3GvtyjfXvVvlzjcmTaKkSZQ0iZImUdvm0Hc5t+PcLjdPY5+5+9rXnNtNzhw6H06aREmTKGkSJU2itp2HPjo3St1193P7mY9q+72vcR46SJMqaRIlTaKkSdTiCP3cG9M3T20793OtuTlDvXb3GebQ+XDSJEqaREmTKGkSdfC0tTXnxonn9jO/+b+Ic3vU195n99QkSppESZMoaRIlTaKuzqGfG9vePAWsvxK+/x8DI3S+MWkSJU2ipEmUNIla3CluzbmR481zys6N62+OrG+eauc9dD6KNImSJlHSJEqaRG2bQ9/1XTPXGd08JfztqeVv/xdxc62CpyZR0iRKmkRJkyhpEnV1Dv3cO9Rrdo12z+0v9/Zkt5u75I08NYmSJlHSJEqaREmTqNxOcTPejhxHN083W7v723fMvYfOR5EmUdIkSppESZOoqTn0m+eYj8bRXG1N+9p1RuOVz/3m355zN8NTkyhpEiVNoqRJlDSJWlzl/vZU7rdr0dfG7DP3OrdefXRzH/s1nppESZMoaRIlTaKkSdS299Bv7iG2dvebO5Pv2klv16ry2kh/hqcmUdIkSppESZMoaRJ1dae4m97un3bzbLWbq+5n7PrZPTWJkiZR0iRKmkRJk6gPGaGfW50+49xebed2ib/5mdd4ahIlTaKkSZQ0iZImUdtG6Dd3U7+5w/m5MfLo5r5wo7enn488NYmSJlHSJEqaREmTqMUR+tvd3c/tunZzVn30dr/3c7Pz9nLno0iTKGkSJU2ipEnUtzwPnf8DT02ipEmUNImSJlHSJEqaREmTKGkSJU2ipEmUNIn6Gy0M7gXmWibuAAAAAElFTkSuQmCC" style="width:90px;height:90px;border-radius:5px;display:block;">
-          <div style="font-size:11px;color:#EDE0CE;margin-top:4px;font-weight:500;">網站註冊</div>
+          <div style="font-size:10px;color:#EDE0CE;margin-top:3px;font-weight:500;">網站註冊</div>
           <div style="font-size:9px;color:#6B4C2A;">BitoAlliance</div>
         </div>
       </div>
@@ -368,10 +365,10 @@ body {
 </div><!-- /主體 -->
 
 <!-- 警語列（全寬）-->
-<div style="background:#3D2B1F;padding:3px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
-  <div style="font-size:12px;color:#C4A882;font-weight:500;">比特聯盟 BitoAlliance · bitocat.github.io/bitoalliance</div>
-  <div style="font-size:12px;color:#EDE0CE;">本內容不構成投資建議 · 加密貨幣交易具有高度風險 · 請量力而為</div>
-  <div style="font-size:12px;color:#C4A882;font-weight:500;">Telegram @Boss1688Bot · 加入會員享指標免費使用</div>
+<div style="background:#3D2B1F;padding:3px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;height:26px;">
+  <div style="font-size:11px;color:#C4A882;font-weight:500;">比特聯盟 BitoAlliance · bitocat.github.io/bitoalliance</div>
+  <div style="font-size:11px;color:#EDE0CE;">本內容不構成投資建議 · 加密貨幣交易具有高度風險 · 請量力而為</div>
+  <div style="font-size:11px;color:#C4A882;font-weight:500;">Telegram @Boss1688Bot · 加入會員享指標免費使用</div>
 </div>
 
 <script>
@@ -452,7 +449,7 @@ function arcPath(cx, cy, r, startDeg, endDeg) {
 function updateFundingGauge(rate) {
   const pct = (Math.max(-0.05,Math.min(0.10,rate))+0.05)/0.15;
   const deg = -90+pct*180;
-  const tip = polarPoint(118,74,76,deg);
+  const tip = polarPoint(118,70,72,deg);
   const needle = document.getElementById('fundingNeedle');
   const arc    = document.getElementById('fundingArc');
   const val    = document.getElementById('fundingVal');
@@ -465,7 +462,7 @@ function updateFundingGauge(rate) {
 
 function updateFgGauge(v) {
   const deg = -90+(v/100)*180;
-  const tip = polarPoint(70,58,48,deg);
+  const tip = polarPoint(68,56,46,deg);
   const needle = document.getElementById('fgNeedle');
   const val    = document.getElementById('fgVal');
   const num    = document.getElementById('fgNum');
@@ -480,8 +477,8 @@ function updateFgGauge(v) {
 function drawSparkline(svgId, data, color, opacity) {
   const svg = document.getElementById(svgId);
   if (!svg) return;
-  const W = svgId==='sparkSvg' ? 236 : svgId==='oiSvg' ? 166 : 312;
-  const H = svgId==='sparkSvg' ? 38 : 26;
+  const W = svgId==='sparkSvg' ? 236 : svgId==='oiSvg' ? 160 : 312;
+  const H = svgId==='sparkSvg' ? 36 : 24;
   const min=Math.min(...data), max=Math.max(...data), range=max-min||1;
   const pts = data.map((v,i)=>`${(i/(data.length-1))*W},${H-((v-min)/range)*(H-4)-2}`).join(' ');
   const last = pts.split(' ').pop().split(',');
