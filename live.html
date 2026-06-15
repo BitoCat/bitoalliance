@@ -275,61 +275,56 @@ body {
     </div>
 
     <!-- 數據橫列 -->
-    <div style="background:#f5e8d8;border-bottom:1px solid #d4b896;padding:4px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;">
+    <div style="background:#f5e8d8;border-bottom:1px solid #d4b896;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;">
 
-      <div style="background:#edd4be;border-radius:7px;padding:6px 10px;min-width:180px;">
-        <div style="font-size:10px;color:#8B6F47;margin-bottom:2px;">多空比（Binance）</div>
-        <div class="ratio-bar" style="height:18px;">
-          <div class="ratio-long" id="longBar" style="width:50%;"><span class="ratio-label" style="font-size:10px;" id="longPct">—</span></div>
-          <div class="ratio-short" id="shortBar" style="width:50%;"><span class="ratio-label" style="font-size:10px;" id="shortPct">—</span></div>
+      <div style="background:#edd4be;border-radius:8px;padding:10px 14px;min-width:210px;">
+        <div style="font-size:12px;color:#8B6F47;margin-bottom:4px;">多空比（Binance）</div>
+        <div class="ratio-bar" style="height:24px;">
+          <div class="ratio-long" id="longBar" style="width:50%;"><span class="ratio-label" style="font-size:13px;" id="longPct">—</span></div>
+          <div class="ratio-short" id="shortBar" style="width:50%;"><span class="ratio-label" style="font-size:13px;" id="shortPct">—</span></div>
         </div>
-        <div style="font-size:9px;color:#8B6F47;margin-top:2px;" id="ratioSub">—</div>
+        <div style="font-size:11px;color:#8B6F47;margin-top:3px;" id="ratioSub">—</div>
       </div>
 
-      <div style="background:#edd4be;border-radius:7px;padding:6px 10px;min-width:185px;">
-        <div style="font-size:10px;color:#8B6F47;margin-bottom:1px;">未平倉量 OI</div>
-        <svg id="oiSvg" width="160" height="24" viewBox="0 0 160 24" style="display:block;">
-          <text x="80" y="15" text-anchor="middle" font-size="10" fill="#c9a88a">載入中...</text>
+      <div style="background:#edd4be;border-radius:8px;padding:10px 14px;min-width:210px;">
+        <div style="font-size:12px;color:#8B6F47;margin-bottom:3px;">未平倉量 OI</div>
+        <svg id="oiSvg" width="178" height="32" viewBox="0 0 178 32" style="display:block;">
+          <text x="89" y="20" text-anchor="middle" font-size="11" fill="#c9a88a">載入中...</text>
         </svg>
-        <div style="display:flex;justify-content:space-between;">
-          <span style="font-size:10px;font-weight:500;color:#4a9eff;" id="oiVal">—</span>
-          <span style="font-size:10px;font-weight:500;" id="oiChg">—</span>
+        <div style="display:flex;justify-content:space-between;margin-top:2px;">
+          <span style="font-size:13px;font-weight:500;color:#4a9eff;" id="oiVal">—</span>
+          <span style="font-size:13px;font-weight:500;" id="oiChg">—</span>
         </div>
       </div>
 
-      <div style="background:#edd4be;border-radius:7px;padding:6px 10px;min-width:125px;">
-        <div style="font-size:10px;color:#8B6F47;margin-bottom:1px;">資金費率</div>
-        <div style="font-size:18px;font-weight:500;color:#B85C1A;" id="fundingRateBar">—</div>
-        <div style="font-size:9px;color:#8B6F47;" id="fundingCountdownBar">下次結算 —</div>
+      <div style="background:#edd4be;border-radius:8px;padding:10px 14px;min-width:150px;">
+        <div style="font-size:12px;color:#8B6F47;margin-bottom:3px;">資金費率</div>
+        <div style="font-size:24px;font-weight:500;color:#B85C1A;" id="fundingRateBar">—</div>
+        <div style="font-size:11px;color:#8B6F47;margin-top:2px;" id="fundingCountdownBar">下次結算 —</div>
       </div>
 
-      <div style="background:#edd4be;border-radius:7px;padding:6px 10px;min-width:230px;">
-        <div style="font-size:10px;color:#8B6F47;margin-bottom:2px;">Bitunix 熱門合約 24h</div>
+      <div style="background:#edd4be;border-radius:8px;padding:10px 14px;flex:1;">
+        <div style="font-size:12px;color:#8B6F47;margin-bottom:4px;">Bitunix 熱門合約 24h</div>
         <div id="hotList" style="display:flex;gap:0;align-items:center;">
-          <div style="font-size:11px;color:#c9a88a;">載入中...</div>
+          <div style="font-size:12px;color:#c9a88a;">載入中...</div>
         </div>
       </div>
 
-      <div style="background:#3D2B1F;border-radius:7px;padding:6px 14px;flex:1;display:flex;align-items:center;">
-        <div>
-          <div style="font-size:10px;color:#6B4C2A;margin-bottom:3px;">📢 今日直播主題</div>
-          <div style="font-size:15px;font-weight:500;color:#EDE0CE;" id="liveTitle">BTC 突破關鍵壓力！今晚能否站穩？</div>
-        </div>
-      </div>
 
-      <div style="background:#edd4be;border-radius:7px;padding:6px 10px;min-width:148px;text-align:center;">
-        <div style="font-size:10px;color:#8B6F47;">恐懼貪婪指數</div>
-        <svg id="fgGauge" width="136" height="62" viewBox="0 0 136 62">
-          <path d="M 8 56 A 50 50 0 0 1 40 9" fill="none" stroke="#C0392B" stroke-width="8" stroke-linecap="round"/>
-          <path d="M 40 9 A 50 50 0 0 1 96 9" fill="none" stroke="#d4b896" stroke-width="8"/>
-          <path d="M 96 9 A 50 50 0 0 1 128 56" fill="none" stroke="#27AE60" stroke-width="8" stroke-linecap="round"/>
-          <line id="fgNeedle" x1="68" y1="56" x2="30" y2="26" stroke="#3D2B1F" stroke-width="2" stroke-linecap="round"/>
-          <circle cx="68" cy="56" r="4" fill="#3D2B1F"/>
-          <text id="fgVal" x="68" y="46" text-anchor="middle" font-size="16" font-weight="500" fill="#8B6F47">—</text>
-          <text x="3" y="62" font-size="8" fill="#C0392B">恐懼</text>
-          <text x="100" y="62" font-size="8" fill="#27AE60">貪婪</text>
+
+      <div style="background:#edd4be;border-radius:8px;padding:10px 12px;min-width:168px;text-align:center;">
+        <div style="font-size:12px;color:#8B6F47;">恐懼貪婪指數</div>
+        <svg id="fgGauge" width="152" height="76" viewBox="0 0 152 76">
+          <path d="M 10 68 A 58 58 0 0 1 46 12" fill="none" stroke="#C0392B" stroke-width="10" stroke-linecap="round"/>
+          <path d="M 46 12 A 58 58 0 0 1 106 12" fill="none" stroke="#d4b896" stroke-width="10"/>
+          <path d="M 106 12 A 58 58 0 0 1 142 68" fill="none" stroke="#27AE60" stroke-width="10" stroke-linecap="round"/>
+          <line id="fgNeedle" x1="76" y1="68" x2="34" y2="32" stroke="#3D2B1F" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="76" cy="68" r="5" fill="#3D2B1F"/>
+          <text id="fgVal" x="76" y="56" text-anchor="middle" font-size="20" font-weight="500" fill="#8B6F47">—</text>
+          <text x="4" y="76" font-size="9" fill="#C0392B">恐懼</text>
+          <text x="112" y="76" font-size="9" fill="#27AE60">貪婪</text>
         </svg>
-        <div style="font-size:9px;margin-top:-2px;" id="fgLabel">—</div>
+        <div style="font-size:11px;margin-top:-2px;" id="fgLabel">—</div>
       </div>
 
     </div>
@@ -471,7 +466,7 @@ function updateFundingGauge(rate) {
 
 function updateFgGauge(v) {
   const deg = -90+(v/100)*180;
-  const tip = polarPoint(68,56,46,deg);
+  const tip = polarPoint(76,68,54,deg);
   const needle = document.getElementById('fgNeedle');
   const val    = document.getElementById('fgVal');
   const num    = document.getElementById('fgNum');
@@ -486,8 +481,8 @@ function updateFgGauge(v) {
 function drawSparkline(svgId, data, color, opacity) {
   const svg = document.getElementById(svgId);
   if (!svg) return;
-  const W = svgId==='sparkSvg' ? 236 : svgId==='oiSvg' ? 160 : 312;
-  const H = svgId==='sparkSvg' ? 36 : 24;
+  const W = svgId==='sparkSvg' ? 236 : svgId==='oiSvg' ? 178 : 312;
+  const H = svgId==='sparkSvg' ? 36 : 32;
   const min=Math.min(...data), max=Math.max(...data), range=max-min||1;
   const pts = data.map((v,i)=>`${(i/(data.length-1))*W},${H-((v-min)/range)*(H-4)-2}`).join(' ');
   const last = pts.split(' ').pop().split(',');
@@ -582,10 +577,10 @@ function processLiveData(d) {
       const sym=(item.symbol||'').replace('USDT',''), pr=parseFloat(item.lastPrice), op=parseFloat(item.open);
       const chg=op>0?((pr-op)/op*100):0, sign=chg>=0?'+':'', col=chg>=0?'#27AE60':'#C0392B';
       const prStr=pr>=100?fmt1(pr):pr.toLocaleString('en-US',{minimumFractionDigits:3,maximumFractionDigits:4});
-      return `<div style="text-align:center;padding:0 12px;border-right:1px solid #d4b896;">
-        <div style="font-size:13px;font-weight:500;color:#3D2B1F;">${sym}</div>
-        <div style="font-size:11px;color:#8B6F47;font-variant-numeric:tabular-nums;">${prStr}</div>
-        <div style="font-size:13px;font-weight:600;color:${col};">${sign}${Math.abs(chg).toFixed(2)}%</div>
+      return `<div style="text-align:center;padding:0 16px;border-right:1px solid #d4b896;">
+        <div style="font-size:15px;font-weight:500;color:#3D2B1F;">${sym}</div>
+        <div style="font-size:12px;color:#8B6F47;font-variant-numeric:tabular-nums;">${prStr}</div>
+        <div style="font-size:15px;font-weight:600;color:${col};">${sign}${Math.abs(chg).toFixed(2)}%</div>
       </div>`;
     }).join('');
   }
