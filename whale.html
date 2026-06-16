@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>比特聯盟 · 鯨魚追蹤</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #edd4be; --panel: #f5e8d8; --dark: #1a1008;
+  --accent: #8b5e3c; --gold: #d4a843;
+  --text: #2a1f14; --muted: #7a5c42; --border: #d4b896;
+  --up: #27AE60; --dn: #C0392B; --radius: 12px;
+  --shadow: 0 2px 12px rgba(42,31,20,.08);
+}
+body { background: var(--bg); font-family: -apple-system,'Helvetica Neue','PingFang TC',sans-serif; min-height:100vh; color:var(--text); }
+
+.navbar {
+  background: var(--dark); height: 56px;
+  display: flex; align-items: center; padding: 0 24px; gap: 14px;
+  position: sticky; top: 0; z-index: 100;
+}
+.nav-logo { font-size: 18px; font-weight: 700; color: var(--gold); }
+.nav-spacer { flex: 1; }
+.nav-badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; background: var(--accent); color: #fff; }
+.nav-badge.ranger { background: #4a7a6a; }
+.nav-badge.master { background: var(--gold); color: #1a1008; }
+.btn-back { background: transparent; border: 1px solid #444; color: #aaa; padding: 5px 14px; border-radius: 7px; cursor: pointer; font-size: 13px; text-decoration: none; }
+
+.layout { max-width: 1400px; margin: 0 auto; padding: 20px 24px 48px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.col-full  { grid-column: 1/-1; }
+.col-half  { grid-column: span 2; }
+.col-third { grid-column: span 1; }
+
+.section-title { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; margin-bottom: 12px; }
+
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+.panel-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px 10px; border-bottom: 1px solid var(--border); }
+.panel-title { font-size: 14px; font-weight: 700; }
+.panel-sub   { font-size: 11px; color: var(--muted); }
+.panel-body  { padding: 16px 18px; }
+
+/* Stat grid */
+.stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+.stat-box { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); }
+.stat-label { font-size: 11px; color: var(--muted); letter-spacing: .4px; margin-bottom: 6px; }
+.stat-val   { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat-sub   { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.up { color: var(--up); } .dn { color: var(--dn); }
+
+/* Ratio bar */
+.ratio-bar { display: flex; height: 28px; border-radius: 8px; overflow: hidden; margin: 10px 0 6px; }
+.ratio-long  { background: var(--up); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; transition: width .5s; }
+.ratio-short { background: var(--dn); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; transition: width .5s; }
+.ratio-labels { display: flex; justify-content: space-between; font-size: 12px; }
+
+/* Table */
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.data-table th { background: #e4cdb0; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .5px; text-align: left; padding: 8px 12px; text-transform: uppercase; }
+.data-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: rgba(139,94,60,.04); }
+
+/* Depth bars */
+.depth-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 12px; }
+.depth-bar-wrap { flex: 1; height: 20px; background: rgba(0,0,0,.05); border-radius: 4px; overflow: hidden; }
+.depth-bar { height: 100%; border-radius: 4px; transition: width .3s; }
+.depth-price { min-width: 90px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.depth-vol   { min-width: 70px; color: var(--muted); }
+
+/* Tab */
+.tab-bar { display: flex; gap: 4px; padding: 12px 18px 0; }
+.tab-btn { padding: 6px 14px; border-radius: 7px 7px 0 0; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid transparent; border-bottom: none; color: var(--muted); background: transparent; transition: all .15s; }
+.tab-btn.active { background: var(--bg); border-color: var(--border); color: var(--accent); }
+.tab-content { display: none; padding: 14px 18px; }
+.tab-content.active { display: block; }
+
+/* Symbol selector */
+.sym-selector { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.sym-btn { padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--muted); transition: all .15s; }
+.sym-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* Update badge */
+.update-badge { font-size: 10px; color: var(--muted); }
+
+.skeleton { background: linear-gradient(90deg,var(--border) 25%,var(--bg) 50%,var(--border) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 6px; height: 16px; margin-bottom: 6px; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+@media(max-width:1100px){ .layout{grid-template-columns:1fr 1fr;} .col-half{grid-column:span 2;} .stat-grid{grid-template-columns:repeat(2,1fr);} }
+@media(max-width:700px){ .layout{grid-template-columns:1fr;padding:12px;} .col-half,.col-third{grid-column:span 1;} .stat-grid{grid-template-columns:1fr 1fr;} }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <span class="nav-logo">⚔️ 比特聯盟</span>
+  <div class="nav-spacer"></div>
+  <span class="update-badge" id="updateBadge">—</span>
+  <span class="nav-badge" id="navBadge">載入中</span>
+  <a href="signals.html" class="btn-back">← 儀表板</a>
+</nav>
+
+<div class="layout">
+
+  <!-- ── 頂部指標列 ── -->
+  <div class="col-full">
+    <div class="section-title">BTC 鯨魚指標</div>
+    <div class="stat-grid">
+      <div class="stat-box">
+        <div class="stat-label">未平倉量 OI</div>
+        <div class="stat-val" id="oiVal">—</div>
+        <div class="stat-sub" id="oiSub">—</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">大戶帳戶多空比</div>
+        <div class="stat-val" id="topAccRatio">—</div>
+        <div class="stat-sub" id="topAccSub">大戶帳戶方向</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">大戶持倉多空比</div>
+        <div class="stat-val" id="topPosRatio">—</div>
+        <div class="stat-sub" id="topPosSub">大戶持倉方向</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">主動買賣比</div>
+        <div class="stat-val" id="takerRatio">—</div>
+        <div class="stat-sub" id="takerSub">買方 / 賣方成交</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 大戶持倉趨勢 ── -->
+  <div class="col-half">
+    <div class="section-title">大戶持倉趨勢（24h）</div>
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">🐋 大戶帳戶多空比</span>
+        <div style="display:flex;gap:6px;">
+          <select id="topRatioInterval" onchange="loadTopRatio()" style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:5px;background:var(--bg);color:var(--muted);">
+            <option value="5m">5m</option>
+            <option value="15m">15m</option>
+            <option value="1h" selected>1h</option>
+            <option value="4h">4h</option>
+          </select>
+        </div>
+      </div>
+      <div class="panel-body">
+        <canvas id="topRatioChart" height="160"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 全市場多空比 ── -->
+  <div class="col-third">
+    <div class="section-title">全市場多空比</div>
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">⚖️ 全市場帳戶比例</span>
+      </div>
+      <div class="panel-body">
+        <div class="ratio-bar">
+          <div class="ratio-long"  id="globalLongBar"  style="width:50%">多</div>
+          <div class="ratio-short" id="globalShortBar" style="width:50%">空</div>
+        </div>
+        <div class="ratio-labels">
+          <span class="up" id="globalLongPct">—%</span>
+          <span class="dn" id="globalShortPct">—%</span>
+        </div>
+        <div style="margin-top:16px;">
+          <div class="panel-title" style="margin-bottom:10px;font-size:13px;">🎯 大戶持倉比例</div>
+          <div class="ratio-bar">
+            <div class="ratio-long"  id="posLongBar"  style="width:50%">多</div>
+            <div class="ratio-short" id="posShortBar" style="width:50%">空</div>
+          </div>
+          <div class="ratio-labels">
+            <span class="up" id="posLongPct">—%</span>
+            <span class="dn" id="posShortPct">—%</span>
+          </div>
+        </div>
+        <div style="margin-top:16px;">
+          <div class="panel-title" style="margin-bottom:10px;font-size:13px;">⚡ 主動買賣比趨勢</div>
+          <canvas id="takerChart" height="80"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── OI 趨勢 ── -->
+  <div class="col-half">
+    <div class="section-title">未平倉量趨勢</div>
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">📊 BTC OI 歷史</span>
+        <select id="oiInterval" onchange="loadOI()" style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:5px;background:var(--bg);color:var(--muted);">
+          <option value="5m">5m</option>
+          <option value="15m">15m</option>
+          <option value="1h" selected>1h</option>
+          <option value="4h">4h</option>
+        </select>
+      </div>
+      <div class="panel-body">
+        <canvas id="oiChart" height="160"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 訂單簿深度 ── -->
+  <div class="col-third">
+    <div class="section-title">訂單簿大單牆</div>
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">📚 買賣掛單深度</span>
+        <div class="sym-selector" style="margin-bottom:0;">
+          <button class="sym-btn active" onclick="switchDepthSym('BTCUSDT',this)">BTC</button>
+          <button class="sym-btn" onclick="switchDepthSym('ETHUSDT',this)">ETH</button>
+          <button class="sym-btn" onclick="switchDepthSym('SOLUSDT',this)">SOL</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--up);margin-bottom:8px;letter-spacing:.5px;">買單 BIDS</div>
+            <div id="bidsDepth"></div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--dn);margin-bottom:8px;letter-spacing:.5px;">賣單 ASKS</div>
+            <div id="asksDepth"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 爆倉數據 ── -->
+  <div class="col-third">
+    <div class="section-title">爆倉數據</div>
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">💥 近期爆倉</span>
+        <span class="panel-sub">BTC 合約</span>
+      </div>
+      <div class="panel-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+          <div style="text-align:center;padding:12px;background:rgba(39,174,96,.08);border-radius:8px;border:1px solid rgba(39,174,96,.2);">
+            <div style="font-size:10px;color:var(--up);font-weight:700;letter-spacing:.5px;margin-bottom:4px;">多單爆倉</div>
+            <div style="font-size:18px;font-weight:700;color:var(--up);" id="liqLong">—</div>
+            <div style="font-size:10px;color:var(--muted);" id="liqLongAmt">USDT</div>
+          </div>
+          <div style="text-align:center;padding:12px;background:rgba(192,57,43,.08);border-radius:8px;border:1px solid rgba(192,57,43,.2);">
+            <div style="font-size:10px;color:var(--dn);font-weight:700;letter-spacing:.5px;margin-bottom:4px;">空單爆倉</div>
+            <div style="font-size:18px;font-weight:700;color:var(--dn);" id="liqShort">—</div>
+            <div style="font-size:10px;color:var(--muted);" id="liqShortAmt">USDT</div>
+          </div>
+        </div>
+        <div id="liqList">
+          <div class="skeleton"></div>
+          <div class="skeleton" style="width:80%"></div>
+          <div class="skeleton" style="width:60%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 資金費率排行 ── -->
+  <div class="col-third">
+    <div class="section-title">資金費率排行</div>
+    <div class="panel">
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('high',this)">費率最高</button>
+        <button class="tab-btn" onclick="switchTab('low',this)">費率最低</button>
+      </div>
+      <div class="tab-content active" id="tab-high">
+        <table class="data-table">
+          <thead><tr><th>幣種</th><th>費率</th><th>趨勢</th></tr></thead>
+          <tbody id="fundingHighBody"><tr><td colspan="3"><div class="skeleton"></div></td></tr></tbody>
+        </table>
+      </div>
+      <div class="tab-content" id="tab-low">
+        <table class="data-table">
+          <thead><tr><th>幣種</th><th>費率</th><th>趨勢</th></tr></thead>
+          <tbody id="fundingLowBody"><tr><td colspan="3"><div class="skeleton"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 鯨魚大單追蹤 ── -->
+  <div class="col-full">
+    <div class="section-title">鯨魚大單追蹤</div>
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">🐳 近期大額成交</span>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <div class="sym-selector" style="margin-bottom:0;">
+            <button class="sym-btn active" onclick="switchWhaleSym('BTCUSDT',this)">BTC</button>
+            <button class="sym-btn" onclick="switchWhaleSym('ETHUSDT',this)">ETH</button>
+            <button class="sym-btn" onclick="switchWhaleSym('SOLUSDT',this)">SOL</button>
+            <button class="sym-btn" onclick="switchWhaleSym('BNBUSDT',this)">BNB</button>
+          </div>
+          <span class="panel-sub" id="whaleMinAmt">≥ $50萬 USDT</span>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead><tr><th>時間</th><th>方向</th><th>價格</th><th>數量</th><th>金額（USDT）</th></tr></thead>
+            <tbody id="whaleBody"><tr><td colspan="5"><div class="skeleton"></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TradingView Widget ── -->
+  <div class="col-full">
+    <div class="section-title">BTC 多空比歷史（TradingView）</div>
+    <div class="panel" style="height:400px;overflow:hidden;">
+      <div class="tradingview-widget-container" style="height:100%;">
+        <div class="tradingview-widget-container__widget" style="height:100%;"></div>
+        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+        {
+          "autosize": true,
+          "symbol": "BINANCE:BTCUSDTPERP",
+          "interval": "60",
+          "timezone": "Asia/Taipei",
+          "theme": "light",
+          "style": "1",
+          "locale": "zh_TW",
+          "backgroundColor": "rgba(245,232,216,1)",
+          "hide_top_toolbar": false,
+          "save_image": false
+        }
+        </script>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SUPABASE_URL  = 'https://kldumnxdlgovaxtiszyn.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsZHVtbnhkbGdvdmF4dGlzenluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjIyNDgsImV4cCI6MjA5MzY5ODI0OH0.P_anfYpSV2tgCPIQ7uZDVBjUFY3UhfEXk9u3XjlzBHI';
+const BITO_API = 'https://web-production-f4735.up.railway.app';
+const BINANCE  = 'https://fapi.binance.com';
+
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+let charts = {};
+let depthSym = 'BTCUSDT';
+let whaleSym = 'BTCUSDT';
+let depthTimer = null;
+let whaleTimer  = null;
+
+// ── Init ──
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { window.location.href = 'login.html'; return; }
+  const { data: profile } = await sb.from('profiles').select('plan, is_direct_client').eq('id', session.user.id).single();
+  const plan = profile?.plan || 'free';
+  const isDirect = profile?.is_direct_client;
+  if (plan === 'free' && !isDirect) { window.location.href = 'index.html'; return; }
+
+  const b = document.getElementById('navBadge');
+  if (plan === 'admin')       { b.textContent = '系統管理員'; b.className = 'nav-badge master'; }
+  else if (plan === 'master') { b.textContent = '⚔️ 盟主';   b.className = 'nav-badge master'; }
+  else if (plan === 'ranger') { b.textContent = '🗡️ 遊俠';   b.className = 'nav-badge ranger'; }
+  else { b.textContent = '⚔️ 會員'; b.className = 'nav-badge'; }
+
+  loadAll();
+  setInterval(loadAll, 30000);
+}
+
+async function loadAll() {
+  const now = new Date().toLocaleTimeString('zh-TW', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('updateBadge').textContent = `更新 ${now}`;
+  await Promise.all([
+    loadOI(),
+    loadTopRatio(),
+    loadGlobalLS(),
+    loadTaker(),
+    loadDepth(),
+    loadLiquidations(),
+    loadFundingRanking(),
+    loadWhales(),
+  ]);
+}
+
+// ── OI ──
+async function loadOI() {
+  const interval = document.getElementById('oiInterval').value;
+  try {
+    const r = await fetch(`${BINANCE}/futures/data/openInterestHist?symbol=BTCUSDT&period=${interval}&limit=48`);
+    const data = await r.json();
+    if (!Array.isArray(data) || !data.length) return;
+    const latest = parseFloat(data[data.length-1].sumOpenInterestValue);
+    const prev   = parseFloat(data[0].sumOpenInterestValue);
+    const chg    = ((latest-prev)/prev*100).toFixed(2);
+    document.getElementById('oiVal').textContent = fmtB(latest);
+    document.getElementById('oiSub').innerHTML = `<span class="${chg>=0?'up':'dn'}">${chg>=0?'▲':'▼'} ${Math.abs(chg)}%</span> vs 48根前`;
+
+    const labels = data.map(d => {
+      const t = new Date(d.timestamp);
+      return `${t.getMonth()+1}/${t.getDate()} ${t.getHours()}:00`;
+    });
+    const values = data.map(d => parseFloat(d.sumOpenInterestValue) / 1e9);
+
+    if (charts.oi) charts.oi.destroy();
+    charts.oi = new Chart(document.getElementById('oiChart').getContext('2d'), {
+      type: 'line',
+      data: { labels, datasets: [{ data: values, borderColor: '#8b5e3c', backgroundColor: 'rgba(139,94,60,.1)', borderWidth: 2, pointRadius: 0, fill: true, tension: 0.3 }] },
+      options: { responsive:true, plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx => `$${ctx.parsed.y.toFixed(2)}B` } } }, scales:{ x:{ ticks:{ maxTicksLimit:8, font:{size:10} }, grid:{display:false} }, y:{ ticks:{ callback: v => `$${v.toFixed(1)}B`, font:{size:10} }, grid:{ color:'rgba(0,0,0,.05)' } } } }
+    });
+  } catch(e) {}
+}
+
+// ── 大戶多空比 ──
+async function loadTopRatio() {
+  const interval = document.getElementById('topRatioInterval').value;
+  try {
+    const [accR, posR] = await Promise.all([
+      fetch(`${BINANCE}/futures/data/topLongShortAccountRatio?symbol=BTCUSDT&period=${interval}&limit=48`).then(r=>r.json()),
+      fetch(`${BINANCE}/futures/data/topLongShortPositionRatio?symbol=BTCUSDT&period=${interval}&limit=48`).then(r=>r.json()),
+    ]);
+    if (!Array.isArray(accR) || !accR.length) return;
+
+    const latest = accR[accR.length-1];
+    const lp = parseFloat(latest.longAccount)*100;
+    const sp = parseFloat(latest.shortAccount)*100;
+    document.getElementById('topAccRatio').textContent = `${lp.toFixed(1)}% / ${sp.toFixed(1)}%`;
+    document.getElementById('topAccRatio').className = `stat-val ${lp>sp?'up':'dn'}`;
+    document.getElementById('topAccSub').textContent = lp>sp ? '大戶偏多' : '大戶偏空';
+
+    const posLatest = posR[posR.length-1];
+    if (posLatest) {
+      const plp = parseFloat(posLatest.longAccount)*100;
+      const psp = parseFloat(posLatest.shortAccount)*100;
+      document.getElementById('topPosRatio').textContent = `${plp.toFixed(1)}% / ${psp.toFixed(1)}%`;
+      document.getElementById('topPosRatio').className = `stat-val ${plp>psp?'up':'dn'}`;
+      document.getElementById('topPosSub').textContent = plp>psp ? '大戶持多' : '大戶持空';
+    }
+
+    const labels = accR.map(d => {
+      const t = new Date(d.timestamp);
+      return `${t.getHours()}:${String(t.getMinutes()).padStart(2,'0')}`;
+    });
+    const longData = accR.map(d => parseFloat(d.longAccount)*100);
+    const posData  = posR.map(d => parseFloat(d.longAccount)*100);
+
+    if (charts.topRatio) charts.topRatio.destroy();
+    charts.topRatio = new Chart(document.getElementById('topRatioChart').getContext('2d'), {
+      type: 'line',
+      data: { labels, datasets: [
+        { label: '帳戶多比', data: longData, borderColor: '#27AE60', backgroundColor: 'rgba(39,174,96,.1)', borderWidth: 2, pointRadius: 0, fill: false, tension: 0.3 },
+        { label: '持倉多比', data: posData,  borderColor: '#2980B9', backgroundColor: 'rgba(41,128,185,.1)', borderWidth: 2, pointRadius: 0, fill: false, tension: 0.3, borderDash: [4,2] },
+      ]},
+      options: { responsive:true, plugins:{ legend:{ display:true, position:'top', labels:{font:{size:11},boxWidth:20} } }, scales:{ x:{ ticks:{maxTicksLimit:8,font:{size:10}}, grid:{display:false} }, y:{ min:30, max:70, ticks:{ callback: v=>`${v}%`, font:{size:10} }, grid:{color:'rgba(0,0,0,.05)'} } } }
+    });
+  } catch(e) {}
+}
+
+// ── 全市場多空比 ──
+async function loadGlobalLS() {
+  try {
+    const r = await fetch(`${BINANCE}/futures/data/globalLongShortAccountRatio?symbol=BTCUSDT&period=5m&limit=1`);
+    const data = await r.json();
+    const d = Array.isArray(data) ? data[0] : data;
+    if (!d) return;
+    const lp = parseFloat(d.longAccount)*100;
+    const sp = parseFloat(d.shortAccount)*100;
+    document.getElementById('globalLongBar').style.width  = `${lp}%`;
+    document.getElementById('globalShortBar').style.width = `${sp}%`;
+    document.getElementById('globalLongPct').textContent  = `多 ${lp.toFixed(1)}%`;
+    document.getElementById('globalShortPct').textContent = `空 ${sp.toFixed(1)}%`;
+
+    // 持倉比
+    const pr = await fetch(`${BINANCE}/futures/data/topLongShortPositionRatio?symbol=BTCUSDT&period=5m&limit=1`);
+    const pd = await pr.json();
+    const p = Array.isArray(pd) ? pd[0] : pd;
+    if (p) {
+      const plp = parseFloat(p.longAccount)*100;
+      const psp = parseFloat(p.shortAccount)*100;
+      document.getElementById('posLongBar').style.width  = `${plp}%`;
+      document.getElementById('posShortBar').style.width = `${psp}%`;
+      document.getElementById('posLongPct').textContent  = `多 ${plp.toFixed(1)}%`;
+      document.getElementById('posShortPct').textContent = `空 ${psp.toFixed(1)}%`;
+    }
+  } catch(e) {}
+}
+
+// ── 主動買賣比 ──
+async function loadTaker() {
+  try {
+    const r = await fetch(`${BINANCE}/futures/data/takerlongshortRatio?symbol=BTCUSDT&period=5m&limit=48`);
+    const data = await r.json();
+    if (!Array.isArray(data) || !data.length) return;
+    const latest = data[data.length-1];
+    const buy = parseFloat(latest.buySellRatio);
+    document.getElementById('takerRatio').textContent = buy.toFixed(3);
+    document.getElementById('takerRatio').className = `stat-val ${buy>1?'up':'dn'}`;
+    document.getElementById('takerSub').textContent = buy>1 ? '買方主動 ↑' : '賣方主動 ↓';
+
+    const labels = data.map(d => {
+      const t = new Date(d.timestamp);
+      return `${t.getHours()}:${String(t.getMinutes()).padStart(2,'0')}`;
+    });
+    const values = data.map(d => parseFloat(d.buySellRatio));
+
+    if (charts.taker) charts.taker.destroy();
+    charts.taker = new Chart(document.getElementById('takerChart').getContext('2d'), {
+      type: 'line',
+      data: { labels, datasets: [{ data: values, borderColor: '#d4a843', backgroundColor: 'rgba(212,168,67,.15)', borderWidth: 2, pointRadius: 0, fill: true, tension: 0.3 }] },
+      options: { responsive:true, plugins:{ legend:{display:false} }, scales:{ x:{display:false}, y:{ ticks:{font:{size:9}, callback: v=>v.toFixed(2)}, grid:{color:'rgba(0,0,0,.05)'} } } }
+    });
+  } catch(e) {}
+}
+
+// ── 訂單簿深度 ──
+async function loadDepth() {
+  try {
+    const r = await fetch(`${BITO_API}/live-data?symbol=${depthSym}`);
+    const j = await r.json();
+    const depth = j.depth || {};
+    const bids = (depth.bids || []).slice(0,8);
+    const asks = (depth.asks || []).slice(0,8);
+
+    const maxVol = Math.max(
+      ...bids.map(b => parseFloat(b[1]||b.qty||0)),
+      ...asks.map(a => parseFloat(a[1]||a.qty||0))
+    );
+
+    const renderSide = (orders, color) => orders.map(o => {
+      const price = parseFloat(o[0]||o.price||0);
+      const qty   = parseFloat(o[1]||o.qty||0);
+      const pct   = maxVol > 0 ? (qty/maxVol*100).toFixed(0) : 0;
+      return `<div class="depth-row">
+        <div class="depth-price" style="color:${color}">$${fmtPrice(price)}</div>
+        <div class="depth-bar-wrap"><div class="depth-bar" style="width:${pct}%;background:${color}40;"></div></div>
+        <div class="depth-vol">${fmtVol(qty)}</div>
+      </div>`;
+    }).join('');
+
+    document.getElementById('bidsDepth').innerHTML = renderSide(bids, 'var(--up)');
+    document.getElementById('asksDepth').innerHTML = renderSide(asks.reverse(), 'var(--dn)');
+  } catch(e) {}
+}
+
+function switchDepthSym(sym, btn) {
+  depthSym = sym;
+  document.querySelectorAll('.sym-selector .sym-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadDepth();
+}
+
+// ── 爆倉數據 ──
+async function loadLiquidations() {
+  try {
+    const r = await fetch(`${BINANCE}/futures/data/forceOrders?symbol=BTCUSDT&limit=50&autoCloseType=LIQUIDATION`);
+    const data = await r.json();
+    if (!Array.isArray(data)) return;
+
+    let longLiq = 0, shortLiq = 0, longAmt = 0, shortAmt = 0;
+    data.forEach(d => {
+      const amt = parseFloat(d.origQty) * parseFloat(d.price);
+      if (d.side === 'BUY') { shortLiq++; shortAmt += amt; } // 空單爆倉 → 買入平倉
+      else { longLiq++; longAmt += amt; }
+    });
+
+    document.getElementById('liqLong').textContent  = longLiq + ' 筆';
+    document.getElementById('liqShort').textContent = shortLiq + ' 筆';
+    document.getElementById('liqLongAmt').textContent  = `$${fmtB(longAmt)}`;
+    document.getElementById('liqShortAmt').textContent = `$${fmtB(shortAmt)}`;
+
+    const list = data.slice(0,8);
+    document.getElementById('liqList').innerHTML = list.map(d => {
+      const isLong = d.side === 'SELL';
+      const amt = parseFloat(d.origQty) * parseFloat(d.price);
+      const t = new Date(d.time || d.updateTime);
+      const ts = t.toLocaleTimeString('zh-TW', {hour:'2-digit',minute:'2-digit'});
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;">
+        <span style="color:${isLong?'var(--dn)':'var(--up)'};font-weight:700">${isLong?'📉 多單爆倉':'📈 空單爆倉'}</span>
+        <span style="color:var(--muted)">${ts}</span>
+        <span style="font-weight:600">$${fmtB(amt)}</span>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('liqList').innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">爆倉數據載入中...</div>';
+  }
+}
+
+// ── 資金費率排行 ──
+async function loadFundingRanking() {
+  const syms = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT','DOGEUSDT','ADAUSDT','LINKUSDT','AVAXUSDT','DOTUSDT','MATICUSDT','LTCUSDT','APTUSDT','ARBUSDT','OPUSDT'];
+  try {
+    const results = await Promise.all(syms.map(async s => {
+      const r = await fetch(`${BINANCE}/fapi/v1/fundingRate?symbol=${s}&limit=1`);
+      const d = await r.json();
+      return { symbol: s.replace('USDT',''), rate: d[0] ? parseFloat(d[0].fundingRate) : 0 };
+    }));
+    results.sort((a,b) => b.rate - a.rate);
+
+    const fmt = r => (r>=0?'+':'') + (r*100).toFixed(4) + '%';
+    const col = r => r>0?'var(--dn)':r<0?'var(--up)':'var(--muted)';
+    const trend = r => r>0.001?'🔥':r<-0.001?'❄️':'➡️';
+
+    const rows = (list) => list.map(d => `<tr>
+      <td style="font-weight:700">${d.symbol}</td>
+      <td style="color:${col(d.rate)};font-weight:700">${fmt(d.rate)}</td>
+      <td>${trend(d.rate)}</td>
+    </tr>`).join('');
+
+    document.getElementById('fundingHighBody').innerHTML = rows(results.slice(0,8));
+    document.getElementById('fundingLowBody').innerHTML  = rows([...results].reverse().slice(0,8));
+  } catch(e) {}
+}
+
+// ── 鯨魚大單 ──
+async function loadWhales() {
+  try {
+    const r = await fetch(`${BINANCE}/fapi/v1/aggTrades?symbol=${whaleSym}&limit=500`);
+    const data = await r.json();
+    if (!Array.isArray(data)) return;
+
+    // 過濾大單（依幣種設定門檻）
+    const price = parseFloat(data[data.length-1]?.p || 0);
+    const threshold = whaleSym === 'BTCUSDT' ? 500000 : whaleSym === 'ETHUSDT' ? 200000 : 100000;
+
+    const whales = data
+      .map(d => ({ ...d, usdAmt: parseFloat(d.q) * parseFloat(d.p) }))
+      .filter(d => d.usdAmt >= threshold)
+      .sort((a,b) => b.T - a.T)
+      .slice(0,20);
+
+    document.getElementById('whaleMinAmt').textContent = `≥ $${(threshold/10000).toFixed(0)}萬 USDT`;
+
+    const tbody = document.getElementById('whaleBody');
+    if (!whales.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;font-size:13px;">暫無大單</td></tr>';
+      return;
+    }
+    tbody.innerHTML = whales.map(d => {
+      const isBuy = !d.m; // m=true 表示賣方主動（市場賣單）
+      const t = new Date(d.T);
+      const ts = t.toLocaleTimeString('zh-TW', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      return `<tr>
+        <td style="color:var(--muted);font-size:12px;">${ts}</td>
+        <td style="font-weight:700;color:${isBuy?'var(--up)':'var(--dn)'}">${isBuy?'🟢 買入':'🔴 賣出'}</td>
+        <td style="font-variant-numeric:tabular-nums;">$${fmtPrice(parseFloat(d.p))}</td>
+        <td style="color:var(--muted);">${parseFloat(d.q).toFixed(3)}</td>
+        <td style="font-weight:700;">$${fmtB(d.usdAmt)}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) {}
+}
+
+function switchWhaleSym(sym, btn) {
+  whaleSym = sym;
+  document.querySelectorAll('[onclick*="switchWhaleSym"]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadWhales();
+}
+
+// ── Tab ──
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(`tab-${tab}`).classList.add('active');
+}
+
+// ── Helpers ──
+function fmtB(v) {
+  if (v >= 1e9) return (v/1e9).toFixed(2) + 'B';
+  if (v >= 1e6) return (v/1e6).toFixed(2) + 'M';
+  if (v >= 1e3) return (v/1e3).toFixed(1) + 'K';
+  return v.toFixed(0);
+}
+function fmtPrice(v) {
+  if (v >= 100) return v.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1});
+  return v.toLocaleString('en-US',{minimumFractionDigits:3,maximumFractionDigits:4});
+}
+function fmtVol(v) {
+  if (v >= 1e6) return (v/1e6).toFixed(2)+'M';
+  if (v >= 1e3) return (v/1e3).toFixed(1)+'K';
+  return v.toFixed(2);
+}
+
+init();
+</script>
+</body>
+</html>
