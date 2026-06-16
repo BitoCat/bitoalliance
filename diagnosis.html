@@ -205,7 +205,65 @@ body { background:var(--bg); font-family:-apple-system,'Helvetica Neue','PingFan
       </div>
     </div>
 
-    <!-- 多時框卡片 -->
+    <!-- ── AI 解讀區塊（放在多時框上方）── -->
+    <div style="margin-bottom:20px;">
+
+      <!-- 有 Key：顯示吸引人的按鈕 -->
+      <div id="aiBanner" style="background:linear-gradient(135deg,#1a2a1a,#0d1a0d,#1a1008);border-radius:var(--radius);padding:24px 28px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;border:1px solid rgba(74,122,106,.4);box-shadow:0 4px 24px rgba(0,0,0,.2);">
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7ab8a4;margin-bottom:8px;text-transform:uppercase;">✨ 限會員專屬</div>
+          <div style="font-size:20px;font-weight:800;color:#f5e8d8;margin-bottom:6px;">🤖 AI 即時技術分析</div>
+          <div style="font-size:13px;color:#b0907a;line-height:1.6;">診斷完成後，讓 AI 解讀所有指標、給出<br>進場點、止損點、目標價與風險評估</div>
+        </div>
+        <div style="text-align:center;flex-shrink:0;">
+          <button id="aiBtn" onclick="runAI()" style="
+            padding:14px 32px;
+            background:linear-gradient(135deg,#4a7a6a,#2a5a4a);
+            color:#fff; border:none; border-radius:10px;
+            font-size:16px; font-weight:800; cursor:pointer;
+            box-shadow:0 4px 16px rgba(74,122,106,.5);
+            letter-spacing:.5px; transition:all .2s;
+            display:block; margin-bottom:8px;
+            animation: pulse 2s infinite;
+          ">⚡ 按此進行即時 AI 分析</button>
+          <div style="font-size:11px;color:#7a6050;">由 Groq llama-3.3-70b 提供支援</div>
+        </div>
+      </div>
+
+      <!-- 無 Key：引導設定 -->
+      <div id="noKeyBanner" style="display:none;background:linear-gradient(135deg,#1a1008,#2a1a08);border-radius:var(--radius);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;border:1px solid rgba(212,168,67,.3);">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:6px;">🔑 設定 Groq Key，解鎖 AI 分析功能</div>
+          <div style="font-size:12px;color:#b0907a;line-height:1.6;">
+            免費申請 Groq API Key，即可讓 AI 即時解讀技術指標<br>
+            給出進場建議、止損點、目標價
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;flex-shrink:0;">
+          <a href="profile.html" style="padding:10px 18px;background:var(--accent);color:#fff;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap;">⚙️ 前往設定 Key</a>
+          <a href="https://console.groq.com" target="_blank" style="padding:10px 18px;background:rgba(212,168,67,.15);color:var(--gold);border:1px solid rgba(212,168,67,.4);border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap;">📖 申請教學</a>
+        </div>
+      </div>
+
+      <!-- AI 結果 -->
+      <div id="aiResult" style="display:none;margin-top:14px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);">
+        <div style="font-size:14px;font-weight:700;color:var(--accent);margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+          🤖 AI 技術分析解讀
+          <span style="font-size:11px;font-weight:400;color:var(--muted);">by Groq llama-3.3-70b</span>
+          <button onclick="document.getElementById('aiResult').style.display='none'" style="margin-left:auto;background:transparent;border:1px solid var(--border);color:var(--muted);padding:3px 10px;border-radius:6px;cursor:pointer;font-size:12px;">✕ 關閉</button>
+        </div>
+        <div id="aiContent" style="font-size:14px;line-height:1.8;color:var(--text);white-space:pre-wrap;"></div>
+      </div>
+    </div>
+
+    <style>
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 4px 16px rgba(74,122,106,.5); }
+      50%      { box-shadow: 0 4px 28px rgba(74,122,106,.9), 0 0 0 4px rgba(74,122,106,.2); }
+    }
+    </style>
+
+    <!-- 多時框技術評分 -->
     <div class="section-title" style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:12px;">多時框技術評分</div>
     <div class="tf-grid" id="tfGrid"></div>
 
@@ -260,42 +318,6 @@ body { background:var(--bg); font-family:-apple-system,'Helvetica Neue','PingFan
     <div class="section-title" style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:12px;">價格走勢（1h）</div>
     <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:20px;">
       <canvas id="priceChart" height="100"></canvas>
-    </div>
-
-    <!-- AI 解讀 -->
-    <div style="background:linear-gradient(135deg,#1a1008,#2a1a08);border-radius:var(--radius);padding:24px 28px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
-      <div>
-        <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:#7ab8a4;margin-bottom:6px;text-transform:uppercase;">🤖 AI 解讀</div>
-        <div style="font-size:16px;font-weight:700;color:#f5e8d8;margin-bottom:4px;">讓 AI 分析這份技術診斷報告</div>
-        <div style="font-size:12px;color:#b0907a;">需要在帳號設定中填入 Groq API Key</div>
-      </div>
-      <button id="aiBtn" onclick="runAI()" style="padding:12px 28px;background:#4a7a6a;color:#fff;border:none;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity .2s;">
-        🤖 AI 解讀
-      </button>
-    </div>
-
-    <!-- AI 結果 -->
-    <div id="aiResult" style="display:none;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);margin-bottom:20px;">
-      <div style="font-size:14px;font-weight:700;color:var(--accent);margin-bottom:14px;display:flex;align-items:center;gap:8px;">
-        🤖 AI 技術分析解讀
-        <span style="font-size:11px;font-weight:400;color:var(--muted);">by Groq llama-3.3-70b</span>
-      </div>
-      <div id="aiContent" style="font-size:14px;line-height:1.8;color:var(--text);white-space:pre-wrap;"></div>
-    </div>
-
-    <!-- 無 Key 提示 -->
-    <div id="noKeyMsg" style="display:none;background:#f5e8d8;border:1px solid #d4a843;border-radius:var(--radius);padding:20px 24px;margin-bottom:20px;">
-      <div style="font-size:15px;font-weight:700;color:#8b5e3c;margin-bottom:8px;">⚠️ 尚未設定 Groq API Key</div>
-      <div style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:14px;">
-        要使用 AI 解讀功能，請先申請免費的 Groq API Key 並填入帳號設定。
-      </div>
-      <a href="profile.html" style="display:inline-block;padding:9px 20px;background:var(--accent);color:#fff;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;">
-        👤 前往帳號設定填入 Key
-      </a>
-      &nbsp;
-      <a href="https://console.groq.com" target="_blank" style="display:inline-block;padding:9px 20px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;">
-        🔗 申請 Groq Key 教學
-      </a>
     </div>
 
   </div>
@@ -398,7 +420,6 @@ async function runDiagnosis() {
       weightedScore: tfResults.reduce((s,r,i) => s + r.score * [0.15,0.35,0.35,0.15][i], 0),
     };
     document.getElementById('aiResult').style.display = 'none';
-    document.getElementById('noKeyMsg').style.display = 'none';
 
     document.getElementById('resultArea').classList.add('show');
     document.getElementById('resultArea').scrollIntoView({ behavior:'smooth', block:'start' });
@@ -817,6 +838,14 @@ async function loadGroqKey() {
   if (!session) return;
   const { data } = await sb.from('profiles').select('groq_api_key').eq('id', session.user.id).single();
   userGroqKey = data?.groq_api_key || null;
+  // 根據是否有 Key 顯示對應 banner
+  if (userGroqKey) {
+    document.getElementById('aiBanner').style.display = 'flex';
+    document.getElementById('noKeyBanner').style.display = 'none';
+  } else {
+    document.getElementById('aiBanner').style.display = 'none';
+    document.getElementById('noKeyBanner').style.display = 'flex';
+  }
 }
 
 async function runAI() {
@@ -824,15 +853,14 @@ async function runAI() {
 
   // 確認有 Key
   if (!userGroqKey) {
-    document.getElementById('noKeyMsg').style.display = 'block';
-    document.getElementById('aiResult').style.display = 'none';
-    document.getElementById('noKeyMsg').scrollIntoView({ behavior:'smooth' });
+    document.getElementById('noKeyBanner').style.display = 'flex';
+    document.getElementById('aiBanner').style.display = 'none';
+    document.getElementById('noKeyBanner').scrollIntoView({ behavior:'smooth' });
     return;
   }
 
-  document.getElementById('noKeyMsg').style.display = 'none';
   document.getElementById('aiResult').style.display = 'block';
-  document.getElementById('aiContent').textContent = '🤖 AI 分析中，請稍候...';
+  document.getElementById('aiContent').textContent = '🤖 AI 分析中，請稍候約10秒...';
   document.getElementById('aiBtn').disabled = true;
   document.getElementById('aiResult').scrollIntoView({ behavior:'smooth' });
 
