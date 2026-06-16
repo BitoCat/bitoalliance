@@ -377,12 +377,12 @@ body {
       <div class="cta-label">🗡️ 解鎖高階功能</div>
       <div class="cta-title" id="ctaTitle">選擇你的方式，升級身份</div>
       <div class="cta-desc" id="ctaDesc">
-        成為<strong style="color:#f5e8d8;">遊俠</strong>（租用指標）或加入盟主成為<strong style="color:#f5e8d8;">會員</strong>，解鎖網站完整功能
+        成為<strong style="color:#f5e8d8;">遊俠</strong>（租用指標）或加入聯盟成為<strong style="color:#f5e8d8;">會員</strong>，解鎖網站完整功能
       </div>
     </div>
     <div class="cta-btns">
       <a href="indicator.html" class="cta-btn-ranger">🗡️ 租用指標（$3,600/年）</a>
-      <a href="profile.html" class="cta-btn-ghost">⚔️ 加入盟主</a>
+      <a href="profile.html" class="cta-btn-ghost">⚔️ 加入聯盟</a>
     </div>
   </div>
 
@@ -499,7 +499,7 @@ async function loadProfile() {
     document.getElementById('upgradeCta').style.display = 'flex';
     document.getElementById('joinCard').href = 'indicator.html';
     document.getElementById('joinCardTitle').textContent = '解鎖高階功能';
-    document.getElementById('joinCardDesc').textContent = '成為遊俠或加入盟主成為會員，享有完整網站功能';
+    document.getElementById('joinCardDesc').textContent = '成為遊俠或加入聯盟成為會員，享有完整網站功能';
     document.getElementById('joinCardTag').textContent = '了解方案';
     document.getElementById('joinCardTag').className = 'feature-tag tag-ranger';
   } else if (isRanger) {
