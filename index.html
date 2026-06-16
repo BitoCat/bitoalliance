@@ -294,7 +294,7 @@ body {
       <div class="welcome-sub" id="welcomeSub">載入會員資訊中...</div>
     </div>
     <div class="welcome-actions">
-      <a href="live.html" class="btn btn-ghost">🎬 直播儀表板</a>
+      
       <a href="profile.html" class="btn btn-primary">👤 帳號設定</a>
     </div>
   </div>
@@ -365,24 +365,24 @@ body {
     <a href="indicator.html" class="feature-card" id="joinCard">
       <div class="feature-icon">🗡️</div>
       <div class="feature-name" id="joinCardTitle">解鎖高階功能</div>
-      <div class="feature-desc" id="joinCardDesc">成為遊俠或加入盟主直客，享有完整網站功能</div>
+      <div class="feature-desc" id="joinCardDesc">成為遊俠或加入盟主成為會員，享有完整網站功能</div>
       <span class="feature-tag tag-ranger" id="joinCardTag">了解方案</span>
     </a>
 
   </div>
 
-  <!-- 升級 CTA（僅礦工顯示） -->
+  <!-- 升級 CTA（僅布衣顯示） -->
   <div class="upgrade-cta" id="upgradeCta" style="display:none;">
     <div>
       <div class="cta-label">🗡️ 解鎖高階功能</div>
       <div class="cta-title" id="ctaTitle">選擇你的方式，升級身份</div>
       <div class="cta-desc" id="ctaDesc">
-        成為<strong style="color:#f5e8d8;">遊俠</strong>（租用指標）或加入盟主成為<strong style="color:#f5e8d8;">直客</strong>，解鎖網站完整功能
+        成為<strong style="color:#f5e8d8;">遊俠</strong>（租用指標）或加入盟主成為<strong style="color:#f5e8d8;">會員</strong>，解鎖網站完整功能
       </div>
     </div>
     <div class="cta-btns">
       <a href="indicator.html" class="cta-btn-ranger">🗡️ 租用指標（$3,600/年）</a>
-      <a href="profile.html" class="cta-btn-ghost">⚔️ 加入盟主直客</a>
+      <a href="profile.html" class="cta-btn-ghost">⚔️ 加入盟主</a>
     </div>
   </div>
 
@@ -466,7 +466,7 @@ async function loadProfile() {
   const isMaster = plan === 'master' || plan === 'admin';
 
   // Nav badge
-  let badgeText = '礦工', badgeClass = 'nav-badge free';
+  let badgeText = '布衣', badgeClass = 'nav-badge free';
   let subText = '選擇升級方式，解鎖更多功能';
 
   if (isMaster) {
@@ -474,8 +474,8 @@ async function loadProfile() {
     badgeClass = 'nav-badge';
     subText = '歡迎回來！';
   } else if (isDirect || plan === 'direct') {
-    badgeText = '直客'; badgeClass = 'nav-badge direct';
-    subText = '直客身份 · BitoCat 指標使用中';
+    badgeText = '會員'; badgeClass = 'nav-badge direct';
+    subText = '會員身份 · BitoCat 指標使用中';
   } else if (isRanger) {
     badgeText = '🗡️ 遊俠'; badgeClass = 'nav-badge ranger';
     const exp = profile?.indicator_expires_at;
@@ -495,11 +495,11 @@ async function loadProfile() {
   const isFree = !isDirect && !isRanger && !isMaster && !['tw','us','all','direct'].includes(plan);
 
   if (isFree) {
-    // 礦工：顯示升級 CTA，功能卡顯示「了解升級方案」
+    // 布衣：顯示升級 CTA，功能卡顯示「了解升級方案」
     document.getElementById('upgradeCta').style.display = 'flex';
     document.getElementById('joinCard').href = 'indicator.html';
     document.getElementById('joinCardTitle').textContent = '解鎖高階功能';
-    document.getElementById('joinCardDesc').textContent = '成為遊俠或加入盟主直客，享有完整網站功能';
+    document.getElementById('joinCardDesc').textContent = '成為遊俠或加入盟主成為會員，享有完整網站功能';
     document.getElementById('joinCardTag').textContent = '了解方案';
     document.getElementById('joinCardTag').className = 'feature-tag tag-ranger';
   } else if (isRanger) {
@@ -513,8 +513,8 @@ async function loadProfile() {
     // 直客/盟主：卡片改成後台或帳號
     document.getElementById('joinCard').href = isMaster ? 'admin.html' : 'profile.html';
     document.getElementById('joinCardTitle').textContent = isMaster ? '盟主後台' : '帳號管理';
-    document.getElementById('joinCardDesc').textContent = isMaster ? '管理直客、審核 VIP 截圖' : '查看帳號資訊與直客狀態';
-    document.getElementById('joinCardTag').textContent = isMaster ? '⚔️ 盟主' : '✅ 直客';
+    document.getElementById('joinCardDesc').textContent = isMaster ? '管理會員、審核 VIP 截圖' : '查看帳號資訊與會員狀態';
+    document.getElementById('joinCardTag').textContent = isMaster ? '⚔️ 盟主' : '✅ 會員';
     document.getElementById('joinCardTag').className = 'feature-tag tag-member';
   }
 
