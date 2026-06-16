@@ -295,6 +295,9 @@
       <span class="icon">🗡️</span> 指標申請管理
       <span class="sidebar-badge" id="badge-indicator" style="display:none">0</span>
     </div>
+    <div class="sidebar-item" onclick="switchPanel('bito-members',this)">
+      <span class="icon">📨</span> Telegram 會員管理
+    </div>
     <div class="sidebar-label" style="margin-top:12px;">紀錄</div>
     <div class="sidebar-item" onclick="switchPanel('activity',this)">
       <span class="icon">📋</span> 活動時間序
@@ -489,6 +492,62 @@
       </div>
     </div>
 
+    <!-- ── 比特聯盟 Telegram 會員管理 ── -->
+    <div class="panel" id="panel-bito-members">
+      <div class="page-title">Telegram 會員管理</div>
+      <div class="page-subtitle">管理可使用 @Boss1688Bot 進入比特聯盟頻道的會員，包含遊俠、直客、國外客戶。</div>
+
+      <!-- 新增會員 -->
+      <div class="card">
+        <div class="card-title">➕ 新增入群資格</div>
+        <div class="grid-2">
+          <div>
+            <label class="field-label">姓名（必填）</label>
+            <input type="text" id="bito-name" placeholder="會員姓名或暱稱">
+          </div>
+          <div>
+            <label class="field-label">Gmail（必填）</label>
+            <input type="email" id="bito-email" placeholder="付款或註冊用的 Gmail">
+          </div>
+        </div>
+        <label class="field-label">類型</label>
+        <select id="bito-type" style="margin-bottom:14px;">
+          <option value="bitoalliance">遊俠（付年費）</option>
+          <option value="direct">直客（跟隨盟主）</option>
+          <option value="foreign">國外客戶（PayPal / 支付寶）</option>
+        </select>
+        <label class="field-label">有效天數（預設 365 天）</label>
+        <input type="text" id="bito-days" placeholder="365" value="365" style="margin-bottom:14px;">
+        <label class="field-label">備註（可選）</label>
+        <input type="text" id="bito-note" placeholder="例：PayPal 收款確認、直客推薦人等">
+        <button class="btn btn-gold" onclick="addBitoMember()">📨 新增入群資格</button>
+        <div id="addMemberResult" style="margin-top:12px;font-size:13px;"></div>
+      </div>
+
+      <!-- 現有會員列表 -->
+      <div class="card">
+        <div class="card-title">📋 現有比特聯盟 Telegram 會員</div>
+        <div class="filter-row">
+          <input type="text" id="bitoMemberSearch" placeholder="搜尋姓名 / Email…" oninput="filterBitoMembers()">
+          <select id="bitoMemberStatus" onchange="filterBitoMembers()">
+            <option value="all">全部</option>
+            <option value="active">有效中</option>
+            <option value="expired">已到期</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>姓名</th><th>Gmail</th><th>類型</th><th>Telegram</th><th>到期日</th><th>狀態</th></tr>
+            </thead>
+            <tbody id="bitoMembersBody">
+              <tr><td colspan="6"><div class="loading">載入中…</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -530,6 +589,7 @@
 <script>
 const SUPABASE_URL = 'https://kldumnxdlgovaxtiszyn.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsZHVtbnhkbGdvdmF4dGlzenluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjIyNDgsImV4cCI6MjA5MzY5ODI0OH0.P_anfYpSV2tgCPIQ7uZDVBjUFY3UhfEXk9u3XjlzBHI';
+const API = 'https://web-production-f4735.up.railway.app';
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -567,6 +627,7 @@ function switchPanel(name, el) {
   if (name === 'masters-list') loadMastersList();
   if (name === 'activity') loadActivity();
   if (name === 'indicator-orders') loadIndicatorOrders();
+  if (name === 'bito-members') loadBitoMembers();
 }
 
 // ── Overview ──
@@ -1093,6 +1154,108 @@ async function loadIndicatorBadge() {
   if (count > 0) {
     const b = document.getElementById('badge-indicator');
     b.textContent = count; b.style.display = 'inline-block';
+  }
+}
+
+// ── Bito Telegram Members ──
+let bitoMembersCache = [];
+
+async function loadBitoMembers() {
+  const tbody = document.getElementById('bitoMembersBody');
+  tbody.innerHTML = `<tr><td colspan="6"><div class="loading">載入中…</div></td></tr>`;
+  try {
+    const res = await fetch(`${API}/bito/members`);
+    const data = await res.json();
+    if (!data.ok) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="emoji">❌</div><p>${data.message || '載入失敗'}</p></div></td></tr>`;
+      return;
+    }
+    bitoMembersCache = data.data || [];
+    renderBitoMembers(bitoMembersCache);
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="emoji">❌</div><p>連線失敗</p></div></td></tr>`;
+  }
+}
+
+function renderBitoMembers(rows) {
+  const tbody = document.getElementById('bitoMembersBody');
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="emoji">📭</div><p>尚無會員</p></div></td></tr>`;
+    return;
+  }
+  const now = new Date();
+  tbody.innerHTML = rows.map(m => {
+    const isActive = m.is_active && new Date(m.expires_at) > now;
+    const typeMap = { bitoalliance:'🗡️ 遊俠', direct:'⚔️ 直客', foreign:'🌏 國外客戶' };
+    const typeLabel = typeMap[m.plan] || m.plan || '—';
+    const tgLabel = m.telegram_username
+      ? `<a href="https://t.me/${m.telegram_username}" target="_blank" style="color:var(--accent);">@${esc(m.telegram_username)}</a>`
+      : '<span style="color:var(--text-muted);font-size:11px;">未綁定</span>';
+    const statusBadge = isActive
+      ? '<span class="status-badge s-approved">✅ 有效</span>'
+      : '<span class="status-badge s-rejected">❌ 已到期</span>';
+    return `<tr>
+      <td>${esc(m.name)}</td>
+      <td style="font-size:12px;">${esc(m.email)}</td>
+      <td>${typeLabel}</td>
+      <td>${tgLabel}</td>
+      <td style="font-size:12px;color:var(--text-muted);">${m.expires_at ? m.expires_at.slice(0,10) : '—'}</td>
+      <td>${statusBadge}</td>
+    </tr>`;
+  }).join('');
+}
+
+function filterBitoMembers() {
+  const q = document.getElementById('bitoMemberSearch').value.toLowerCase();
+  const status = document.getElementById('bitoMemberStatus').value;
+  const now = new Date();
+  const filtered = bitoMembersCache.filter(m => {
+    const matchQ = (m.name||'').toLowerCase().includes(q) || (m.email||'').toLowerCase().includes(q);
+    const isActive = m.is_active && new Date(m.expires_at) > now;
+    const matchStatus = status === 'all' || (status === 'active' && isActive) || (status === 'expired' && !isActive);
+    return matchQ && matchStatus;
+  });
+  renderBitoMembers(filtered);
+}
+
+async function addBitoMember() {
+  const name  = document.getElementById('bito-name').value.trim();
+  const email = document.getElementById('bito-email').value.trim();
+  const type  = document.getElementById('bito-type').value;
+  const days  = parseInt(document.getElementById('bito-days').value) || 365;
+  const note  = document.getElementById('bito-note').value.trim();
+  const result = document.getElementById('addMemberResult');
+
+  if (!name || !email) { showToast('請填寫姓名和 Gmail', 'error'); return; }
+
+  result.textContent = '處理中…';
+  result.style.color = 'var(--text-muted)';
+
+  try {
+    const res = await fetch(`${API}/bito/add-member`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, type, days, note }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      result.textContent = `✅ ${data.message}`;
+      result.style.color = 'var(--success)';
+      document.getElementById('bito-name').value = '';
+      document.getElementById('bito-email').value = '';
+      document.getElementById('bito-note').value = '';
+      document.getElementById('bito-days').value = '365';
+      showToast('✅ 新增成功！', 'success');
+      await loadBitoMembers();
+    } else {
+      result.textContent = `❌ ${data.message}`;
+      result.style.color = 'var(--danger)';
+      showToast(data.message || '新增失敗', 'error');
+    }
+  } catch(e) {
+    result.textContent = '❌ 連線失敗';
+    result.style.color = 'var(--danger)';
+    showToast('連線失敗', 'error');
   }
 }
 
