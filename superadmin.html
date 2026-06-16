@@ -262,7 +262,7 @@
 <nav class="topnav">
   <span class="logo">⚔️ 比特聯盟</span>
   <span class="role-badge">✨ 超級管理員</span>
-  <span class="user-label" id="navName">毛哥</span>
+  <span class="user-label" id="navName">系統管理員</span>
   <span class="spacer"></span>
   <button class="logout" onclick="handleLogout()">登出</button>
 </nav>
@@ -289,6 +289,11 @@
     </div>
     <div class="sidebar-item" onclick="switchPanel('masters-list',this)">
       <span class="icon">⚔️</span> 盟主列表
+    </div>
+    <div class="sidebar-label" style="margin-top:12px;">遊俠</div>
+    <div class="sidebar-item" onclick="switchPanel('indicator-orders',this)">
+      <span class="icon">🗡️</span> 指標申請管理
+      <span class="sidebar-badge" id="badge-indicator" style="display:none">0</span>
     </div>
     <div class="sidebar-label" style="margin-top:12px;">紀錄</div>
     <div class="sidebar-item" onclick="switchPanel('activity',this)">
@@ -432,6 +437,58 @@
       </div>
     </div>
 
+    <!-- ── 指標申請管理 ── -->
+    <div class="panel" id="panel-indicator-orders">
+      <div class="page-title">指標申請管理</div>
+      <div class="page-subtitle">管理所有遊俠的 BitoCat 指標申請，核准後在 TradingView 手動授權，再回來標記完成。</div>
+
+      <div class="card">
+        <div class="filter-row">
+          <select id="indicatorStatusFilter" onchange="loadIndicatorOrders()">
+            <option value="pending">⏳ 待授權</option>
+            <option value="granted">✅ 已授權</option>
+            <option value="all">全部</option>
+          </select>
+          <input type="text" id="indicatorSearch" placeholder="搜尋 Email / 訂單編號…" oninput="filterIndicatorTable()">
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>訂單編號</th>
+                <th>Email / 名稱</th>
+                <th>TradingView 帳號</th>
+                <th>推薦盟主</th>
+                <th>金額</th>
+                <th>付款</th>
+                <th>授權</th>
+                <th>時間</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="indicatorOrdersBody">
+              <tr><td colspan="9"><div class="loading">載入中…</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 優惠碼管理 -->
+      <div class="card">
+        <div class="card-title">🎟️ 盟主優惠碼管理</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>盟主</th><th>Email</th><th>優惠碼</th><th>推薦成功次數</th><th>操作</th></tr>
+            </thead>
+            <tbody id="referralCodesBody">
+              <tr><td colspan="5"><div class="loading">載入中…</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -493,8 +550,9 @@ async function init() {
     window.location.href = 'index.html';
     return;
   }
-  document.getElementById('navName').textContent = profile.display_name || '毛哥';
+  document.getElementById('navName').textContent = profile.display_name || '系統管理員';
   await loadOverview();
+  await loadIndicatorBadge();
 }
 
 // ── Panel Switch ──
@@ -508,6 +566,7 @@ function switchPanel(name, el) {
   if (name === 'all-members') loadAllMembers();
   if (name === 'masters-list') loadMastersList();
   if (name === 'activity') loadActivity();
+  if (name === 'indicator-orders') loadIndicatorOrders();
 }
 
 // ── Overview ──
@@ -638,12 +697,23 @@ async function loadMasterReview() {
 
 async function reviewMaster(userId, decision) {
   const updates = { master_status: decision };
-  if (decision === 'approved') updates.plan = 'master';
+  if (decision === 'approved') {
+    updates.plan = 'master';
+    // 自動配發優惠碼
+    updates.referral_code = genReferralCode();
+  }
   const { error } = await sb.from('profiles').update(updates).eq('id', userId);
   if (error) { showToast('操作失敗：' + error.message, 'error'); return; }
-  showToast(decision === 'approved' ? '🎉 已核准！對方已升級為盟主' : '❌ 已拒絕', decision === 'approved' ? 'success' : 'error');
+  showToast(decision === 'approved' ? '🎉 已核准！優惠碼已自動配發' : '❌ 已拒絕', decision === 'approved' ? 'success' : 'error');
   await loadMasterReview();
   await loadOverview();
+}
+
+function genReferralCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = 'BITO-';
+  for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
 }
 
 // ── All VIP ──
@@ -874,6 +944,156 @@ async function loadActivity() {
       </div>
     </li>
   `).join('');
+}
+
+// ── Indicator Orders ──
+let indicatorCache = [];
+
+async function loadIndicatorOrders() {
+  const status = document.getElementById('indicatorStatusFilter').value;
+  let query = sb.from('indicator_orders')
+    .select('id, merchant_trade_no, amount, payment_status, indicator_status, tv_username, referral_code, referred_by, paid_at, granted_at, created_at, user_id')
+    .order('created_at', { ascending: false })
+    .limit(100);
+
+  if (status !== 'all') query = query.eq('indicator_status', status);
+  const { data } = await query;
+  indicatorCache = data || [];
+
+  // 更新 sidebar badge
+  const { count: pendingCount } = await sb.from('indicator_orders')
+    .select('id', { count: 'exact', head: true })
+    .eq('payment_status', 'paid')
+    .eq('indicator_status', 'pending');
+  if (pendingCount > 0) {
+    const b = document.getElementById('badge-indicator');
+    b.textContent = pendingCount; b.style.display = 'inline-block';
+  }
+
+  // 取得 referred_by 盟主資訊
+  const masterIds = [...new Set(indicatorCache.map(o => o.referred_by).filter(Boolean))];
+  let masterMap = {};
+  if (masterIds.length) {
+    const { data: ms } = await sb.from('profiles').select('id, display_name, email').in('id', masterIds);
+    (ms||[]).forEach(m => masterMap[m.id] = m);
+  }
+  indicatorCache = indicatorCache.map(o => ({ ...o, masterInfo: masterMap[o.referred_by] }));
+
+  renderIndicatorTable(indicatorCache);
+  await loadReferralCodes();
+}
+
+function renderIndicatorTable(rows) {
+  const tbody = document.getElementById('indicatorOrdersBody');
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="emoji">🗡️</div><p>沒有申請紀錄</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(o => {
+    const payBadge = o.payment_status === 'paid'
+      ? '<span class="status-badge s-approved">✅ 已付款</span>'
+      : '<span class="status-badge s-pending">⏳ 待付款</span>';
+    const grantBadge = o.indicator_status === 'granted'
+      ? '<span class="status-badge s-approved">🗡️ 已授權</span>'
+      : '<span class="status-badge s-pending">⏳ 待授權</span>';
+    const canGrant = o.payment_status === 'paid' && o.indicator_status !== 'granted' && o.tv_username;
+    return `<tr>
+      <td style="font-size:11px;"><code>${esc(o.merchant_trade_no)}</code></td>
+      <td style="font-size:12px;">${esc(o.tv_username ? '—' : '未填')}<br><span style="color:var(--text-muted);font-size:11px;">${esc(o.referral_code||'無優惠碼')}</span></td>
+      <td><strong style="color:var(--accent);">${esc(o.tv_username || '⚠️ 未填寫')}</strong></td>
+      <td style="font-size:12px;">${esc(o.masterInfo?.display_name || o.masterInfo?.email || '—')}</td>
+      <td>$${Number(o.amount).toLocaleString()}</td>
+      <td>${payBadge}</td>
+      <td>${grantBadge}</td>
+      <td style="font-size:11px;color:var(--text-muted);">${fmtDate(o.created_at)}</td>
+      <td>
+        ${canGrant ? `<button class="btn btn-gold btn-sm" onclick="grantIndicator('${o.id}')">🗡️ 標記已授權</button>` : ''}
+        ${!o.tv_username ? '<span style="font-size:11px;color:var(--text-muted);">等待填寫</span>' : ''}
+        ${o.indicator_status === 'granted' ? `<span style="font-size:11px;color:var(--text-muted);">${fmtDate(o.granted_at)}</span>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filterIndicatorTable() {
+  const q = document.getElementById('indicatorSearch').value.toLowerCase();
+  const filtered = indicatorCache.filter(o =>
+    (o.merchant_trade_no||'').toLowerCase().includes(q) ||
+    (o.tv_username||'').toLowerCase().includes(q)
+  );
+  renderIndicatorTable(filtered);
+}
+
+async function grantIndicator(orderId) {
+  if (!confirm('確定已在 TradingView 完成授權？標記後將無法撤銷。')) return;
+  const { error } = await sb.from('indicator_orders').update({
+    indicator_status: 'granted',
+    granted_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }).eq('id', orderId);
+  if (error) { showToast('操作失敗：' + error.message, 'error'); return; }
+  showToast('🗡️ 已標記授權完成！', 'success');
+  await loadIndicatorOrders();
+}
+
+// ── Referral Codes ──
+async function loadReferralCodes() {
+  const { data: masters } = await sb.from('profiles')
+    .select('id, email, display_name, referral_code')
+    .eq('plan', 'master')
+    .order('updated_at', { ascending: false });
+
+  const tbody = document.getElementById('referralCodesBody');
+  if (!masters || !masters.length) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="emoji">⚔️</div><p>尚無盟主</p></div></td></tr>`;
+    return;
+  }
+
+  // 統計每個盟主推薦成功的次數
+  const rows = await Promise.all(masters.map(async m => {
+    const { count } = await sb.from('indicator_orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('referred_by', m.id)
+      .eq('payment_status', 'paid');
+    return { ...m, refCount: count || 0 };
+  }));
+
+  tbody.innerHTML = rows.map(m => `
+    <tr>
+      <td>${esc(m.display_name || '—')}</td>
+      <td style="font-size:12px;">${esc(m.email)}</td>
+      <td>${m.referral_code
+        ? `<code style="font-size:13px;font-weight:700;letter-spacing:1px;">${esc(m.referral_code)}</code>`
+        : '<span style="color:var(--text-muted);font-size:12px;">尚未配發</span>'}</td>
+      <td><strong>${m.refCount}</strong> 次</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="reissueCode('${m.id}','${esc(m.display_name||m.email)}')">
+          🔄 重新配發
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function reissueCode(masterId, name) {
+  if (!confirm(`確定要重新配發「${name}」的優惠碼？舊的優惠碼將立即失效。`)) return;
+  const newCode = genReferralCode();
+  const { error } = await sb.from('profiles').update({ referral_code: newCode }).eq('id', masterId);
+  if (error) { showToast('配發失敗：' + error.message, 'error'); return; }
+  showToast(`✅ 新優惠碼：${newCode}`, 'success');
+  await loadReferralCodes();
+}
+
+// ── Indicator Badge on init ──
+async function loadIndicatorBadge() {
+  const { count } = await sb.from('indicator_orders')
+    .select('id', { count: 'exact', head: true })
+    .eq('payment_status', 'paid')
+    .eq('indicator_status', 'pending');
+  if (count > 0) {
+    const b = document.getElementById('badge-indicator');
+    b.textContent = count; b.style.display = 'inline-block';
+  }
 }
 
 // ── Auth ──
