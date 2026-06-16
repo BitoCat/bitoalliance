@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>比特聯盟 · 市場儀表板</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #edd4be;
+  --panel: #f5e8d8;
+  --dark: #1a1008;
+  --accent: #8b5e3c;
+  --gold: #d4a843;
+  --text: #2a1f14;
+  --muted: #7a5c42;
+  --border: #d4b896;
+  --up: #27AE60;
+  --dn: #C0392B;
+  --radius: 12px;
+  --shadow: 0 2px 12px rgba(42,31,20,.08);
+}
+body {
+  background: var(--bg);
+  font-family: -apple-system, 'Helvetica Neue', 'PingFang TC', sans-serif;
+  min-height: 100vh;
+  color: var(--text);
+}
+
+/* ── Navbar ── */
+.navbar {
+  background: var(--dark);
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 14px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.nav-logo { font-size: 18px; font-weight: 700; color: var(--gold); letter-spacing: 1px; }
+.nav-links { display: flex; gap: 4px; }
+.nav-link {
+  color: #b0907a; font-size: 13px; text-decoration: none;
+  padding: 6px 12px; border-radius: 7px; transition: all .15s;
+}
+.nav-link:hover { background: rgba(255,255,255,.08); color: #f5e8d8; }
+.nav-link.active { background: rgba(212,168,67,.15); color: var(--gold); }
+.nav-spacer { flex: 1; }
+.nav-badge {
+  font-size: 11px; font-weight: 700; padding: 3px 10px;
+  border-radius: 20px; background: var(--accent); color: #fff;
+}
+.nav-badge.ranger { background: #4a7a6a; }
+.nav-badge.master { background: var(--gold); color: #1a1008; }
+.btn-back {
+  background: transparent; border: 1px solid #444; color: #aaa;
+  padding: 5px 14px; border-radius: 7px; cursor: pointer;
+  font-size: 13px; text-decoration: none;
+}
+
+/* ── Layout ── */
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 14px;
+  padding: 20px 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+.col-full  { grid-column: 1 / -1; }
+.col-half  { grid-column: span 2; }
+.col-third { grid-column: span 1; }
+
+/* ── Section title ── */
+.section-title {
+  font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+  color: var(--muted); text-transform: uppercase;
+  margin-bottom: 12px; padding-left: 2px;
+}
+
+/* ── Panel ── */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.panel-title { font-size: 14px; font-weight: 700; color: var(--text); }
+.panel-sub   { font-size: 11px; color: var(--muted); }
+.panel-body  { padding: 14px 18px; }
+
+/* ── Stat grid ── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 0;
+}
+.stat-box {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  box-shadow: var(--shadow);
+}
+.stat-label { font-size: 11px; color: var(--muted); letter-spacing: .4px; margin-bottom: 6px; }
+.stat-val   { font-size: 26px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+.stat-sub   { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.up { color: var(--up); }
+.dn { color: var(--dn); }
+
+/* ── Alert list ── */
+.alert-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+.alert-item:last-child { border-bottom: none; }
+.alert-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.alert-info { flex: 1; }
+.alert-signal { font-size: 13px; font-weight: 600; }
+.alert-meta   { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.alert-price  { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* ── Hot list ── */
+.hot-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 0; border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.hot-item:last-child { border-bottom: none; }
+.hot-sym  { font-weight: 700; min-width: 70px; }
+.hot-price { color: var(--muted); font-variant-numeric: tabular-nums; }
+.hot-chg  { font-weight: 700; min-width: 70px; text-align: right; }
+
+/* ── Liquidation ── */
+.liq-bar {
+  display: flex; height: 24px; border-radius: 6px; overflow: hidden;
+  margin: 10px 0 6px;
+}
+.liq-long  { background: var(--up); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; }
+.liq-short { background: var(--dn); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; }
+.liq-row   { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+
+/* ── Funding table ── */
+.funding-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.funding-table th {
+  background: #e8d4be; color: var(--muted);
+  font-size: 10px; font-weight: 700; letter-spacing: .5px;
+  text-align: left; padding: 7px 10px; text-transform: uppercase;
+}
+.funding-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+.funding-table tr:last-child td { border-bottom: none; }
+
+/* ── TradingView ── */
+.tv-widget { border-radius: 0 0 var(--radius) var(--radius); overflow: hidden; }
+
+/* ── Skeleton ── */
+.skeleton {
+  background: linear-gradient(90deg, var(--border) 25%, var(--bg) 50%, var(--border) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px; height: 18px; margin-bottom: 8px;
+}
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+/* ── Tab bar ── */
+.tab-bar { display: flex; gap: 4px; padding: 14px 18px 0; }
+.tab-btn {
+  padding: 6px 14px; border-radius: 7px 7px 0 0;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  border: 1px solid transparent; border-bottom: none;
+  color: var(--muted); background: transparent;
+  transition: all .15s;
+}
+.tab-btn.active { background: var(--bg); border-color: var(--border); color: var(--accent); }
+.tab-content { display: none; padding: 14px 18px; }
+.tab-content.active { display: block; }
+
+/* ── Responsive ── */
+@media (max-width: 1100px) {
+  .layout { grid-template-columns: 1fr 1fr; }
+  .col-half  { grid-column: span 2; }
+  .col-third { grid-column: span 1; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 700px) {
+  .layout { grid-template-columns: 1fr; padding: 12px; }
+  .col-half, .col-third { grid-column: span 1; }
+  .stat-grid { grid-template-columns: 1fr 1fr; }
+  .navbar { padding: 0 14px; }
+  .nav-links { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <span class="nav-logo">⚔️ 比特聯盟</span>
+  <div class="nav-links">
+    <a href="index.html" class="nav-link">首頁</a>
+    <a href="signals.html" class="nav-link active">市場儀表板</a>
+    <a href="scanner.html" class="nav-link">幣種掃描</a>
+    <a href="whale.html" class="nav-link">鯨魚追蹤</a>
+    <a href="concepts.html" class="nav-link">板塊排行</a>
+    <a href="diagnosis.html" class="nav-link">技術診斷</a>
+  </div>
+  <div class="nav-spacer"></div>
+  <span class="nav-badge" id="navBadge">載入中</span>
+  <a href="index.html" class="btn-back">← 返回</a>
+</nav>
+
+<!-- Main layout -->
+<div class="layout">
+
+  <!-- ── 市場快覽 ── -->
+  <div class="col-full">
+    <div class="section-title">市場快覽</div>
+    <div class="stat-grid">
+      <div class="stat-box">
+        <div class="stat-label">BTC / USDT</div>
+        <div class="stat-val" id="btcPrice">—</div>
+        <div class="stat-sub" id="btcChg">載入中...</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">資金費率</div>
+        <div class="stat-val" id="fundingRate">—</div>
+        <div class="stat-sub" id="fundingSub">—</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">多空比（5m）</div>
+        <div class="stat-val" id="lsRatio">—</div>
+        <div class="stat-sub" id="lsSub">—</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">恐懼貪婪指數</div>
+        <div class="stat-val" id="fgVal">—</div>
+        <div class="stat-sub" id="fgSub">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TradingView K線 ── -->
+  <div class="col-half">
+    <div class="section-title">K 線圖</div>
+    <div class="panel" style="height:420px;">
+      <div class="tv-widget" style="height:100%;">
+        <div class="tradingview-widget-container" style="height:100%;">
+          <div class="tradingview-widget-container__widget" style="height:100%;"></div>
+          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+          {
+            "autosize": true,
+            "symbol": "BINANCE:BTCUSDT",
+            "interval": "60",
+            "timezone": "Asia/Taipei",
+            "theme": "light",
+            "style": "1",
+            "locale": "zh_TW",
+            "enable_publishing": false,
+            "hide_top_toolbar": false,
+            "hide_legend": false,
+            "save_image": false,
+            "calendar": false,
+            "support_host": "https://www.tradingview.com",
+            "backgroundColor": "rgba(245, 232, 216, 1)"
+          }
+          </script>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 右側欄 ── -->
+  <div class="col-third" style="display:flex;flex-direction:column;gap:14px;">
+
+    <!-- BitoCat 快訊 -->
+    <div class="section-title">BitoCat 快訊</div>
+    <div class="panel" style="flex:1;">
+      <div class="panel-header">
+        <span class="panel-title">🐱 貓咪隧道訊號</span>
+        <div style="display:flex;gap:6px;">
+          <select id="alertTfFilter" onchange="loadAlerts()" style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:5px;background:var(--bg);color:var(--muted);">
+            <option value="">全部</option>
+            <option value="15m">15m</option>
+            <option value="1h">1h</option>
+          </select>
+          <select id="alertDirFilter" onchange="loadAlerts()" style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:5px;background:var(--bg);color:var(--muted);">
+            <option value="">全部</option>
+            <option value="upper">上軌</option>
+            <option value="lower">下軌</option>
+          </select>
+        </div>
+      </div>
+      <div class="panel-body" id="alertList">
+        <div class="skeleton"></div>
+        <div class="skeleton" style="width:80%"></div>
+        <div class="skeleton" style="width:60%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── OI & 清算 ── -->
+  <div class="col-third">
+    <div class="section-title">未平倉量 OI</div>
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">📊 BTC OI 趨勢</span>
+        <span class="panel-sub" id="oiSub">—</span>
+      </div>
+      <div class="panel-body">
+        <canvas id="oiChart" height="120"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- 多空清算 -->
+  <div class="col-third">
+    <div class="section-title">清算數據（24h）</div>
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">💥 多空清算</span>
+        <span class="panel-sub">近 24 小時</span>
+      </div>
+      <div class="panel-body">
+        <div class="liq-bar">
+          <div class="liq-long" id="liqLongBar" style="width:50%">多</div>
+          <div class="liq-short" id="liqShortBar" style="width:50%">空</div>
+        </div>
+        <div class="liq-row">
+          <span style="color:var(--up);" id="liqLongAmt">多方清算 —</span>
+          <span style="color:var(--dn);" id="liqShortAmt">空方清算 —</span>
+        </div>
+        <div style="margin-top:14px;">
+          <!-- Coinglass liquidation widget -->
+          <script src="https://www.coinglass.com/static/embed/liquidation-heatmap.js" 
+                  data-coin="BTC" data-theme="light" async></script>
+          <div id="liqFallback" style="font-size:12px;color:var(--muted);text-align:center;padding:16px 0;">
+            載入清算數據中...
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 熱門合約 -->
+  <div class="col-third">
+    <div class="section-title">熱門合約</div>
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">🔥 Bitunix 熱門</span>
+        <span class="panel-sub">24h 成交量排序</span>
+      </div>
+      <div class="panel-body" id="hotList">
+        <div class="skeleton"></div>
+        <div class="skeleton" style="width:85%"></div>
+        <div class="skeleton" style="width:70%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 資金費率排行 ── -->
+  <div class="col-half">
+    <div class="section-title">資金費率排行</div>
+    <div class="panel">
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchFundingTab('high',this)">費率最高</button>
+        <button class="tab-btn" onclick="switchFundingTab('low',this)">費率最低</button>
+      </div>
+      <div class="tab-content active" id="tab-funding-high">
+        <table class="funding-table">
+          <thead><tr><th>幣種</th><th>費率</th><th>下次結算</th></tr></thead>
+          <tbody id="fundingHighBody"><tr><td colspan="3"><div class="skeleton"></div></td></tr></tbody>
+        </table>
+      </div>
+      <div class="tab-content" id="tab-funding-low">
+        <table class="funding-table">
+          <thead><tr><th>幣種</th><th>費率</th><th>下次結算</th></tr></thead>
+          <tbody id="fundingLowBody"><tr><td colspan="3"><div class="skeleton"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TradingView 技術分析 ── -->
+  <div class="col-third">
+    <div class="section-title">技術分析</div>
+    <div class="panel" style="height:380px;overflow:hidden;">
+      <div class="tradingview-widget-container" style="height:100%;">
+        <div class="tradingview-widget-container__widget" style="height:100%;"></div>
+        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js" async>
+        {
+          "interval": "1h",
+          "width": "100%",
+          "isTransparent": true,
+          "height": "100%",
+          "symbol": "BINANCE:BTCUSDT",
+          "showIntervalTabs": true,
+          "displayMode": "single",
+          "locale": "zh_TW",
+          "colorTheme": "light"
+        }
+        </script>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TradingView 市場概覽 ── -->
+  <div class="col-full">
+    <div class="section-title">加密貨幣市場概覽</div>
+    <div class="panel" style="height:400px;overflow:hidden;">
+      <div class="tradingview-widget-container" style="height:100%;">
+        <div class="tradingview-widget-container__widget" style="height:100%;"></div>
+        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-screener.js" async>
+        {
+          "width": "100%",
+          "height": "100%",
+          "defaultColumn": "overview",
+          "screener_type": "crypto_mkt",
+          "displayCurrency": "USD",
+          "colorTheme": "light",
+          "locale": "zh_TW",
+          "isTransparent": true
+        }
+        </script>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TradingView 加密貨幣熱力圖 ── -->
+  <div class="col-full">
+    <div class="section-title">加密貨幣熱力圖</div>
+    <div class="panel" style="height:500px;overflow:hidden;">
+      <div class="tradingview-widget-container" style="height:100%;">
+        <div class="tradingview-widget-container__widget" style="height:100%;"></div>
+        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-crypto-coins-heatmap.js" async>
+        {
+          "dataSource": "Crypto",
+          "blockSize": "market_cap_calc",
+          "blockColor": "change",
+          "locale": "zh_TW",
+          "symbolUrl": "",
+          "colorTheme": "light",
+          "hasTopBar": true,
+          "isDataSetEnabled": true,
+          "isZoomEnabled": true,
+          "hasSymbolTooltip": true,
+          "isMonoSize": false,
+          "width": "100%",
+          "height": "100%"
+        }
+        </script>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script>
+const SUPABASE_URL  = 'https://kldumnxdlgovaxtiszyn.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsZHVtbnhkbGdvdmF4dGlzenluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjIyNDgsImV4cCI6MjA5MzY5ODI0OH0.P_anfYpSV2tgCPIQ7uZDVBjUFY3UhfEXk9u3XjlzBHI';
+const SB_HEADERS    = { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON };
+const BITO_API      = 'https://web-production-f4735.up.railway.app';
+const BINANCE       = 'https://fapi.binance.com';
+
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+let oiChartInstance = null;
+
+// ── Init ──
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { window.location.href = 'login.html'; return; }
+
+  const { data: profile } = await sb.from('profiles').select('plan, is_direct_client, display_name').eq('id', session.user.id).single();
+  const plan = profile?.plan || 'free';
+  const isDirect = profile?.is_direct_client;
+  const hasAccess = plan !== 'free' || isDirect;
+
+  if (!hasAccess) { window.location.href = 'index.html'; return; }
+
+  // Badge
+  const badgeEl = document.getElementById('navBadge');
+  if (plan === 'admin')   { badgeEl.textContent = '系統管理員'; badgeEl.className = 'nav-badge master'; }
+  else if (plan === 'master') { badgeEl.textContent = '⚔️ 盟主'; badgeEl.className = 'nav-badge master'; }
+  else if (plan === 'ranger') { badgeEl.textContent = '🗡️ 遊俠'; badgeEl.className = 'nav-badge ranger'; }
+  else if (isDirect || plan === 'direct') { badgeEl.textContent = '⚔️ 會員'; badgeEl.className = 'nav-badge'; }
+  else { badgeEl.textContent = plan.toUpperCase(); badgeEl.className = 'nav-badge'; }
+
+  // Load all
+  loadMarketData();
+  loadAlerts();
+  loadHotList();
+  loadFundingRanking();
+  loadOI();
+
+  setInterval(loadMarketData, 30000);
+  setInterval(loadAlerts, 60000);
+  setInterval(loadHotList, 30000);
+}
+
+// ── 市場數據 ──
+async function loadMarketData() {
+  try {
+    const r = await fetch(`${BITO_API}/live-data?symbol=BTCUSDT`);
+    const d = await r.json();
+    const t = d.ticker || {};
+    const price = parseFloat(t.lastPrice), open = parseFloat(t.open);
+    const fmt = v => v.toLocaleString('en-US', {minimumFractionDigits:1, maximumFractionDigits:1});
+
+    if (price > 0) {
+      document.getElementById('btcPrice').textContent = '$' + fmt(price);
+      if (open > 0) {
+        const chg = ((price - open) / open) * 100;
+        const el = document.getElementById('btcChg');
+        el.textContent = (chg >= 0 ? '▲ +' : '▼ ') + Math.abs(chg).toFixed(2) + '% (24h)';
+        el.className = 'stat-sub ' + (chg >= 0 ? 'up' : 'dn');
+      }
+    }
+
+    const f = d.funding || {};
+    const rate = parseFloat(f.fundingRate);
+    if (!isNaN(rate)) {
+      const el = document.getElementById('fundingRate');
+      el.textContent = (rate >= 0 ? '+' : '') + (rate * 100).toFixed(4) + '%';
+      el.className = 'stat-val ' + (rate > 0 ? 'dn' : rate < 0 ? 'up' : '');
+      document.getElementById('fundingSub').textContent = '週期 ' + (f.fundingInterval || 8) + 'h';
+    }
+
+    const fg = d.fg || {};
+    if (fg.value) {
+      const v = parseInt(fg.value);
+      const el = document.getElementById('fgVal');
+      el.textContent = v;
+      el.className = 'stat-val ' + (v <= 25 ? 'dn' : v >= 75 ? 'up' : '');
+      document.getElementById('fgSub').textContent = fg.value_classification || '';
+    }
+
+    // 多空比
+    const ls = d.ls || {};
+    if (ls.longAccount) {
+      const lp = parseFloat(ls.longAccount) * 100;
+      const sp = parseFloat(ls.shortAccount) * 100;
+      const el = document.getElementById('lsRatio');
+      el.textContent = lp.toFixed(0) + '% / ' + sp.toFixed(0) + '%';
+      el.className = 'stat-val ' + (lp > sp ? 'up' : 'dn');
+      document.getElementById('lsSub').textContent = lp > sp ? '多方佔優' : '空方佔優';
+    }
+  } catch(e) {}
+}
+
+// ── BitoCat 快訊 ──
+async function loadAlerts() {
+  const tf  = document.getElementById('alertTfFilter').value;
+  const dir = document.getElementById('alertDirFilter').value;
+
+  let url = `${SUPABASE_URL}/rest/v1/bitocat_alerts?type=eq.tunnel&order=created_at.desc&limit=20`;
+  if (tf)  url += `&timeframe=eq.${tf}`;
+  if (dir) url += `&signal=eq.${dir}`;
+
+  try {
+    const r = await fetch(url, { headers: SB_HEADERS });
+    const data = await r.json();
+    const el = document.getElementById('alertList');
+    if (!Array.isArray(data) || data.length === 0) {
+      el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px;">尚無符合的快訊</div>';
+      return;
+    }
+    el.innerHTML = data.map(a => {
+      const isUp = (a.signal || '').toLowerCase() === 'upper';
+      const color = isUp ? 'var(--dn)' : 'var(--up)';
+      const icon  = isUp ? '▲' : '▼';
+      const t = new Date(a.created_at);
+      const ts = t.toLocaleDateString('zh-TW', {month:'numeric',day:'numeric'}) + ' ' +
+                 t.toLocaleTimeString('zh-TW', {hour:'2-digit',minute:'2-digit',hour12:false});
+      const price = a.price ? parseFloat(a.price).toLocaleString('en-US', {minimumFractionDigits:1,maximumFractionDigits:1}) : '—';
+      return `<div class="alert-item">
+        <div class="alert-dot" style="background:${color}"></div>
+        <div class="alert-info">
+          <div class="alert-signal" style="color:${color}">${icon} ${a.timeframe || ''} ${isUp ? '上軌觸及' : '下軌觸及'}</div>
+          <div class="alert-meta">${a.ticker || 'BTCUSDT'} · ${ts}</div>
+        </div>
+        <div class="alert-price">$${price}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {}
+}
+
+// ── 熱門合約 ──
+async function loadHotList() {
+  try {
+    const r = await fetch(`${BITO_API}/live-data?symbol=BTCUSDT`);
+    const j = await r.json();
+    const data = j.hot || [];
+    const el = document.getElementById('hotList');
+    if (!data.length) return;
+    el.innerHTML = data.map(item => {
+      const sym = (item.symbol||'').replace('USDT','');
+      const price = parseFloat(item.lastPrice), open = parseFloat(item.open);
+      const chg = open > 0 ? ((price-open)/open*100) : 0;
+      const col = chg >= 0 ? 'var(--up)' : 'var(--dn)';
+      const prStr = price >= 100
+        ? price.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})
+        : price.toLocaleString('en-US',{minimumFractionDigits:3,maximumFractionDigits:4});
+      return `<div class="hot-item">
+        <span class="hot-sym">${sym}</span>
+        <span class="hot-price">${prStr}</span>
+        <span class="hot-chg" style="color:${col}">${chg >= 0 ? '+' : ''}${chg.toFixed(2)}%</span>
+      </div>`;
+    }).join('');
+  } catch(e) {}
+}
+
+// ── OI 趨勢 ──
+async function loadOI() {
+  try {
+    const r = await fetch(`${BINANCE}/futures/data/openInterestHist?symbol=BTCUSDT&period=1h&limit=24`);
+    const data = await r.json();
+    if (!Array.isArray(data) || !data.length) return;
+
+    const labels = data.map(d => {
+      const t = new Date(d.timestamp);
+      return t.getHours() + ':00';
+    });
+    const values = data.map(d => parseFloat(d.sumOpenInterest));
+    const latest = values[values.length - 1];
+    const prev   = values[0];
+    const chg = ((latest - prev) / prev * 100).toFixed(2);
+
+    document.getElementById('oiSub').textContent =
+      `${(latest/1000).toFixed(1)}K BTC (${chg >= 0 ? '+' : ''}${chg}%)`;
+
+    const ctx = document.getElementById('oiChart').getContext('2d');
+    if (oiChartInstance) oiChartInstance.destroy();
+    oiChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          data: values,
+          borderColor: '#8b5e3c',
+          backgroundColor: 'rgba(139,94,60,.1)',
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: true,
+          tension: 0.4,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { display: false },
+          y: { display: false }
+        }
+      }
+    });
+  } catch(e) {}
+}
+
+// ── 資金費率排行 ──
+async function loadFundingRanking() {
+  const syms = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT','DOGEUSDT','ADAUSDT','LINKUSDT','AVAXUSDT','DOTUSDT','MATICUSDT','LTCUSDT'];
+  try {
+    const results = await Promise.all(syms.map(async s => {
+      const r = await fetch(`${BINANCE}/fapi/v1/fundingRate?symbol=${s}&limit=1`);
+      const d = await r.json();
+      return { symbol: s.replace('USDT',''), rate: d[0] ? parseFloat(d[0].fundingRate) : 0 };
+    }));
+    results.sort((a, b) => b.rate - a.rate);
+
+    const fmt = r => (r >= 0 ? '+' : '') + (r * 100).toFixed(4) + '%';
+    const color = r => r > 0 ? 'var(--dn)' : r < 0 ? 'var(--up)' : 'var(--muted)';
+
+    const renderRows = (rows) => rows.map(d => `
+      <tr>
+        <td style="font-weight:700">${d.symbol}</td>
+        <td style="color:${color(d.rate)};font-weight:600">${fmt(d.rate)}</td>
+        <td style="color:var(--muted)">每8小時</td>
+      </tr>`).join('');
+
+    document.getElementById('fundingHighBody').innerHTML = renderRows(results.slice(0, 6));
+    document.getElementById('fundingLowBody').innerHTML  = renderRows([...results].reverse().slice(0, 6));
+  } catch(e) {}
+}
+
+// ── Tab 切換 ──
+function switchFundingTab(tab, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(`tab-funding-${tab}`).classList.add('active');
+}
+
+init();
+</script>
+</body>
+</html>
