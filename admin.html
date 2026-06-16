@@ -374,7 +374,7 @@
       <span class="sidebar-badge" id="badge-vip" style="display:none">0</span>
     </div>
     <div class="sidebar-item" onclick="switchPanel('members')">
-      <span class="icon">👥</span> 直客列表
+      <span class="icon">👥</span> 會員列表
     </div>
     <div class="sidebar-item" onclick="switchPanel('recommend-master')">
       <span class="icon">🌟</span> 推薦新盟主
@@ -395,7 +395,7 @@
       <div class="grid-2" style="margin-bottom:20px;">
         <div class="stat-box">
           <div class="stat-num" id="statTotal">—</div>
-          <div class="stat-label">直客總數</div>
+          <div class="stat-label">會員總數</div>
         </div>
         <div class="stat-box">
           <div class="stat-num" id="statPending">—</div>
@@ -423,7 +423,7 @@
       <div class="card">
         <div class="card-title">✏️ 修改團隊名稱</div>
         <label class="field-label">新團隊名稱</label>
-        <input type="text" id="newTeamName" placeholder="例：毛哥鐵騎團" maxlength="30">
+        <input type="text" id="newTeamName" placeholder="例：比特鐵騎團" maxlength="30">
         <div style="font-size:12px;color:var(--text-muted);margin-top:-10px;margin-bottom:14px;">最多 30 個字元</div>
         <button class="btn btn-primary" onclick="saveTeamName()">💾 儲存名稱</button>
       </div>
@@ -432,7 +432,7 @@
     <!-- ── UID 審核 ── -->
     <div class="panel" id="panel-uid-review">
       <div class="page-title">UID 審核</div>
-      <div class="page-subtitle">審核直客提交的 Bitunix UID 綁定申請。</div>
+      <div class="page-subtitle">審核會員提交的 Bitunix UID 綁定申請。</div>
       <div class="card">
         <div class="card-title">⏳ 待審核 UID 申請</div>
         <div class="table-wrap">
@@ -457,7 +457,7 @@
     <!-- ── VIP 截圖審核 ── -->
     <div class="panel" id="panel-vip-review">
       <div class="page-title">VIP 截圖審核</div>
-      <div class="page-subtitle">審核直客上傳的 Bitunix VIP 等級截圖，核准後自動授予對應稱號（有效期 1 個月）。</div>
+      <div class="page-subtitle">審核會員上傳的 Bitunix VIP 等級截圖，核准後自動授予對應稱號（有效期 1 個月）。</div>
       <div class="card">
         <div class="card-title">⏳ 待審核 VIP 截圖</div>
         <div class="table-wrap">
@@ -499,10 +499,10 @@
       </div>
     </div>
 
-    <!-- ── 直客列表 ── -->
+    <!-- ── 會員列表 ── -->
     <div class="panel" id="panel-members">
-      <div class="page-title">直客列表</div>
-      <div class="page-subtitle">管理你底下的所有直客會員。</div>
+      <div class="page-title">會員列表</div>
+      <div class="page-subtitle">管理你底下的所有會員。</div>
       <div class="card">
         <div style="display:flex;gap:10px;margin-bottom:16px;">
           <input type="text" id="memberSearch" placeholder="搜尋姓名 / Email" style="margin-bottom:0;flex:1;" oninput="filterMembers()">
@@ -530,7 +530,7 @@
     <!-- ── 推薦新盟主 ── -->
     <div class="panel" id="panel-recommend-master">
       <div class="page-title">推薦新盟主</div>
-      <div class="page-subtitle">填入人選資料送出後，毛哥會進行最終審核。</div>
+      <div class="page-subtitle">填入人選資料送出後，系統管理員會進行最終審核。</div>
 
       <!-- 我底下的盟主 -->
       <div class="card">
@@ -837,7 +837,7 @@ async function loadMembers() {
 function renderMembers(members) {
   const tbody = document.getElementById('membersBody');
   if (!members.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="emoji">👥</div><p>尚無直客</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="emoji">👥</div><p>尚無會員</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = members.map(m => `
@@ -956,7 +956,7 @@ async function submitRecommendation() {
   const { error } = await sb.from('profiles').update(updates).eq('id', target.id);
   if (error) { showToast('推薦失敗：' + error.message, 'error'); return; }
 
-  showToast('🌟 推薦已送出，等待毛哥審核！', 'success');
+  showToast('🌟 推薦已送出，等待系統管理員審核！', 'success');
   document.getElementById('rec-name').value = '';
   document.getElementById('rec-bitunix-uid').value = '';
   document.getElementById('rec-email').value = '';
@@ -1079,7 +1079,7 @@ function showToast(msg, type = 'success') {
 
 // ── Helpers ──
 const RANK_MAP = {
-  miner:   ['⛏️ 礦工',  'rank-miner'],
+  miner:   ['⛏️ 布衣',  'rank-miner'],
   knight:  ['⚔️ 騎士',  'rank-knight'],
   wargod:  ['⚡ 戰神',  'rank-wargod'],
   wizard:  ['🔮 術士',  'rank-wizard'],
