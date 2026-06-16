@@ -352,7 +352,7 @@
     <!-- 付款表單 -->
     <div class="card">
       <div class="card-title">💳 付款資訊</div>
-      <div class="card-sub">填入優惠碼可享折扣（選填），確認後點下方付款按鈕跳轉綠界。</div>
+      <div class="card-sub">填入優惠碼可享折扣（選填），確認後點下方付款按鈕跳轉至付款頁。</div>
 
       <label class="field-label">盟主優惠碼（選填）</label>
       <div class="coupon-row">
@@ -382,7 +382,7 @@
       </div>
 
       <button class="btn-pay" id="payBtn" onclick="goCheckout()">
-        🔐 前往綠界付款
+        🔐 前往付款
       </button>
     </div>
 
@@ -395,7 +395,7 @@
       <div class="card-title">📋 填寫申請資料</div>
       <div class="card-sub">請填入付款後收到的訂單編號，以及你的 TradingView 帳號名稱，系統管理員將以此授權指標。</div>
 
-      <label class="field-label">綠界訂單編號（必填）</label>
+      <label class="field-label">訂單編號（必填）</label>
       <input type="text" id="tradeNoInput" placeholder="例：BITO20240616143022ABCD" maxlength="30">
 
       <label class="field-label">TradingView 帳號名稱（必填）</label>
@@ -468,7 +468,7 @@ async function init() {
   const { data: { session } } = await sb.auth.getSession();
   if (session) currentUserId = session.user.id;
 
-  // 檢查 URL 參數（綠界付款後回來）
+  // 檢查 URL 參數（付款後回來）
   const params = new URLSearchParams(window.location.search);
   const result = params.get('result');
   const tradeNo = params.get('no');
@@ -546,7 +546,7 @@ async function goCheckout() {
   } catch (e) {
     showToast('建立訂單失敗，請稍後再試', 'error');
     btn.disabled = false;
-    btn.innerHTML = '🔐 前往綠界付款';
+    btn.innerHTML = '🔐 前往付款';
   }
 }
 
