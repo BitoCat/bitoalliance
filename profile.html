@@ -325,6 +325,34 @@ body {
     <div class="msg" id="msgRank"></div>
   </div>
 
+<!-- Groq API Key -->
+<div class="card">
+  <div class="card-title">🤖 Groq API Key（AI 解讀功能）</div>
+  <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6;">
+    填入你的 Groq API Key，即可在幣種技術診斷頁面使用 AI 解讀功能。<br>
+    Key 僅儲存在你的帳號中，不會被其他人看到。<br>
+    <a href="https://console.groq.com" target="_blank" style="color:var(--accent);font-weight:600;">👉 點此申請免費 Groq API Key</a>
+    （用 Google 帳號即可註冊，完全免費）
+  </p>
+  <div style="background:#f0e8d8;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:12px;color:var(--muted);line-height:1.8;">
+    申請步驟：<br>
+    1. 前往 <strong>https://console.groq.com</strong> 用 Google 帳號註冊<br>
+    2. 右上角點 <strong>API Keys</strong> → <strong>Create API Key</strong><br>
+    3. 填名稱（例：比特聯盟），選 <strong>No expiration</strong>，勾選驗證後送出<br>
+    4. 複製 Key（格式：gsk_開頭）貼到下方儲存
+  </div>
+  <div class="form-group">
+    <label class="form-label">Groq API Key</label>
+    <div style="display:flex;gap:10px;">
+      <input class="form-input" type="password" id="groqKey" placeholder="gsk_xxxxxxxxxxxxxxxx" style="margin-bottom:0;flex:1;">
+      <button onclick="toggleGroqKey()" style="background:transparent;border:1px solid var(--border);border-radius:8px;padding:0 14px;cursor:pointer;color:var(--muted);font-size:13px;white-space:nowrap;" id="toggleGroqBtn">👁 顯示</button>
+    </div>
+    <div class="form-hint" style="margin-top:6px;" id="groqStatus"></div>
+  </div>
+  <button class="btn btn-primary" id="btnSaveGroq" onclick="saveGroqKey()">💾 儲存 Key</button>
+  <button class="btn btn-danger" id="btnClearGroq" onclick="clearGroqKey()" style="margin-left:10px;display:none;">🗑 刪除 Key</button>
+  <div class="msg" id="msgGroq"></div>
+</div>  
   <!-- 修改密碼 -->
   <div class="card">
     <div class="card-title">🔒 修改密碼</div>
