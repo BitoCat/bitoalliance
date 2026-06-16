@@ -225,7 +225,7 @@ body {
       <span id="infoPlan"><span class="plan-badge plan-free">免費會員</span></span>
     </div>
     <div class="info-row">
-      <span class="info-key">直客身份</span>
+      <span class="info-key">會員身份</span>
       <span class="info-val" id="infoDirect">載入中...</span>
     </div>
     <div class="info-row">
@@ -245,12 +245,12 @@ body {
     <div class="msg" id="msgName"></div>
   </div>
 
-  <!-- 申請直客 -->
+  <!-- 申請會員 -->
   <div class="card">
-    <div class="card-title">🎯 申請直客身份</div>
+    <div class="card-title">🎯 申請會員身份</div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6;">
       在 Bitunix 使用推薦碼 <strong style="color:var(--accent);">Pooc</strong> 開戶後，填入你的 Bitunix UID，
-      毛哥審核通過後即可享有 BitoCat 指標免費使用資格。
+      管理員審核通過後即可享有 BitoCat 指標免費使用資格。
     </p>
 
     <!-- 狀態顯示 -->
@@ -387,12 +387,12 @@ async function loadProfile() {
   const isDirect = profile.is_direct_client;
   let planHtml = '<span class="plan-badge plan-free">免費會員</span>';
   if (isDirect || plan === 'direct') {
-    planHtml = '<span class="plan-badge plan-direct">✅ 直客會員</span>';
+    planHtml = '<span class="plan-badge plan-direct">✅ 會員</span>';
   } else if (['tw','us','all'].includes(plan)) {
     planHtml = `<span class="plan-badge plan-paid">付費會員（${plan.toUpperCase()}）</span>`;
   }
   document.getElementById('infoPlan').innerHTML = planHtml;
-  document.getElementById('infoDirect').textContent = isDirect ? '已驗證直客身份' : '尚未申請';
+  document.getElementById('infoDirect').textContent = isDirect ? '已驗證會員身份' : '尚未申請';
 
   // UID 申請狀態
   renderUidStatus(profile.bitunix_uid, isDirect);
@@ -411,7 +411,7 @@ function renderUidStatus(uid, isDirect) {
     statusArea.innerHTML = `<div class="uid-status approved">
       <span style="font-size:20px;">✅</span>
       <div>
-        <div style="font-size:14px;font-weight:600;color:#1a5c30;">直客身份已驗證</div>
+        <div style="font-size:14px;font-weight:600;color:#1a5c30;">會員身份已驗證</div>
         <div style="font-size:12px;color:#2d7a45;margin-top:2px;">Bitunix UID：${uid || '—'}｜BitoCat 指標免費使用中</div>
       </div>
     </div>`;
@@ -421,14 +421,14 @@ function renderUidStatus(uid, isDirect) {
       <span style="font-size:20px;">⏳</span>
       <div>
         <div style="font-size:14px;font-weight:600;color:#7a6000;">審核中</div>
-        <div style="font-size:12px;color:#8a7000;margin-top:2px;">Bitunix UID：${uid}｜毛哥審核後即可使用</div>
+        <div style="font-size:12px;color:#8a7000;margin-top:2px;">Bitunix UID：${uid}｜管理員審核後即可使用</div>
       </div>
     </div>`;
     inputArea.style.display = 'none';
   } else {
     statusArea.innerHTML = `<div class="uid-status none">
       <span style="font-size:20px;">💡</span>
-      <div style="font-size:13px;color:var(--muted);">尚未申請直客身份，填入 Bitunix UID 即可提交</div>
+      <div style="font-size:13px;color:var(--muted);">尚未申請會員身份，填入 Bitunix UID 即可提交</div>
     </div>`;
     inputArea.style.display = '';
   }
