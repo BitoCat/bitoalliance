@@ -574,15 +574,19 @@ async function goCheckout() {
 
     if (!res.ok) throw new Error('建立訂單失敗');
 
-    // 後端回傳 HTML form，直接寫進 document 觸發送出
-    const html = await res.text();
-    document.open();
-    document.write(html);
-    document.close();
+    const data = await res.json();
+    if (data.html) {
+      const div = document.createElement('div');
+      div.innerHTML = data.html;
+      document.body.appendChild(div);
+      div.querySelector('form').submit();
+    } else {
+      throw new Error('回傳格式錯誤');
+    }
   } catch (e) {
     showToast('建立訂單失敗，請稍後再試', 'error');
     btn.disabled = false;
-    btn.innerHTML = '🔐 前往綠界付款';
+    btn.innerHTML = '🔐 前往付款';
   }
 }
 
