@@ -838,14 +838,8 @@ async function loadGroqKey() {
   if (!session) return;
   const { data } = await sb.from('profiles').select('groq_api_key').eq('id', session.user.id).single();
   userGroqKey = data?.groq_api_key || null;
-  // 根據是否有 Key 顯示對應 banner
-  if (userGroqKey) {
-    document.getElementById('aiBanner').style.display = 'flex';
-    document.getElementById('noKeyBanner').style.display = 'none';
-  } else {
-    document.getElementById('aiBanner').style.display = 'none';
-    document.getElementById('noKeyBanner').style.display = 'flex';
-  }
+  // 不切換 banner，永遠顯示 aiBanner
+  // noKeyBanner 只在按下按鈕且沒有 Key 時才顯示
 }
 
 async function runAI() {
@@ -854,11 +848,11 @@ async function runAI() {
   // 確認有 Key
   if (!userGroqKey) {
     document.getElementById('noKeyBanner').style.display = 'flex';
-    document.getElementById('aiBanner').style.display = 'none';
     document.getElementById('noKeyBanner').scrollIntoView({ behavior:'smooth' });
     return;
   }
 
+  document.getElementById('noKeyBanner').style.display = 'none';
   document.getElementById('aiResult').style.display = 'block';
   document.getElementById('aiContent').textContent = '🤖 AI 分析中，請稍候約10秒...';
   document.getElementById('aiBtn').disabled = true;
