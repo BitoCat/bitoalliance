@@ -261,9 +261,14 @@ body {
       <div class="form-group">
         <label class="form-label">Bitunix UID</label>
         <input class="form-input" type="text" id="bitunixUid" placeholder="請輸入你的 Bitunix UID">
-        <div class="form-hint">
-          Bitunix UID 可在 Bitunix App → 個人資料 → 用戶 ID 找到
-        </div>
+        <div class="form-hint">Bitunix UID 可在 Bitunix App → 個人資料 → 用戶 ID 找到</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">選擇你的盟主</label>
+        <select class="form-input" id="masterSelect" style="cursor:pointer;">
+          <option value="">載入中...</option>
+        </select>
+        <div class="form-hint">選擇邀請你加入的盟主，若無則選「比特聯盟官方」</div>
       </div>
       <button class="btn btn-accent" id="btnSubmitUid" onclick="submitUid()">提交申請</button>
       <div class="msg" id="msgUid"></div>
@@ -394,6 +399,8 @@ async function loadProfile() {
 
   // VIP 等級
   loadRank();
+  // 盟主清單
+  loadMasters();
 }
 
 function renderUidStatus(uid, isDirect) {
@@ -442,14 +449,41 @@ async function saveName() {
 // ── 提交 Bitunix UID ──
 async function submitUid() {
   const uid = document.getElementById('bitunixUid').value.trim();
+  const masterId = document.getElementById('masterSelect').value;
   if (!uid) { showMsg('msgUid', '請輸入 Bitunix UID', 'error'); return; }
+  if (!masterId) { showMsg('msgUid', '請選擇盟主', 'error'); return; }
   setLoading('btnSubmitUid', true, '提交申請');
   const { error } = await sb.from('profiles')
-    .upsert({ id: currentUser.id, bitunix_uid: uid }, { onConflict: 'id' });
+    .upsert({ id: currentUser.id, bitunix_uid: uid, master_id: masterId }, { onConflict: 'id' });
   setLoading('btnSubmitUid', false, '提交申請');
   if (error) { showMsg('msgUid', error.message, 'error'); return; }
-  showMsg('msgUid', '✅ 已提交！請等待毛哥審核', 'success');
+  // 同時建立 member_ranks pending 記錄
+  await sb.from('member_ranks').upsert({
+    user_id: currentUser.id,
+    rank: 'miner',
+    status: 'pending',
+    granted_by: masterId,
+  }, { onConflict: 'user_id' });
+  showMsg('msgUid', '✅ 已提交！請等待盟主審核', 'success');
   setTimeout(() => renderUidStatus(uid, false), 1000);
+}
+
+// 載入盟主清單
+async function loadMasters() {
+  const { data } = await sb.from('profiles')
+    .select('id, email, team_name, display_name')
+    .in('plan', ['master', 'admin'])
+    .order('team_name');
+  const sel = document.getElementById('masterSelect');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">-- 請選擇盟主 --</option>';
+  (data || []).forEach(m => {
+    const name = m.team_name || m.display_name || m.email;
+    const opt = document.createElement('option');
+    opt.value = m.id;
+    opt.textContent = name;
+    sel.appendChild(opt);
+  });
 }
 
 // ── 修改密碼 ──
