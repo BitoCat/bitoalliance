@@ -379,6 +379,9 @@
     <div class="sidebar-item" onclick="switchPanel('recommend-master')">
       <span class="icon">🌟</span> 推薦新盟主
     </div>
+    <div class="sidebar-item" onclick="switchPanel('referral')">
+      <span class="icon">🎟️</span> 我的優惠碼
+    </div>
   </aside>
 
   <!-- Main -->
@@ -582,6 +585,50 @@
       </div>
     </div>
 
+    <!-- ── 我的優惠碼 ── -->
+    <div class="panel" id="panel-referral">
+      <div class="page-title">我的優惠碼</div>
+      <div class="page-subtitle">將優惠碼分享給有興趣租用 BitoCat 指標的朋友，對方付款時輸入可折抵 $1,200。</div>
+
+      <!-- 優惠碼顯示 -->
+      <div class="card">
+        <div class="card-title">🎟️ 我的專屬優惠碼</div>
+        <div id="referralCodeDisplay">
+          <div class="loading">載入中…</div>
+        </div>
+      </div>
+
+      <!-- 推薦統計 -->
+      <div class="card">
+        <div class="card-title">📊 推薦統計</div>
+        <div class="grid-2" style="margin-bottom:0;">
+          <div class="stat-box">
+            <div class="stat-num" id="refStatCount">—</div>
+            <div class="stat-label">成功推薦次數</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num" id="refStatAmount">—</div>
+            <div class="stat-label">推薦折抵總金額</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 推薦紀錄 -->
+      <div class="card">
+        <div class="card-title">📋 推薦訂單紀錄</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>訂單編號</th><th>TradingView 帳號</th><th>金額</th><th>指標授權</th><th>時間</th></tr>
+            </thead>
+            <tbody id="refOrdersBody">
+              <tr><td colspan="5"><div class="loading">載入中…</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -638,6 +685,7 @@ function switchPanel(name) {
   document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
   document.getElementById('panel-' + name).classList.add('active');
   event.currentTarget.classList.add('active');
+  if (name === 'referral') loadReferralPanel();
 }
 
 // ── Overview ──
@@ -916,6 +964,92 @@ async function submitRecommendation() {
   document.getElementById('rec-team').value = '';
   await loadRecHistory();
   await loadSubMasters();
+}
+
+// ── Referral Code ──
+async function loadReferralPanel() {
+  const code = currentProfile.referral_code;
+  const display = document.getElementById('referralCodeDisplay');
+
+  if (!code) {
+    display.innerHTML = `
+      <div class="empty-state">
+        <div class="emoji">⏳</div>
+        <p>尚未配發優惠碼，請聯繫系統管理員。</p>
+      </div>`;
+    document.getElementById('refStatCount').textContent = '—';
+    document.getElementById('refStatAmount').textContent = '—';
+    document.getElementById('refOrdersBody').innerHTML =
+      `<tr><td colspan="5"><div class="empty-state"><div class="emoji">📭</div><p>尚無推薦紀錄</p></div></td></tr>`;
+    return;
+  }
+
+  // 顯示優惠碼
+  display.innerHTML = `
+    <div style="text-align:center;padding:16px 0;">
+      <div style="font-size:36px;font-weight:800;letter-spacing:4px;color:var(--accent);
+                  background:#f0e4d0;border:2px dashed var(--border);
+                  border-radius:10px;padding:16px 32px;display:inline-block;margin-bottom:12px;">
+        ${esc(code)}
+      </div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">
+        朋友在申請指標時輸入此碼，可折抵 <strong>$1,200</strong>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="copyCode('${esc(code)}')">📋 複製優惠碼</button>
+      <button class="btn btn-ghost btn-sm" style="margin-left:8px;" onclick="shareCode('${esc(code)}')">🔗 分享連結</button>
+    </div>`;
+
+  // 查詢推薦訂單
+  const { data: orders } = await sb.from('indicator_orders')
+    .select('merchant_trade_no, tv_username, amount, indicator_status, payment_status, created_at')
+    .eq('referred_by', currentUser.id)
+    .eq('payment_status', 'paid')
+    .order('created_at', { ascending: false });
+
+  const list = orders || [];
+  const totalCount = list.length;
+  const totalDiscount = totalCount * 1200;
+
+  document.getElementById('refStatCount').textContent = totalCount;
+  document.getElementById('refStatAmount').textContent = `$${totalDiscount.toLocaleString()}`;
+
+  const tbody = document.getElementById('refOrdersBody');
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="emoji">📭</div><p>尚無推薦紀錄</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(o => {
+    const grantBadge = o.indicator_status === 'granted'
+      ? '<span class="status-badge status-approved">🗡️ 已授權</span>'
+      : '<span class="status-badge status-pending">⏳ 待授權</span>';
+    return `<tr>
+      <td><code style="font-size:11px;">${esc(o.merchant_trade_no)}</code></td>
+      <td>${esc(o.tv_username || '（未填寫）')}</td>
+      <td>$${Number(o.amount).toLocaleString()}</td>
+      <td>${grantBadge}</td>
+      <td style="font-size:12px;color:var(--text-muted);">${fmtDate(o.created_at)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function copyCode(code) {
+  navigator.clipboard.writeText(code).then(() => {
+    showToast('✅ 優惠碼已複製！', 'success');
+  }).catch(() => {
+    showToast('請手動複製：' + code, 'error');
+  });
+}
+
+function shareCode(code) {
+  const url = `https://bitocat.github.io/bitoalliance/indicator.html`;
+  const text = `我在比特聯盟租用 BitoCat 指標，用我的優惠碼 ${code} 可以折抵 $1,200！\n申請連結：${url}`;
+  if (navigator.share) {
+    navigator.share({ title: 'BitoCat 指標優惠碼', text });
+  } else {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('✅ 分享文字已複製！', 'success');
+    });
+  }
 }
 
 // ── Auth ──
