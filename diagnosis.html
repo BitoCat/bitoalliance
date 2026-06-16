@@ -660,36 +660,76 @@ function calcRSI(closes, period=14) {
 function detectPatterns(closes, opens, highs, lows, n) {
   const patterns = [];
   const c = closes[n-1], o = opens[n-1], h = highs[n-1], l = lows[n-1];
-  const body = Math.abs(c-o);
-  const range = h-l;
+  const c1 = closes[n-2], o1 = opens[n-2], h1 = highs[n-2], l1 = lows[n-2];
+  const c2 = closes[n-3], o2 = opens[n-3];
+  const body  = Math.abs(c-o);
+  const range = h-l || 0.0001;
+  const upperShadow = h - Math.max(c,o);
+  const lowerShadow = Math.min(c,o) - l;
 
-  // 錘子線（看多）
-  if (range > 0 && (h-Math.max(c,o))/range < 0.1 && (Math.min(c,o)-l)/range > 0.6 && c > o)
-    patterns.push({ name:'🔨 錘子線', score:2 });
+  // 錘子線（看多）— 下影線長，上影線短，實體在上方
+  if (lowerShadow > body*2 && upperShadow < body*0.5 && range > 0)
+    patterns.push({ name:'🔨 錘子線（看多）', score:2 });
 
-  // 吞噬（看多）
-  if (n>=2 && c > opens[n-2] && o < closes[n-2] && closes[n-2] < opens[n-2])
+  // 倒錘子（看多）
+  if (upperShadow > body*2 && lowerShadow < body*0.5 && c > o && range > 0)
+    patterns.push({ name:'🔨 倒錘子（看多）', score:1 });
+
+  // 射擊之星（看空）— 上影線長，實體在下方
+  if (upperShadow > body*2 && lowerShadow < body*0.5 && c < o && range > 0)
+    patterns.push({ name:'⭐ 射擊之星（看空）', score:-2 });
+
+  // 上吊線（看空）
+  if (lowerShadow > body*2 && upperShadow < body*0.5 && c < o && range > 0)
+    patterns.push({ name:'🔻 上吊線（看空）', score:-1 });
+
+  // 看多吞噬
+  if (n>=2 && c > o && c1 < o1 && c >= o1 && o <= c1)
     patterns.push({ name:'📈 看多吞噬', score:2 });
 
-  // 射擊之星（看空）
-  if (range > 0 && (h-Math.max(c,o))/range > 0.6 && (Math.min(c,o)-l)/range < 0.1)
-    patterns.push({ name:'⭐ 射擊之星', score:-2 });
-
-  // 吞噬（看空）
-  if (n>=2 && c < opens[n-2] && o > closes[n-2] && closes[n-2] > opens[n-2])
+  // 看空吞噬
+  if (n>=2 && c < o && c1 > o1 && c <= o1 && o >= c1)
     patterns.push({ name:'📉 看空吞噬', score:-2 });
 
   // 長紅棒（看多）
-  if (c > o && body/range > 0.8 && range > 0)
-    patterns.push({ name:'🕯️ 長紅棒', score:1 });
+  if (c > o && body/range > 0.7)
+    patterns.push({ name:'🕯️ 長紅棒（看多）', score:1 });
 
   // 長黑棒（看空）
-  if (c < o && body/range > 0.8 && range > 0)
-    patterns.push({ name:'🕯️ 長黑棒', score:-1 });
+  if (c < o && body/range > 0.7)
+    patterns.push({ name:'🕯️ 長黑棒（看空）', score:-1 });
 
-  // 十字星（中性/反轉）
-  if (range > 0 && body/range < 0.1)
-    patterns.push({ name:'✛ 十字星', score:0 });
+  // 十字星（反轉警示）
+  if (body/range < 0.15 && range > 0)
+    patterns.push({ name:'✛ 十字星（反轉警示）', score:0 });
+
+  // 多方炮（連三陽）
+  if (n>=3 && c>o && c1>o1 && c2>o2 && c>c1 && c1>c2)
+    patterns.push({ name:'🚀 多方炮（看多）', score:3 });
+
+  // 空方炮（連三陰）
+  if (n>=3 && c<o && c1<o1 && c2<o2 && c<c1 && c1<c2)
+    patterns.push({ name:'💣 空方炮（看空）', score:-3 });
+
+  // 孕線（看多）
+  if (n>=2 && c1<o1 && c>o && c<o1 && o>c1)
+    patterns.push({ name:'🤰 孕線（看多）', score:1 });
+
+  // 早晨之星（看多，三根）
+  if (n>=3 && c2<o2 && Math.abs(c1-o1)/( h1-l1||1)<0.3 && c>o && c>c2)
+    patterns.push({ name:'🌅 早晨之星（看多）', score:2 });
+
+  // 黃昏之星（看空）
+  if (n>=3 && c2>o2 && Math.abs(c1-o1)/(h1-l1||1)<0.3 && c<o && c<c2)
+    patterns.push({ name:'🌇 黃昏之星（看空）', score:-2 });
+
+  // 若完全無型態，顯示當前K棒基本描述
+  if (patterns.length === 0) {
+    const bodyPct = (body/range*100).toFixed(0);
+    if (c > o) patterns.push({ name:`📊 陽棒（實體 ${bodyPct}%）`, score:0 });
+    else if (c < o) patterns.push({ name:`📊 陰棒（實體 ${bodyPct}%）`, score:0 });
+    else patterns.push({ name:'📊 十字線', score:0 });
+  }
 
   return patterns;
 }
