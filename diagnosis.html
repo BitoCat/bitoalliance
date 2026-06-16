@@ -184,57 +184,6 @@ body { background:var(--bg); font-family:-apple-system,'Helvetica Neue','PingFan
     </div>
   </div>
 
-  <!-- ── AI 解讀區塊（搜尋列下方，永遠顯示）── -->
-  <div style="margin-bottom:20px;">
-
-    <!-- 有 Key：顯示吸引人的按鈕 -->
-    <div id="aiBanner" style="display:flex;background:linear-gradient(135deg,#1a2a1a,#0d1a0d,#1a1008);border-radius:var(--radius);padding:24px 28px;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;border:1px solid rgba(74,122,106,.4);box-shadow:0 4px 24px rgba(0,0,0,.2);">
-      <div>
-        <div style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7ab8a4;margin-bottom:8px;text-transform:uppercase;">✨ 限會員專屬</div>
-        <div style="font-size:20px;font-weight:800;color:#f5e8d8;margin-bottom:6px;">🤖 AI 即時技術分析</div>
-        <div style="font-size:13px;color:#b0907a;line-height:1.6;">診斷完成後，讓 AI 解讀所有指標、給出<br>進場點、止損點、目標價與風險評估</div>
-      </div>
-      <div style="text-align:center;flex-shrink:0;">
-        <button id="aiBtn" onclick="runAI()" style="
-          padding:14px 32px;
-          background:linear-gradient(135deg,#4a7a6a,#2a5a4a);
-          color:#fff; border:none; border-radius:10px;
-          font-size:16px; font-weight:800; cursor:pointer;
-          box-shadow:0 4px 16px rgba(74,122,106,.5);
-          letter-spacing:.5px; transition:all .2s;
-          display:block; margin-bottom:8px;
-          animation: pulse 2s infinite;
-        ">⚡ 按此進行即時 AI 分析</button>
-        <div style="font-size:11px;color:#7a6050;">由 Groq llama-3.3-70b 提供支援</div>
-      </div>
-    </div>
-
-    <!-- 無 Key：引導設定 -->
-    <div id="noKeyBanner" style="display:none;background:linear-gradient(135deg,#1a1008,#2a1a08);border-radius:var(--radius);padding:20px 24px;flex-direction:row;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;border:1px solid rgba(212,168,67,.3);">
-      <div>
-        <div style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:6px;">🔑 設定 Groq Key，解鎖 AI 分析功能</div>
-        <div style="font-size:12px;color:#b0907a;line-height:1.6;">
-          免費申請 Groq API Key，即可讓 AI 即時解讀技術指標<br>
-          給出進場建議、止損點、目標價
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;flex-shrink:0;">
-        <a href="profile.html" style="padding:10px 18px;background:var(--accent);color:#fff;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap;">⚙️ 前往設定 Key</a>
-        <a href="https://console.groq.com" target="_blank" style="padding:10px 18px;background:rgba(212,168,67,.15);color:var(--gold);border:1px solid rgba(212,168,67,.4);border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap;">📖 申請教學</a>
-      </div>
-    </div>
-
-    <!-- AI 結果 -->
-    <div id="aiResult" style="display:none;margin-top:14px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);">
-      <div style="font-size:14px;font-weight:700;color:var(--accent);margin-bottom:14px;display:flex;align-items:center;gap:8px;">
-        🤖 AI 技術分析解讀
-        <span style="font-size:11px;font-weight:400;color:var(--muted);">by Groq llama-3.3-70b</span>
-        <button onclick="document.getElementById('aiResult').style.display='none'" style="margin-left:auto;background:transparent;border:1px solid var(--border);color:var(--muted);padding:3px 10px;border-radius:6px;cursor:pointer;font-size:12px;">✕ 關閉</button>
-      </div>
-      <div id="aiContent" style="font-size:14px;line-height:1.8;color:var(--text);white-space:pre-wrap;"></div>
-    </div>
-  </div>
-
   <style>
   @keyframes pulse {
     0%,100% { box-shadow: 0 4px 16px rgba(74,122,106,.5); }
@@ -266,6 +215,44 @@ body { background:var(--bg); font-family:-apple-system,'Helvetica Neue','PingFan
     <!-- 多時框技術評分 -->
     <div class="section-title" style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:12px;">多時框技術評分</div>
     <div class="tf-grid" id="tfGrid"></div>
+
+    <!-- ── AI 即時技術分析（診斷後才顯示）── -->
+    <div style="margin:20px 0;">
+      <!-- AI 按鈕 -->
+      <div id="aiBanner" style="background:linear-gradient(135deg,#1a2a1a,#0d1a0d,#1a1008);border-radius:var(--radius);padding:24px 28px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;border:1px solid rgba(74,122,106,.4);box-shadow:0 4px 24px rgba(0,0,0,.2);">
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7ab8a4;margin-bottom:8px;text-transform:uppercase;">✨ 限會員專屬</div>
+          <div style="font-size:20px;font-weight:800;color:#f5e8d8;margin-bottom:6px;">🤖 AI 即時技術分析</div>
+          <div style="font-size:13px;color:#b0907a;line-height:1.6;">讓 AI 解讀所有指標，給出進場點、止損點、目標價與風險評估</div>
+        </div>
+        <div style="text-align:center;flex-shrink:0;">
+          <button id="aiBtn" onclick="runAI()" style="padding:14px 32px;background:linear-gradient(135deg,#4a7a6a,#2a5a4a);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 4px 16px rgba(74,122,106,.5);letter-spacing:.5px;display:block;margin-bottom:8px;animation:pulse 2s infinite;">⚡ 按此進行即時 AI 分析</button>
+          <div style="font-size:11px;color:#7a6050;">由 Groq llama-3.3-70b 提供支援</div>
+        </div>
+      </div>
+
+      <!-- 無 Key 提示（按下按鈕後沒有 Key 才出現）-->
+      <div id="noKeyBanner" style="display:none;margin-top:12px;background:linear-gradient(135deg,#1a1008,#2a1a08);border-radius:var(--radius);padding:20px 24px;border:1px solid rgba(212,168,67,.3);">
+        <div style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:8px;">🔑 需要設定 Groq API Key 才能使用 AI 分析</div>
+        <div style="font-size:12px;color:#b0907a;line-height:1.7;margin-bottom:14px;">
+          Groq 完全免費，用 Google 帳號即可申請。申請後到帳號設定貼上 Key，即可使用 AI 分析功能。
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <a href="profile.html" style="padding:10px 18px;background:var(--accent);color:#fff;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap;">⚙️ 前往設定 Key</a>
+          <a href="https://console.groq.com" target="_blank" style="padding:10px 18px;background:rgba(212,168,67,.15);color:var(--gold);border:1px solid rgba(212,168,67,.4);border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap;">📖 免費申請 Groq Key</a>
+        </div>
+      </div>
+
+      <!-- AI 分析結果 -->
+      <div id="aiResult" style="display:none;margin-top:12px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);">
+        <div style="font-size:14px;font-weight:700;color:var(--accent);margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+          🤖 AI 技術分析解讀
+          <span style="font-size:11px;font-weight:400;color:var(--muted);">by Groq llama-3.3-70b</span>
+          <button onclick="document.getElementById('aiResult').style.display='none'" style="margin-left:auto;background:transparent;border:1px solid var(--border);color:var(--muted);padding:3px 10px;border-radius:6px;cursor:pointer;font-size:12px;">✕ 關閉</button>
+        </div>
+        <div id="aiContent" style="font-size:14px;line-height:1.8;color:var(--text);white-space:pre-wrap;"></div>
+      </div>
+    </div>
 
     <!-- 詳細指標 -->
     <div class="section-title" style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:12px;">指標詳情（1h）</div>
