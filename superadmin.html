@@ -495,7 +495,7 @@
     <!-- ── 比特聯盟 Telegram 會員管理 ── -->
     <div class="panel" id="panel-bito-members">
       <div class="page-title">Telegram 會員管理</div>
-      <div class="page-subtitle">管理可使用 @Boss1688Bot 進入比特聯盟頻道的會員，包含遊俠、直客、國外客戶。</div>
+      <div class="page-subtitle">管理可使用 @Boss1688Bot 進入比特聯盟頻道的會員，包含遊俠、會員、國外客戶。</div>
 
       <!-- 新增會員 -->
       <div class="card">
@@ -513,13 +513,13 @@
         <label class="field-label">類型</label>
         <select id="bito-type" style="margin-bottom:14px;">
           <option value="bitoalliance">遊俠（付年費）</option>
-          <option value="direct">直客（跟隨盟主）</option>
+          <option value="direct">會員（跟隨盟主）</option>
           <option value="foreign">國外客戶（PayPal / 支付寶）</option>
         </select>
         <label class="field-label">有效天數（預設 365 天）</label>
         <input type="text" id="bito-days" placeholder="365" value="365" style="margin-bottom:14px;">
         <label class="field-label">備註（可選）</label>
-        <input type="text" id="bito-note" placeholder="例：PayPal 收款確認、直客推薦人等">
+        <input type="text" id="bito-note" placeholder="例：PayPal 收款確認、會員推薦人等">
         <button class="btn btn-gold" onclick="addBitoMember()">📨 新增入群資格</button>
         <div id="addMemberResult" style="margin-top:12px;font-size:13px;"></div>
       </div>
@@ -606,7 +606,7 @@ async function init() {
 
   const { data: profile } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
   if (!profile || profile.plan !== 'admin') {
-    alert('此頁面僅限超級管理員使用');
+    alert('此頁面僅限系統管理員使用');
     window.location.href = 'index.html';
     return;
   }
@@ -1186,7 +1186,7 @@ function renderBitoMembers(rows) {
   const now = new Date();
   tbody.innerHTML = rows.map(m => {
     const isActive = m.is_active && new Date(m.expires_at) > now;
-    const typeMap = { bitoalliance:'🗡️ 遊俠', direct:'⚔️ 直客', foreign:'🌏 國外客戶' };
+    const typeMap = { bitoalliance:'🗡️ 遊俠', direct:'⚔️ 會員', foreign:'🌏 國外客戶' };
     const typeLabel = typeMap[m.plan] || m.plan || '—';
     const tgLabel = m.telegram_username
       ? `<a href="https://t.me/${m.telegram_username}" target="_blank" style="color:var(--accent);">@${esc(m.telegram_username)}</a>`
