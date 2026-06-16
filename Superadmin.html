@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>比特聯盟 · 超級管理員</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg: #edd4be;
+    --bg-card: #f5e8d8;
+    --bg-dark: #1a1008;
+    --accent: #8b5e3c;
+    --accent-light: #c49a6c;
+    --accent-gold: #d4a843;
+    --text: #2a1f14;
+    --text-muted: #7a5c42;
+    --border: #d4b896;
+    --success: #5a8a5a;
+    --danger: #a84444;
+    --warn: #c47a1e;
+    --radius: 10px;
+    --shadow: 0 2px 12px rgba(42,31,20,.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Helvetica Neue','PingFang TC','Microsoft JhengHei',sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Top Nav ── */
+  .topnav {
+    background: var(--bg-dark);
+    color: #f5e8d8;
+    height: 54px;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 14px;
+    flex-shrink: 0;
+  }
+  .topnav .logo { font-size: 18px; font-weight: 700; letter-spacing: 1px; color: var(--accent-gold); }
+  .topnav .role-badge {
+    background: linear-gradient(90deg,#d4a843,#e8c060);
+    color: #1a1008;
+    font-size: 11px; font-weight: 700;
+    padding: 3px 10px; border-radius: 20px; letter-spacing: .5px;
+  }
+  .topnav .spacer { flex: 1; }
+  .topnav .user-label { font-size: 13px; color: #cbb898; }
+  .topnav button.logout {
+    background: transparent; border: 1px solid #555; color: #aaa;
+    padding: 5px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all .2s;
+  }
+  .topnav button.logout:hover { border-color: var(--accent-light); color: #f5e8d8; }
+
+  /* ── Layout ── */
+  .layout { display: flex; flex: 1; overflow: hidden; }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 220px; background: #e0c4a8;
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    padding: 20px 0; flex-shrink: 0;
+  }
+  .sidebar-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+    color: var(--text-muted); padding: 0 18px 8px; text-transform: uppercase;
+  }
+  .sidebar-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 18px; cursor: pointer;
+    color: var(--text-muted); font-size: 14px;
+    border-left: 3px solid transparent; transition: all .15s;
+  }
+  .sidebar-item:hover { background: rgba(139,94,60,.08); color: var(--text); }
+  .sidebar-item.active { background: rgba(139,94,60,.13); border-left-color: var(--accent); color: var(--accent); font-weight: 600; }
+  .sidebar-item .icon { font-size: 17px; width: 22px; text-align: center; }
+  .sidebar-badge {
+    margin-left: auto; background: var(--danger); color: #fff;
+    font-size: 10px; font-weight: 700; padding: 1px 6px;
+    border-radius: 10px; min-width: 18px; text-align: center;
+  }
+
+  /* ── Main ── */
+  .main { flex: 1; overflow-y: auto; padding: 28px 32px; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .page-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .page-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
+
+  /* ── Card ── */
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 22px 24px;
+    margin-bottom: 20px; box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-size: 14px; font-weight: 700; color: var(--accent);
+    margin-bottom: 16px; display: flex; align-items: center; gap: 6px;
+  }
+
+  /* ── Stats ── */
+  .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 22px; }
+  @media(max-width:800px){ .stats-grid { grid-template-columns: repeat(2,1fr); } }
+  .stat-box {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px 16px; text-align: center;
+  }
+  .stat-num { font-size: 30px; font-weight: 700; color: var(--accent); }
+  .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 3px; letter-spacing: .3px; }
+
+  /* ── Table ── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    background: #dcc4a8; color: var(--text-muted);
+    font-size: 11px; font-weight: 700; letter-spacing: .5px;
+    text-align: left; padding: 9px 12px; white-space: nowrap;
+  }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(139,94,60,.04); }
+
+  /* ── Form ── */
+  label.field-label {
+    display: block; font-size: 12px; font-weight: 600;
+    color: var(--text-muted); margin-bottom: 5px; letter-spacing: .3px;
+  }
+  input[type=text], input[type=email], select, textarea {
+    width: 100%; padding: 9px 12px;
+    border: 1px solid var(--border); border-radius: 7px;
+    background: #fffaf5; color: var(--text);
+    font-size: 14px; font-family: inherit;
+    outline: none; transition: border .2s; margin-bottom: 14px;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 70px; }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 20px; border-radius: 7px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    border: none; transition: opacity .15s, transform .1s;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: #7a5235; }
+  .btn-gold { background: var(--accent-gold); color: #2a1f14; }
+  .btn-gold:hover:not(:disabled) { background: #c09930; }
+  .btn-success { background: var(--success); color: #fff; }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+  .btn-ghost:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .btn-sm { padding: 5px 12px; font-size: 12px; }
+
+  /* ── Badges ── */
+  .rank-badge {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; white-space: nowrap;
+  }
+  .rank-miner   { background:#e8e0d4;color:#7a6a54; }
+  .rank-knight  { background:#d4e0f0;color:#3a5a8a; }
+  .rank-wargod  { background:#f0dcd4;color:#8a4a3a; }
+  .rank-wizard  { background:#e4d4f0;color:#6a3a8a; }
+  .rank-king    { background:#f0e8c4;color:#8a6a14; }
+  .rank-elder   { background:#d4f0e4;color:#2a7a5a; }
+  .rank-master  { background:#ffd4a0;color:#8a4a00; }
+  .rank-supreme { background:linear-gradient(90deg,#ffd700,#ffa500);color:#2a1f14; }
+
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 700;
+  }
+  .s-pending  { background:#f0e4c4;color:#8a6214; }
+  .s-approved { background:#d4f0d4;color:#2a7a2a; }
+  .s-rejected { background:#f0d4d4;color:#8a2a2a; }
+  .s-recommended { background:#d4e4f0;color:#2a4a8a; }
+  .s-master { background:linear-gradient(90deg,#ffd70033,#ffa50033);color:#8a6200;border:1px solid #d4a843; }
+
+  /* ── Timeline ── */
+  .timeline { list-style: none; padding: 0; position: relative; }
+  .timeline::before {
+    content: ''; position: absolute; left: 14px; top: 0; bottom: 0;
+    width: 2px; background: var(--border);
+  }
+  .timeline-item { display: flex; gap: 16px; padding-bottom: 20px; position: relative; }
+  .timeline-dot {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--bg-card); border: 2px solid var(--border);
+    flex-shrink: 0; display: flex; align-items: center;
+    justify-content: center; font-size: 13px; z-index: 1;
+  }
+  .timeline-dot.approved { border-color: var(--success); background: #d4f0d4; }
+  .timeline-dot.rejected { border-color: var(--danger); background: #f0d4d4; }
+  .timeline-dot.pending  { border-color: var(--warn); background: #f0e4c4; }
+  .timeline-body { flex: 1; padding-top: 3px; }
+  .timeline-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .timeline-meta { font-size: 11px; color: var(--text-muted); }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.7); z-index: 9999;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--bg-card); border-radius: var(--radius);
+    padding: 28px; max-width: 480px; width: 90%;
+    box-shadow: 0 8px 40px rgba(0,0,0,.4);
+  }
+  .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+  .modal-img-full { max-width:90vw;max-height:90vh;border-radius:8px; }
+  .modal-close-btn {
+    position: absolute; top: 16px; right: 16px;
+    background: #fff; border: none; border-radius: 50%;
+    width: 36px; height: 36px; font-size: 18px; cursor: pointer;
+  }
+
+  /* ── Toast ── */
+  .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 8888; display: flex; flex-direction: column; gap: 8px; }
+  .toast {
+    background: var(--bg-dark); color: #f5e8d8;
+    padding: 12px 20px; border-radius: 8px;
+    font-size: 13px; max-width: 280px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.3);
+    animation: slideIn .25s ease;
+  }
+  .toast.success { border-left: 3px solid var(--success); }
+  .toast.error   { border-left: 3px solid var(--danger); }
+  @keyframes slideIn { from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none} }
+
+  .loading { text-align:center;padding:30px;color:var(--text-muted);font-size:14px; }
+  .empty-state { text-align:center;padding:36px 20px;color:var(--text-muted); }
+  .empty-state .emoji { font-size:34px;margin-bottom:8px; }
+  .empty-state p { font-size:14px; }
+
+  .filter-row { display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap; }
+  .filter-row input, .filter-row select { margin-bottom:0;flex:1;min-width:140px; }
+
+  .screenshot-preview {
+    width:80px;height:56px;object-fit:cover;
+    border-radius:5px;border:1px solid var(--border);cursor:pointer;
+  }
+
+  code { background:#e8d8c4;padding:2px 7px;border-radius:4px;font-size:12px; }
+</style>
+</head>
+<body>
+
+<!-- Top Nav -->
+<nav class="topnav">
+  <span class="logo">⚔️ 比特聯盟</span>
+  <span class="role-badge">✨ 超級管理員</span>
+  <span class="user-label" id="navName">毛哥</span>
+  <span class="spacer"></span>
+  <button class="logout" onclick="handleLogout()">登出</button>
+</nav>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-label">總覽</div>
+    <div class="sidebar-item active" onclick="switchPanel('overview',this)">
+      <span class="icon">📊</span> 數據總覽
+    </div>
+    <div class="sidebar-label" style="margin-top:12px;">審核</div>
+    <div class="sidebar-item" onclick="switchPanel('master-review',this)">
+      <span class="icon">🌟</span> 盟主申請審核
+      <span class="sidebar-badge" id="badge-master" style="display:none">0</span>
+    </div>
+    <div class="sidebar-item" onclick="switchPanel('vip-overview',this)">
+      <span class="icon">👑</span> 全體 VIP 申請
+      <span class="sidebar-badge" id="badge-vip" style="display:none">0</span>
+    </div>
+    <div class="sidebar-label" style="margin-top:12px;">管理</div>
+    <div class="sidebar-item" onclick="switchPanel('all-members',this)">
+      <span class="icon">👥</span> 所有會員
+    </div>
+    <div class="sidebar-item" onclick="switchPanel('masters-list',this)">
+      <span class="icon">⚔️</span> 盟主列表
+    </div>
+    <div class="sidebar-label" style="margin-top:12px;">紀錄</div>
+    <div class="sidebar-item" onclick="switchPanel('activity',this)">
+      <span class="icon">📋</span> 活動時間序
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- ── 數據總覽 ── -->
+    <div class="panel active" id="panel-overview">
+      <div class="page-title">數據總覽</div>
+      <div class="page-subtitle">比特聯盟整體會員狀況一覽</div>
+
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-box"><div class="stat-num" id="s-total">—</div><div class="stat-label">總會員數</div></div>
+        <div class="stat-box"><div class="stat-num" id="s-masters">—</div><div class="stat-label">現任盟主數</div></div>
+        <div class="stat-box"><div class="stat-num" id="s-pending-master">—</div><div class="stat-label">盟主待審核</div></div>
+        <div class="stat-box"><div class="stat-num" id="s-pending-vip">—</div><div class="stat-label">VIP 待審核</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">⚔️ 各盟主直客統計</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>盟主</th><th>團隊名稱</th><th>直客數</th><th>待審 VIP</th><th>操作</th></tr></thead>
+            <tbody id="masterStatsBody"><tr><td colspan="5"><div class="loading">載入中…</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 盟主申請審核 ── -->
+    <div class="panel" id="panel-master-review">
+      <div class="page-title">盟主申請審核</div>
+      <div class="page-subtitle">審核各盟主推薦的新盟主人選，核准後對方帳號升級為 plan=master。</div>
+      <div class="card">
+        <div class="card-title">⏳ 待審核（recommended）</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>申請人 Email</th><th>顯示名稱</th><th>推薦盟主</th><th>建議團隊名</th><th>申請時間</th><th>操作</th></tr>
+            </thead>
+            <tbody id="masterPendingBody"><tr><td colspan="6"><div class="loading">載入中…</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 近期已處理</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Email</th><th>狀態</th><th>推薦人</th><th>處理時間</th></tr></thead>
+            <tbody id="masterHistoryBody"><tr><td colspan="4"><div class="loading">載入中…</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 全體 VIP 申請 ── -->
+    <div class="panel" id="panel-vip-overview">
+      <div class="page-title">全體 VIP 申請</div>
+      <div class="page-subtitle">所有會員的 VIP 截圖申請，含各盟主轄下。</div>
+      <div class="card">
+        <div class="filter-row">
+          <select id="vipStatusFilter" onchange="loadAllVip()">
+            <option value="pending">⏳ 待審核</option>
+            <option value="approved">✅ 已核准</option>
+            <option value="rejected">❌ 已拒絕</option>
+          </select>
+          <input type="text" id="vipSearch" placeholder="搜尋 Email…" oninput="filterVipTable()">
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>會員</th><th>Bitunix UID</th><th>所屬盟主</th><th>申請稱號</th><th>截圖</th><th>狀態</th><th>時間</th></tr>
+            </thead>
+            <tbody id="allVipBody"><tr><td colspan="7"><div class="loading">載入中…</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 所有會員 ── -->
+    <div class="panel" id="panel-all-members">
+      <div class="page-title">所有會員</div>
+      <div class="page-subtitle">搜尋、查看、修改所有已註冊會員。</div>
+      <div class="card">
+        <div class="filter-row">
+          <input type="text" id="memberSearch" placeholder="搜尋 Email / 名稱…" oninput="filterMemberTable()">
+          <select id="memberPlanFilter" onchange="filterMemberTable()">
+            <option value="">所有方案</option>
+            <option value="free">free</option>
+            <option value="tw">tw</option>
+            <option value="us">us</option>
+            <option value="all">all</option>
+            <option value="master">master</option>
+            <option value="admin">admin</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>顯示名稱</th><th>Email</th><th>方案</th><th>所屬盟主</th><th>Bitunix UID</th><th>操作</th></tr>
+            </thead>
+            <tbody id="allMembersBody"><tr><td colspan="6"><div class="loading">載入中…</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 盟主列表 ── -->
+    <div class="panel" id="panel-masters-list">
+      <div class="page-title">盟主列表</div>
+      <div class="page-subtitle">現任所有盟主，可手動升降級。</div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>盟主</th><th>Email</th><th>團隊名稱</th><th>直客數</th><th>加入時間</th><th>操作</th></tr></thead>
+            <tbody id="mastersListBody"><tr><td colspan="6"><div class="loading">載入中…</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 活動時間序 ── -->
+    <div class="panel" id="panel-activity">
+      <div class="page-title">活動時間序</div>
+      <div class="page-subtitle">所有 VIP 申請與盟主審核的時間軸紀錄。</div>
+      <div class="card">
+        <div class="filter-row">
+          <select id="actTypeFilter" onchange="loadActivity()">
+            <option value="all">所有類型</option>
+            <option value="vip">VIP 截圖</option>
+            <option value="master">盟主申請</option>
+          </select>
+        </div>
+        <ul class="timeline" id="activityTimeline">
+          <li><div class="loading">載入中…</div></li>
+        </ul>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Edit Member Modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-title">✏️ 編輯會員</div>
+    <input type="hidden" id="edit-uid">
+    <label class="field-label">顯示名稱</label>
+    <input type="text" id="edit-display-name">
+    <label class="field-label">方案（plan）</label>
+    <select id="edit-plan">
+      <option value="free">free</option>
+      <option value="tw">tw</option>
+      <option value="us">us</option>
+      <option value="all">all</option>
+      <option value="direct">direct</option>
+      <option value="master">master</option>
+      <option value="admin">admin</option>
+    </select>
+    <label class="field-label">Bitunix UID</label>
+    <input type="text" id="edit-bitunix-uid">
+    <div style="display:flex;gap:10px;margin-top:6px;">
+      <button class="btn btn-primary" onclick="saveMemberEdit()">💾 儲存</button>
+      <button class="btn btn-ghost" onclick="closeEditModal()">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- Image Modal -->
+<div class="modal-overlay" id="imgModal" onclick="closeImgModal()">
+  <button class="modal-close-btn" onclick="closeImgModal()">✕</button>
+  <img class="modal-img-full" id="modalImg" src="" alt="截圖">
+</div>
+
+<!-- Toast -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+const SUPABASE_URL = 'https://kldumnxdlgovaxtiszyn.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsZHVtbnhkbGdvdmF4dGlzenluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjIyNDgsImV4cCI6MjA5MzY5ODI0OH0.P_anfYpSV2tgCPIQ7uZDVBjUFY3UhfEXk9u3XjlzBHI';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+let currentUser = null;
+let allMembersCache = [];
+let allVipCache = [];
+let mastersCache = [];
+
+// ── Init ──
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { window.location.href = 'login.html'; return; }
+  currentUser = session.user;
+
+  const { data: profile } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+  if (!profile || profile.plan !== 'admin') {
+    alert('此頁面僅限超級管理員使用');
+    window.location.href = 'index.html';
+    return;
+  }
+  document.getElementById('navName').textContent = profile.display_name || '毛哥';
+  await loadOverview();
+}
+
+// ── Panel Switch ──
+function switchPanel(name, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  el.classList.add('active');
+  if (name === 'master-review') loadMasterReview();
+  if (name === 'vip-overview') loadAllVip();
+  if (name === 'all-members') loadAllMembers();
+  if (name === 'masters-list') loadMastersList();
+  if (name === 'activity') loadActivity();
+}
+
+// ── Overview ──
+async function loadOverview() {
+  const [
+    { count: total },
+    { data: masters },
+    { count: pendingMaster },
+    { count: pendingVip }
+  ] = await Promise.all([
+    sb.from('profiles').select('id', { count: 'exact', head: true }),
+    sb.from('profiles').select('id, email, display_name, team_name, updated_at').eq('plan', 'master'),
+    sb.from('profiles').select('id', { count: 'exact', head: true }).eq('master_status', 'recommended'),
+    sb.from('member_ranks').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+  ]);
+
+  document.getElementById('s-total').textContent = total ?? '—';
+  document.getElementById('s-masters').textContent = masters?.length ?? '—';
+  document.getElementById('s-pending-master').textContent = pendingMaster ?? '—';
+  document.getElementById('s-pending-vip').textContent = pendingVip ?? '—';
+
+  mastersCache = masters || [];
+
+  if (pendingMaster > 0) {
+    const b = document.getElementById('badge-master');
+    b.textContent = pendingMaster; b.style.display = 'inline-block';
+  }
+  if (pendingVip > 0) {
+    const b = document.getElementById('badge-vip');
+    b.textContent = pendingVip; b.style.display = 'inline-block';
+  }
+
+  // Per-master stats
+  const tbody = document.getElementById('masterStatsBody');
+  if (!masters || !masters.length) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="emoji">🏯</div><p>尚無盟主</p></div></td></tr>`;
+    return;
+  }
+  // Get member counts per master
+  const rows = await Promise.all(masters.map(async m => {
+    const [{ count: memberCount }, { count: vipPending }] = await Promise.all([
+      sb.from('profiles').select('id', { count: 'exact', head: true }).eq('master_id', m.id),
+      sb.from('member_ranks').select('id', { count: 'exact', head: true }).eq('status', 'pending').eq('granted_by', m.id),
+    ]);
+    return { ...m, memberCount, vipPending };
+  }));
+
+  tbody.innerHTML = rows.map(m => `
+    <tr>
+      <td>${esc(m.display_name || '—')}</td>
+      <td>${esc(m.team_name || '（未設定）')}</td>
+      <td><strong>${m.memberCount ?? 0}</strong></td>
+      <td>${m.vipPending > 0 ? `<span style="color:var(--danger);font-weight:700">${m.vipPending}</span>` : '0'}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="goToMasterMembers('${m.id}')">查看直客</button></td>
+    </tr>
+  `).join('');
+}
+
+function goToMasterMembers(masterId) {
+  document.getElementById('memberSearch').value = '';
+  switchPanel('all-members', document.querySelector('[onclick*="all-members"]'));
+  loadAllMembers(masterId);
+}
+
+// ── Master Review ──
+async function loadMasterReview() {
+  // Pending
+  const { data: pending } = await sb.from('profiles')
+    .select('id, email, display_name, team_name, updated_at, parent_id')
+    .eq('master_status', 'recommended')
+    .order('updated_at', { ascending: false });
+
+  const tbody = document.getElementById('masterPendingBody');
+  if (!pending || !pending.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="emoji">✅</div><p>沒有待審核的盟主申請</p></div></td></tr>`;
+  } else {
+    // Fetch recommender names
+    const parentIds = [...new Set(pending.map(p => p.parent_id).filter(Boolean))];
+    let parentMap = {};
+    if (parentIds.length) {
+      const { data: parents } = await sb.from('profiles').select('id, email, display_name').in('id', parentIds);
+      (parents || []).forEach(p => parentMap[p.id] = p);
+    }
+    tbody.innerHTML = pending.map(m => {
+      const rec = parentMap[m.parent_id];
+      return `<tr>
+        <td>${esc(m.email)}</td>
+        <td>${esc(m.display_name || '—')}</td>
+        <td>${rec ? esc(rec.display_name || rec.email) : '—'}</td>
+        <td>${esc(m.team_name || '—')}</td>
+        <td style="font-size:12px;color:var(--text-muted)">${fmtDate(m.updated_at)}</td>
+        <td style="display:flex;gap:6px;padding-top:8px;">
+          <button class="btn btn-success btn-sm" onclick="reviewMaster('${m.id}','approved')">✅ 核准</button>
+          <button class="btn btn-danger btn-sm" onclick="reviewMaster('${m.id}','rejected')">❌ 拒絕</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // History
+  const { data: history } = await sb.from('profiles')
+    .select('email, master_status, updated_at, parent_id')
+    .in('master_status', ['approved', 'rejected'])
+    .order('updated_at', { ascending: false })
+    .limit(30);
+
+  const histTbody = document.getElementById('masterHistoryBody');
+  if (!history || !history.length) {
+    histTbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><div class="emoji">📭</div><p>尚無紀錄</p></div></td></tr>`;
+  } else {
+    const pIds = [...new Set(history.map(h => h.parent_id).filter(Boolean))];
+    let pMap = {};
+    if (pIds.length) {
+      const { data: ps } = await sb.from('profiles').select('id, display_name, email').in('id', pIds);
+      (ps||[]).forEach(p => pMap[p.id] = p);
+    }
+    histTbody.innerHTML = history.map(h => {
+      const rec = pMap[h.parent_id];
+      return `<tr>
+        <td>${esc(h.email)}</td>
+        <td>${masterStatusBadge(h.master_status)}</td>
+        <td>${rec ? esc(rec.display_name || rec.email) : '—'}</td>
+        <td style="font-size:12px;color:var(--text-muted)">${fmtDate(h.updated_at)}</td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+async function reviewMaster(userId, decision) {
+  const updates = { master_status: decision };
+  if (decision === 'approved') updates.plan = 'master';
+  const { error } = await sb.from('profiles').update(updates).eq('id', userId);
+  if (error) { showToast('操作失敗：' + error.message, 'error'); return; }
+  showToast(decision === 'approved' ? '🎉 已核准！對方已升級為盟主' : '❌ 已拒絕', decision === 'approved' ? 'success' : 'error');
+  await loadMasterReview();
+  await loadOverview();
+}
+
+// ── All VIP ──
+async function loadAllVip() {
+  const status = document.getElementById('vipStatusFilter').value;
+  const { data } = await sb.from('member_ranks')
+    .select('id, rank, status, screenshot_path, created_at, updated_at, user_id, granted_by, profiles!user_id(email, display_name, bitunix_uid)')
+    .eq('status', status)
+    .order('created_at', { ascending: false })
+    .limit(100);
+
+  allVipCache = data || [];
+
+  // Fetch master names
+  const masterIds = [...new Set((data||[]).map(r => r.granted_by).filter(Boolean))];
+  let masterMap = {};
+  if (masterIds.length) {
+    const { data: ms } = await sb.from('profiles').select('id, display_name, email').in('id', masterIds);
+    (ms||[]).forEach(m => masterMap[m.id] = m);
+  }
+
+  allVipCache = allVipCache.map(r => ({ ...r, masterInfo: masterMap[r.granted_by] }));
+  renderVipTable(allVipCache);
+}
+
+function renderVipTable(rows) {
+  const tbody = document.getElementById('allVipBody');
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="emoji">🎉</div><p>沒有資料</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(r => {
+    const p = r.profiles;
+    const imgUrl = r.screenshot_path
+      ? sb.storage.from('vip-screenshots').getPublicUrl(r.screenshot_path).data.publicUrl
+      : null;
+    return `<tr>
+      <td>${esc(p?.display_name||'—')}<br><span style="font-size:11px;color:var(--text-muted)">${esc(p?.email||'')}</span></td>
+      <td><code>${esc(p?.bitunix_uid||'—')}</code></td>
+      <td>${esc(r.masterInfo?.display_name || r.masterInfo?.email || '—')}</td>
+      <td>${rankBadge(r.rank)}</td>
+      <td>${imgUrl ? `<img class="screenshot-preview" src="${imgUrl}" onclick="openImgModal('${imgUrl}')">` : '無'}</td>
+      <td>${statusBadge(r.status)}</td>
+      <td style="font-size:11px;color:var(--text-muted)">${fmtDate(r.created_at)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function filterVipTable() {
+  const q = document.getElementById('vipSearch').value.toLowerCase();
+  const filtered = allVipCache.filter(r =>
+    (r.profiles?.email||'').toLowerCase().includes(q) ||
+    (r.profiles?.display_name||'').toLowerCase().includes(q)
+  );
+  renderVipTable(filtered);
+}
+
+// ── All Members ──
+async function loadAllMembers(filterMasterId = null) {
+  let query = sb.from('profiles').select('id, email, display_name, plan, bitunix_uid, master_id, updated_at').order('updated_at', { ascending: false }).limit(200);
+  if (filterMasterId) query = query.eq('master_id', filterMasterId);
+  const { data } = await query;
+  allMembersCache = data || [];
+
+  // Fetch master info
+  const mIds = [...new Set(allMembersCache.map(m => m.master_id).filter(Boolean))];
+  let mMap = {};
+  if (mIds.length) {
+    const { data: ms } = await sb.from('profiles').select('id, display_name, email').in('id', mIds);
+    (ms||[]).forEach(m => mMap[m.id] = m);
+  }
+  allMembersCache = allMembersCache.map(m => ({ ...m, masterInfo: mMap[m.master_id] }));
+  renderMemberTable(allMembersCache);
+}
+
+function renderMemberTable(rows) {
+  const tbody = document.getElementById('allMembersBody');
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="emoji">👥</div><p>沒有會員</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(m => `
+    <tr>
+      <td>${esc(m.display_name||'—')}</td>
+      <td style="font-size:12px">${esc(m.email)}</td>
+      <td>${planBadge(m.plan)}</td>
+      <td style="font-size:12px;color:var(--text-muted)">${esc(m.masterInfo?.display_name || m.masterInfo?.email || '—')}</td>
+      <td><code>${esc(m.bitunix_uid||'—')}</code></td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="openEditModal('${m.id}','${esc(m.display_name||'')}','${m.plan||'free'}','${esc(m.bitunix_uid||'')}')">✏️ 編輯</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function filterMemberTable() {
+  const q = document.getElementById('memberSearch').value.toLowerCase();
+  const plan = document.getElementById('memberPlanFilter').value;
+  const filtered = allMembersCache.filter(m =>
+    ((m.email||'').toLowerCase().includes(q) || (m.display_name||'').toLowerCase().includes(q)) &&
+    (!plan || m.plan === plan)
+  );
+  renderMemberTable(filtered);
+}
+
+// Edit Member Modal
+function openEditModal(id, name, plan, uid) {
+  document.getElementById('edit-uid').value = id;
+  document.getElementById('edit-display-name').value = name;
+  document.getElementById('edit-plan').value = plan;
+  document.getElementById('edit-bitunix-uid').value = uid;
+  document.getElementById('editModal').classList.add('open');
+}
+function closeEditModal() {
+  document.getElementById('editModal').classList.remove('open');
+}
+async function saveMemberEdit() {
+  const id = document.getElementById('edit-uid').value;
+  const updates = {
+    display_name: document.getElementById('edit-display-name').value.trim(),
+    plan: document.getElementById('edit-plan').value,
+    bitunix_uid: document.getElementById('edit-bitunix-uid').value.trim() || null,
+  };
+  const { error } = await sb.from('profiles').update(updates).eq('id', id);
+  if (error) { showToast('儲存失敗：' + error.message, 'error'); return; }
+  showToast('✅ 已更新', 'success');
+  closeEditModal();
+  await loadAllMembers();
+}
+
+// ── Masters List ──
+async function loadMastersList() {
+  const { data: masters } = await sb.from('profiles')
+    .select('id, email, display_name, team_name, updated_at')
+    .eq('plan', 'master')
+    .order('updated_at', { ascending: false });
+
+  const tbody = document.getElementById('mastersListBody');
+  if (!masters || !masters.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="emoji">🏯</div><p>尚無盟主</p></div></td></tr>`;
+    return;
+  }
+
+  const rows = await Promise.all(masters.map(async m => {
+    const { count } = await sb.from('profiles').select('id', { count: 'exact', head: true }).eq('master_id', m.id);
+    return { ...m, memberCount: count };
+  }));
+
+  tbody.innerHTML = rows.map(m => `
+    <tr>
+      <td>${esc(m.display_name||'—')}</td>
+      <td style="font-size:12px">${esc(m.email)}</td>
+      <td>${esc(m.team_name||'—')}</td>
+      <td><strong>${m.memberCount ?? 0}</strong></td>
+      <td style="font-size:12px;color:var(--text-muted)">${fmtDate(m.updated_at)}</td>
+      <td>
+        <button class="btn btn-danger btn-sm" onclick="demoteMaster('${m.id}','${esc(m.display_name||m.email)}')">降級</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function demoteMaster(id, name) {
+  if (!confirm(`確定要降級「${name}」？對方 plan 將改為 free。`)) return;
+  const { error } = await sb.from('profiles').update({ plan: 'free', master_status: null }).eq('id', id);
+  if (error) { showToast('操作失敗：' + error.message, 'error'); return; }
+  showToast(`已降級 ${name}`, 'success');
+  await loadMastersList();
+  await loadOverview();
+}
+
+// ── Activity ──
+async function loadActivity() {
+  const type = document.getElementById('actTypeFilter').value;
+  const timeline = document.getElementById('activityTimeline');
+  timeline.innerHTML = '<li><div class="loading">載入中…</div></li>';
+
+  let events = [];
+
+  if (type === 'all' || type === 'vip') {
+    const { data: vips } = await sb.from('member_ranks')
+      .select('id, rank, status, created_at, updated_at, profiles!user_id(email, display_name)')
+      .order('updated_at', { ascending: false })
+      .limit(50);
+    (vips||[]).forEach(v => {
+      events.push({
+        time: v.updated_at,
+        icon: v.status === 'approved' ? '✅' : v.status === 'rejected' ? '❌' : '📸',
+        cls: v.status,
+        title: `${v.profiles?.display_name || v.profiles?.email || '—'} 的 VIP 申請`,
+        sub: `${rankLabel(v.rank)} · ${statusLabel(v.status)}`,
+      });
+    });
+  }
+
+  if (type === 'all' || type === 'master') {
+    const { data: ms } = await sb.from('profiles')
+      .select('email, display_name, master_status, updated_at')
+      .not('master_status', 'is', null)
+      .order('updated_at', { ascending: false })
+      .limit(50);
+    (ms||[]).forEach(m => {
+      events.push({
+        time: m.updated_at,
+        icon: m.master_status === 'approved' ? '🌟' : m.master_status === 'rejected' ? '❌' : '📨',
+        cls: m.master_status === 'approved' ? 'approved' : m.master_status === 'rejected' ? 'rejected' : 'pending',
+        title: `${m.display_name || m.email} 盟主申請`,
+        sub: masterStatusLabel(m.master_status),
+      });
+    });
+  }
+
+  // Sort by time
+  events.sort((a, b) => new Date(b.time) - new Date(a.time));
+  events = events.slice(0, 80);
+
+  if (!events.length) {
+    timeline.innerHTML = '<li><div class="empty-state"><div class="emoji">📋</div><p>沒有活動紀錄</p></div></li>';
+    return;
+  }
+
+  timeline.innerHTML = events.map(e => `
+    <li class="timeline-item">
+      <div class="timeline-dot ${e.cls}">${e.icon}</div>
+      <div class="timeline-body">
+        <div class="timeline-title">${esc(e.title)}</div>
+        <div class="timeline-meta">${esc(e.sub)} · ${fmtDate(e.time)}</div>
+      </div>
+    </li>
+  `).join('');
+}
+
+// ── Auth ──
+async function handleLogout() {
+  await sb.auth.signOut();
+  window.location.href = 'login.html';
+}
+
+// ── Modals ──
+function openImgModal(url) {
+  document.getElementById('modalImg').src = url;
+  document.getElementById('imgModal').classList.add('open');
+}
+function closeImgModal() { document.getElementById('imgModal').classList.remove('open'); }
+
+// ── Toast ──
+function showToast(msg, type = 'success') {
+  const c = document.getElementById('toastContainer');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  c.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ── Helpers ──
+const RANK_MAP = {
+  miner:'⛏️ 礦工', knight:'⚔️ 騎士', wargod:'⚡ 戰神',
+  wizard:'🔮 術士', king:'👑 天王', elder:'🏯 長老',
+  master:'🐉 宗師', supreme:'✨ 至尊',
+};
+const RANK_CLS = {
+  miner:'rank-miner',knight:'rank-knight',wargod:'rank-wargod',
+  wizard:'rank-wizard',king:'rank-king',elder:'rank-elder',
+  master:'rank-master',supreme:'rank-supreme',
+};
+function rankLabel(r) { return RANK_MAP[r] || r; }
+function rankBadge(r) {
+  return `<span class="rank-badge ${RANK_CLS[r]||'rank-miner'}">${RANK_MAP[r]||r}</span>`;
+}
+function statusLabel(s) { return {pending:'待審核',approved:'已核准',rejected:'已拒絕'}[s]||s; }
+function statusBadge(s) {
+  const map = { pending:['⏳ 待審核','s-pending'], approved:['✅ 已核准','s-approved'], rejected:['❌ 已拒絕','s-rejected'] };
+  const [l,c] = map[s]||[s,'s-pending'];
+  return `<span class="status-badge ${c}">${l}</span>`;
+}
+function masterStatusLabel(s) {
+  return {null:'—',pending:'申請中',recommended:'已推薦，待毛哥審核',approved:'已核准',rejected:'已拒絕'}[s]||s;
+}
+function masterStatusBadge(s) {
+  const map = {
+    pending:['⏳ 申請中','s-pending'],
+    recommended:['📨 待毛哥審核','s-recommended'],
+    approved:['✅ 已核准','s-approved'],
+    rejected:['❌ 已拒絕','s-rejected'],
+  };
+  const [l,c] = map[s]||[s,'s-pending'];
+  return `<span class="status-badge ${c}">${l}</span>`;
+}
+function planBadge(plan) {
+  const cls = plan === 'master' ? 's-master' : plan === 'admin' ? 's-approved' : 's-pending';
+  return `<span class="status-badge ${cls}">${plan||'free'}</span>`;
+}
+function fmtDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('zh-TW', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+}
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+init();
+</script>
+</body>
+</html>
