@@ -262,6 +262,42 @@ body { background:var(--bg); font-family:-apple-system,'Helvetica Neue','PingFan
       <canvas id="priceChart" height="100"></canvas>
     </div>
 
+    <!-- AI 解讀 -->
+    <div style="background:linear-gradient(135deg,#1a1008,#2a1a08);border-radius:var(--radius);padding:24px 28px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+      <div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:#7ab8a4;margin-bottom:6px;text-transform:uppercase;">🤖 AI 解讀</div>
+        <div style="font-size:16px;font-weight:700;color:#f5e8d8;margin-bottom:4px;">讓 AI 分析這份技術診斷報告</div>
+        <div style="font-size:12px;color:#b0907a;">需要在帳號設定中填入 Groq API Key</div>
+      </div>
+      <button id="aiBtn" onclick="runAI()" style="padding:12px 28px;background:#4a7a6a;color:#fff;border:none;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity .2s;">
+        🤖 AI 解讀
+      </button>
+    </div>
+
+    <!-- AI 結果 -->
+    <div id="aiResult" style="display:none;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);margin-bottom:20px;">
+      <div style="font-size:14px;font-weight:700;color:var(--accent);margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+        🤖 AI 技術分析解讀
+        <span style="font-size:11px;font-weight:400;color:var(--muted);">by Groq llama-3.3-70b</span>
+      </div>
+      <div id="aiContent" style="font-size:14px;line-height:1.8;color:var(--text);white-space:pre-wrap;"></div>
+    </div>
+
+    <!-- 無 Key 提示 -->
+    <div id="noKeyMsg" style="display:none;background:#f5e8d8;border:1px solid #d4a843;border-radius:var(--radius);padding:20px 24px;margin-bottom:20px;">
+      <div style="font-size:15px;font-weight:700;color:#8b5e3c;margin-bottom:8px;">⚠️ 尚未設定 Groq API Key</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:14px;">
+        要使用 AI 解讀功能，請先申請免費的 Groq API Key 並填入帳號設定。
+      </div>
+      <a href="profile.html" style="display:inline-block;padding:9px 20px;background:var(--accent);color:#fff;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;">
+        👤 前往帳號設定填入 Key
+      </a>
+      &nbsp;
+      <a href="https://console.groq.com" target="_blank" style="display:inline-block;padding:9px 20px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;">
+        🔗 申請 Groq Key 教學
+      </a>
+    </div>
+
   </div>
 
 </div>
@@ -294,6 +330,7 @@ async function init() {
   else if (plan === 'master') { b.textContent = '⚔️ 盟主';   b.className = 'nav-badge master'; }
   else if (plan === 'ranger') { b.textContent = '🗡️ 遊俠';   b.className = 'nav-badge ranger'; }
   else { b.textContent = '⚔️ 會員'; b.className = 'nav-badge'; }
+  await loadGroqKey();
 }
 
 function quickSym(sym) {
@@ -346,6 +383,22 @@ async function runDiagnosis() {
     renderTfGrid(tfResults);
     renderDetailPanel(tfResults[1], klineData[1].klines); // 1h 詳情
     renderPriceChart(klineData[1].klines, raw);
+
+    // 儲存診斷結果供 AI 使用
+    const h1 = tfResults[1];
+    lastDiagResult = {
+      tfResults,
+      rsi1h:    h1?.rsi,
+      macd1h:   h1?.macdHist,
+      bb1h:     h1?.bb,
+      mas1h:    h1?.mas,
+      vol1h:    h1?.volRatio,
+      patterns1h: h1?.patterns,
+      overallText: document.getElementById('overallText').textContent,
+      weightedScore: tfResults.reduce((s,r,i) => s + r.score * [0.15,0.35,0.35,0.15][i], 0),
+    };
+    document.getElementById('aiResult').style.display = 'none';
+    document.getElementById('noKeyMsg').style.display = 'none';
 
     document.getElementById('resultArea').classList.add('show');
     document.getElementById('resultArea').scrollIntoView({ behavior:'smooth', block:'start' });
@@ -753,6 +806,104 @@ function fmtB(v) {
   if (v>=1e6) return (v/1e6).toFixed(2)+'M';
   if (v>=1e3) return (v/1e3).toFixed(1)+'K';
   return v.toFixed(0);
+}
+
+// ── AI 解讀 ──
+let lastDiagResult = null; // 儲存最後診斷結果
+let userGroqKey = null;
+
+async function loadGroqKey() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return;
+  const { data } = await sb.from('profiles').select('groq_api_key').eq('id', session.user.id).single();
+  userGroqKey = data?.groq_api_key || null;
+}
+
+async function runAI() {
+  if (!lastDiagResult) { alert('請先執行診斷'); return; }
+
+  // 確認有 Key
+  if (!userGroqKey) {
+    document.getElementById('noKeyMsg').style.display = 'block';
+    document.getElementById('aiResult').style.display = 'none';
+    document.getElementById('noKeyMsg').scrollIntoView({ behavior:'smooth' });
+    return;
+  }
+
+  document.getElementById('noKeyMsg').style.display = 'none';
+  document.getElementById('aiResult').style.display = 'block';
+  document.getElementById('aiContent').textContent = '🤖 AI 分析中，請稍候...';
+  document.getElementById('aiBtn').disabled = true;
+  document.getElementById('aiResult').scrollIntoView({ behavior:'smooth' });
+
+  // 整理診斷摘要給 AI
+  const r = lastDiagResult;
+  const sym = document.getElementById('resSym').textContent;
+  const price = document.getElementById('resPrice').textContent;
+  const chg   = document.getElementById('resChg').textContent;
+
+  const prompt = `你是一位專業的加密貨幣技術分析師，請根據以下技術診斷數據，用繁體中文提供詳細的市場分析與操作建議。
+
+【幣種】${sym}USDT
+【現價】${price}（24h ${chg}）
+
+【多時框技術評分】
+${r.tfResults.map(t => `• ${t.label}：${t.signal}（評分 ${t.score>=0?'+':''}${t.score}）`).join('\n')}
+
+【1h 關鍵指標】
+• RSI(14)：${r.rsi1h?.toFixed(1) || '—'}
+• MACD Histogram：${r.macd1h?.toFixed(4) || '—'}
+• 布林帶：上軌 ${r.bb1h?.upper ? fmtPrice(r.bb1h.upper) : '—'} / 中軌 ${r.bb1h?.mid ? fmtPrice(r.bb1h.mid) : '—'} / 下軌 ${r.bb1h?.lower ? fmtPrice(r.bb1h.lower) : '—'}
+• MA5：${r.mas1h?.ma5 ? fmtPrice(r.mas1h.ma5) : '—'} / MA20：${r.mas1h?.ma20 ? fmtPrice(r.mas1h.ma20) : '—'}
+• 成交量比：${r.vol1h?.toFixed(2) || '—'}x 均值
+
+【K線型態】
+${r.patterns1h?.map(p => `• ${p.name}`).join('\n') || '• 無明顯型態'}
+
+【綜合評分】${r.overallText}（加權評分 ${r.weightedScore?.toFixed(1) || '—'}）
+
+請提供：
+1. 📊 市場現況解讀（目前趨勢、支撐壓力位）
+2. 🎯 操作建議（做多/做空/觀望，進場點、止損點、目標價）
+3. ⚠️ 主要風險提示
+4. 📅 短中期展望
+
+請用清晰的條列式說明，語氣專業但易懂。`;
+
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${userGroqKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 1200,
+        temperature: 0.7,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      if (res.status === 401) {
+        document.getElementById('aiContent').textContent = '❌ Groq Key 無效，請到帳號設定重新填入正確的 Key。';
+      } else {
+        document.getElementById('aiContent').textContent = '❌ 錯誤：' + (err.error?.message || res.statusText);
+      }
+      return;
+    }
+
+    const data = await res.json();
+    const text = data.choices?.[0]?.message?.content || '（無回應）';
+    document.getElementById('aiContent').textContent = text;
+
+  } catch(e) {
+    document.getElementById('aiContent').textContent = '❌ 連線失敗：' + e.message;
+  } finally {
+    document.getElementById('aiBtn').disabled = false;
+  }
 }
 
 init();
