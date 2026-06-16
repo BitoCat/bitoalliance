@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>比特聯盟 · 幣種掃描器</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #edd4be; --panel: #f5e8d8; --dark: #1a1008;
+  --accent: #8b5e3c; --gold: #d4a843;
+  --text: #2a1f14; --muted: #7a5c42; --border: #d4b896;
+  --up: #27AE60; --dn: #C0392B; --radius: 10px;
+  --c-bottom:  #2196F3; --c-strong: #E91E63;
+  --c-funding: #9C27B0; --c-volume: #FF9800;
+  --c-warning: #607D8B;
+}
+body { background: var(--bg); font-family: -apple-system,'Helvetica Neue','PingFang TC',sans-serif; min-height:100vh; color:var(--text); }
+
+/* ── Navbar ── */
+.navbar {
+  background: var(--dark); height: 56px;
+  display: flex; align-items: center; padding: 0 24px; gap: 14px;
+  position: sticky; top: 0; z-index: 100;
+}
+.nav-logo { font-size: 18px; font-weight: 700; color: var(--gold); }
+.nav-spacer { flex: 1; }
+.nav-badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; background: var(--accent); color: #fff; }
+.nav-badge.ranger { background: #4a7a6a; }
+.nav-badge.master { background: var(--gold); color: #1a1008; }
+.btn-back { background: transparent; border: 1px solid #444; color: #aaa; padding: 5px 14px; border-radius: 7px; cursor: pointer; font-size: 13px; text-decoration: none; }
+
+/* ── Header ── */
+.page-header { padding: 20px 24px 0; max-width: 1400px; margin: 0 auto; }
+.page-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+.page-sub { font-size: 13px; color: var(--muted); }
+
+/* ── Controls ── */
+.controls {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 16px 24px; max-width: 1400px; margin: 0 auto;
+}
+.filter-btn {
+  padding: 7px 16px; border-radius: 20px; font-size: 13px; font-weight: 600;
+  cursor: pointer; border: 2px solid var(--border);
+  background: var(--panel); color: var(--muted);
+  transition: all .15s;
+}
+.filter-btn.active { color: #fff; border-color: transparent; }
+.filter-btn[data-type="all"].active    { background: var(--accent); }
+.filter-btn[data-type="bottom"].active { background: var(--c-bottom); }
+.filter-btn[data-type="strong"].active { background: var(--c-strong); }
+.filter-btn[data-type="funding"].active{ background: var(--c-funding); }
+.filter-btn[data-type="volume"].active { background: var(--c-volume); }
+.filter-btn[data-type="warning"].active{ background: var(--c-warning); }
+
+.scan-btn {
+  margin-left: auto; padding: 8px 22px; border-radius: 20px;
+  background: var(--accent); color: #fff; border: none;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; gap: 6px; transition: opacity .2s;
+}
+.scan-btn:hover:not(:disabled) { opacity: .85; }
+.scan-btn:disabled { opacity: .5; cursor: default; }
+
+.scan-meta { font-size: 12px; color: var(--muted); }
+
+/* ── Grid ── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+  padding: 0 24px 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ── Card ── */
+.card {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+  box-shadow: 0 2px 10px rgba(42,31,20,.08);
+  transition: transform .15s, box-shadow .15s;
+}
+.card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(42,31,20,.12); }
+
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.card-sym { font-size: 18px; font-weight: 800; color: var(--text); }
+.card-price { font-size: 14px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+.card-chg { font-size: 13px; font-weight: 700; }
+
+.card-meta {
+  display: flex; gap: 12px; padding: 8px 16px;
+  font-size: 11px; color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  background: rgba(0,0,0,.02);
+}
+
+.card-signals { padding: 10px 16px 14px; display: flex; flex-direction: column; gap: 6px; }
+
+.signal-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 10px; border-radius: 7px;
+  font-size: 12px; font-weight: 600;
+  background: rgba(0,0,0,.05);
+}
+.signal-tag .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.signal-tag .detail { font-size: 11px; color: var(--muted); font-weight: 400; margin-left: 2px; }
+
+.signal-tag.bottom  { background: rgba(33,150,243,.1);  color: #1565C0; }
+.signal-tag.strong  { background: rgba(233,30,99,.1);   color: #880E4F; }
+.signal-tag.funding { background: rgba(156,39,176,.1);  color: #4A148C; }
+.signal-tag.volume  { background: rgba(255,152,0,.1);   color: #E65100; }
+.signal-tag.warning { background: rgba(96,125,139,.1);  color: #37474F; }
+
+.card-score {
+  font-size: 11px; font-weight: 700; padding: 3px 9px;
+  border-radius: 20px; background: var(--gold); color: #1a1008;
+}
+
+/* ── Loading / Empty ── */
+.loading-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(237,212,190,.85); z-index: 999;
+  flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+}
+.loading-overlay.show { display: flex; }
+.spinner {
+  width: 48px; height: 48px; border: 4px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 16px; font-weight: 600; color: var(--accent); }
+.loading-sub  { font-size: 13px; color: var(--muted); }
+
+.empty-state { text-align: center; padding: 60px 20px; color: var(--muted); grid-column: 1/-1; }
+.empty-state .emoji { font-size: 48px; margin-bottom: 12px; }
+
+/* ── Responsive ── */
+@media (max-width: 700px) {
+  .controls { padding: 12px 16px; }
+  .grid { padding: 0 16px 32px; grid-template-columns: 1fr; }
+  .page-header { padding: 16px 16px 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <span class="nav-logo">⚔️ 比特聯盟</span>
+  <div class="nav-spacer"></div>
+  <span class="nav-badge" id="navBadge">載入中</span>
+  <a href="signals.html" class="btn-back">← 儀表板</a>
+</nav>
+
+<!-- Header -->
+<div class="page-header">
+  <div class="page-title">🔍 幣種型態掃描器</div>
+  <div class="page-sub" id="scanMeta">點擊「開始掃描」取得最新訊號</div>
+</div>
+
+<!-- Controls -->
+<div class="controls">
+  <button class="filter-btn active" data-type="all"     onclick="filterCards('all',this)">全部</button>
+  <button class="filter-btn"        data-type="bottom"  onclick="filterCards('bottom',this)">🔵 底部機會</button>
+  <button class="filter-btn"        data-type="strong"  onclick="filterCards('strong',this)">🔴 強勢進場</button>
+  <button class="filter-btn"        data-type="funding" onclick="filterCards('funding',this)">🟣 費率訊號</button>
+  <button class="filter-btn"        data-type="volume"  onclick="filterCards('volume',this)">🟠 量能異常</button>
+  <button class="filter-btn"        data-type="warning" onclick="filterCards('warning',this)">⚫ 注意</button>
+  <button class="scan-btn" id="scanBtn" onclick="startScan()">🔍 開始掃描</button>
+</div>
+
+<!-- Grid -->
+<div class="grid" id="grid">
+  <div class="empty-state">
+    <div class="emoji">🔍</div>
+    <p>點擊「開始掃描」<br>即時掃描 Bitunix 全市場訊號</p>
+  </div>
+</div>
+
+<!-- Loading -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text">掃描中...</div>
+  <div class="loading-sub" id="loadingSub">正在分析市場型態，請稍候</div>
+</div>
+
+<script>
+const SUPABASE_URL  = 'https://kldumnxdlgovaxtiszyn.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsZHVtbnhkbGdvdmF4dGlzenluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjIyNDgsImV4cCI6MjA5MzY5ODI0OH0.P_anfYpSV2tgCPIQ7uZDVBjUFY3UhfEXk9u3XjlzBHI';
+const BITO_API = 'https://web-production-f4735.up.railway.app';
+
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+let allResults = [];
+let currentFilter = 'all';
+
+// ── Init ──
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { window.location.href = 'login.html'; return; }
+
+  const { data: profile } = await sb.from('profiles')
+    .select('plan, is_direct_client').eq('id', session.user.id).single();
+  const plan = profile?.plan || 'free';
+  const isDirect = profile?.is_direct_client;
+  const hasAccess = plan !== 'free' || isDirect;
+  if (!hasAccess) { window.location.href = 'index.html'; return; }
+
+  const badgeEl = document.getElementById('navBadge');
+  if (plan === 'admin')        { badgeEl.textContent = '系統管理員'; badgeEl.className = 'nav-badge master'; }
+  else if (plan === 'master')  { badgeEl.textContent = '⚔️ 盟主';   badgeEl.className = 'nav-badge master'; }
+  else if (plan === 'ranger')  { badgeEl.textContent = '🗡️ 遊俠';   badgeEl.className = 'nav-badge ranger'; }
+  else if (isDirect || plan === 'direct') { badgeEl.textContent = '⚔️ 會員'; badgeEl.className = 'nav-badge'; }
+  else { badgeEl.textContent = plan.toUpperCase(); }
+}
+
+// ── 掃描 ──
+async function startScan() {
+  const btn = document.getElementById('scanBtn');
+  btn.disabled = true;
+  btn.textContent = '掃描中...';
+  document.getElementById('loadingOverlay').classList.add('show');
+
+  // 動態更新 loading 文字
+  const msgs = ['正在取得市場數據...', '計算技術指標中...', '分析型態訊號...', '整理掃描結果...'];
+  let msgIdx = 0;
+  const msgInterval = setInterval(() => {
+    document.getElementById('loadingSub').textContent = msgs[Math.min(msgIdx++, msgs.length-1)];
+  }, 3000);
+
+  try {
+    const r = await fetch(`${BITO_API}/scanner/crypto`);
+    const data = await r.json();
+
+    if (!data.ok) {
+      alert(data.message || '掃描失敗，請稍後再試');
+      return;
+    }
+
+    allResults = data.data || [];
+    const ts = new Date(data.ts * 1000).toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit'});
+    document.getElementById('scanMeta').textContent =
+      `掃描完成 ${ts} · 共掃描 ${data.scanned} 個交易對 · 發現 ${data.count} 個訊號`;
+
+    renderCards(allResults);
+    currentFilter = 'all';
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('[data-type="all"]').classList.add('active');
+
+  } catch(e) {
+    alert('連線失敗，請稍後再試');
+  } finally {
+    clearInterval(msgInterval);
+    document.getElementById('loadingOverlay').classList.remove('show');
+    btn.disabled = false;
+    btn.innerHTML = '🔍 重新掃描';
+  }
+}
+
+// ── 渲染 ──
+function renderCards(results) {
+  const grid = document.getElementById('grid');
+  if (!results.length) {
+    grid.innerHTML = `<div class="empty-state"><div class="emoji">🔍</div><p>目前沒有符合條件的訊號</p></div>`;
+    return;
+  }
+
+  grid.innerHTML = results.map(r => {
+    const sym = r.symbol.replace('USDT','');
+    const chgColor = r.chg24 >= 0 ? 'var(--up)' : 'var(--dn)';
+    const chgSign  = r.chg24 >= 0 ? '+' : '';
+    const priceStr = r.price >= 100
+      ? r.price.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})
+      : r.price.toLocaleString('en-US', {minimumFractionDigits:4, maximumFractionDigits:6});
+
+    const signalTags = r.signals.map(s => `
+      <div class="signal-tag ${s.type}">
+        <span class="dot" style="background:${typeColor(s.type)}"></span>
+        <span>${s.name}</span>
+        <span class="detail">· ${s.detail}</span>
+      </div>`).join('');
+
+    const fundingColor = r.funding > 0.01 ? 'var(--dn)' : r.funding < 0 ? 'var(--up)' : 'var(--muted)';
+
+    return `<div class="card" data-types="${[...new Set(r.signals.map(s=>s.type))].join(',')}">
+      <div class="card-header">
+        <div>
+          <div class="card-sym">${sym}</div>
+          <div class="card-price">$${priceStr}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="card-chg" style="color:${chgColor}">${chgSign}${r.chg24}%</div>
+          <div class="card-score">評分 ${r.score}</div>
+        </div>
+      </div>
+      <div class="card-meta">
+        <span>📊 ${r.quote_vol}M USDT</span>
+        <span>📈 振幅 ${r.amplitude}%</span>
+        <span style="color:${fundingColor}">💸 費率 ${r.funding > 0 ? '+' : ''}${r.funding}%</span>
+      </div>
+      <div class="card-signals">${signalTags}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── 篩選 ──
+function filterCards(type, btn) {
+  currentFilter = type;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  if (!allResults.length) return;
+
+  const filtered = type === 'all'
+    ? allResults
+    : allResults.filter(r => r.signals.some(s => s.type === type));
+
+  renderCards(filtered);
+}
+
+function typeColor(type) {
+  const map = { bottom:'#2196F3', strong:'#E91E63', funding:'#9C27B0', volume:'#FF9800', warning:'#607D8B' };
+  return map[type] || '#999';
+}
+
+init();
+</script>
+</body>
+</html>
