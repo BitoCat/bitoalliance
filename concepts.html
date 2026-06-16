@@ -240,10 +240,8 @@ async function loadData() {
 // ── 取得所有 Ticker ──
 async function fetchAllTickers() {
   try {
-    const r = await fetch(`${BITO_API}/live-data?symbol=BTCUSDT`);
-    // live-data 只回傳固定幣種，改直接打 Bitunix
-    const r2 = await fetch('https://fapi.bitunix.com/api/v1/futures/market/tickers');
-    const data = await r2.json();
+    const r = await fetch(`${BITO_API}/market/tickers`);
+    const data = await r.json();
     const list = data.data || [];
     tickerMap = {};
     list.forEach(t => { tickerMap[t.symbol] = t; });
