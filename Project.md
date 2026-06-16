@@ -30,8 +30,8 @@
 ### Railway 環境變數（bito-api）
 - `SUPABASE_URL`：`https://kldumnxdlgovaxtiszyn.supabase.co`
 - `SUPABASE_KEY`：service_role key
-- `ECPAY_MERCHANT_ID`：3257116
-- `ECPAY_HASH_KEY` / `ECPAY_HASH_IV`：已設定
+- `ECPAY_MERCHANT_ID`：`3189236`（與交易大師共用）
+- `ECPAY_HASH_KEY` / `ECPAY_HASH_IV`：已設定（與交易大師相同）
 - `TG_BOT_URL`：`https://web-production-9ba5b.up.railway.app`
 - `TG_BOT_SECRET`：已設定
 
@@ -52,6 +52,14 @@
 | `/bito/add-member` | POST | 新增 Telegram 會員（中繼） |
 | `/bito/members` | GET | 查詢 Telegram 會員（中繼） |
 | `/debug/kline` | GET | 除錯用 K線格式查看 |
+
+---
+
+### ECPay 注意事項
+- 商家代號 `3189236` 與交易大師共用同一組憑證
+- 綠界後台 ReturnURL：`https://web-production-9ba5b.up.railway.app/ecpay/notify`
+- 比特聯盟指標付款 ReturnURL：`https://web-production-9ba5b.up.railway.app/indicator/notify`
+- `9ba5b`（tg-member-bot）收到後轉發給 `f4735`（bito-api）處理
 
 ---
 
