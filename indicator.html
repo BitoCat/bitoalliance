@@ -352,7 +352,7 @@
     <!-- 付款表單 -->
     <div class="card">
       <div class="card-title">💳 付款資訊</div>
-      <div class="card-sub">填入優惠碼可享折扣（選填），確認後點下方付款按鈕跳轉至付款頁。</div>
+      <div class="card-sub">填入優惠碼可享折扣（選填），選擇付款方式後點下方按鈕跳轉綠界。</div>
 
       <label class="field-label">盟主優惠碼（選填）</label>
       <div class="coupon-row">
@@ -361,6 +361,31 @@
       </div>
       <div class="discount-box" id="discountBox"></div>
       <div class="discount-err" id="discountErr"></div>
+
+      <!-- 付款方式 -->
+      <label class="field-label" style="margin-bottom:10px;">選擇付款方式</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;">
+        <div onclick="selectPayment('Credit',this)" class="pay-opt selected" id="payopt-Credit" style="border:2px solid var(--ranger);border-radius:10px;padding:12px;cursor:pointer;text-align:center;background:rgba(74,122,106,.08);transition:all .2s;">
+          <div style="font-size:22px;margin-bottom:4px;">💳</div>
+          <div style="font-size:12px;font-weight:700;color:var(--text);">信用卡</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">即時付款</div>
+        </div>
+        <div onclick="selectPayment('ATM',this)" class="pay-opt" id="payopt-ATM" style="border:2px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;text-align:center;background:transparent;transition:all .2s;">
+          <div style="font-size:22px;margin-bottom:4px;">🏧</div>
+          <div style="font-size:12px;font-weight:700;color:var(--text);">ATM 轉帳</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">虛擬帳號轉帳</div>
+        </div>
+        <div onclick="selectPayment('CVS',this)" class="pay-opt" id="payopt-CVS" style="border:2px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;text-align:center;background:transparent;transition:all .2s;">
+          <div style="font-size:22px;margin-bottom:4px;">🏪</div>
+          <div style="font-size:12px;font-weight:700;color:var(--text);">超商代碼</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">7-11、全家等</div>
+        </div>
+        <div onclick="selectPayment('BARCODE',this)" class="pay-opt" id="payopt-BARCODE" style="border:2px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;text-align:center;background:transparent;transition:all .2s;">
+          <div style="font-size:22px;margin-bottom:4px;">📊</div>
+          <div style="font-size:12px;font-weight:700;color:var(--text);">超商條碼</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">三段式條碼</div>
+        </div>
+      </div>
 
       <div class="amount-summary">
         <div class="amount-row">
@@ -395,7 +420,7 @@
       <div class="card-title">📋 填寫申請資料</div>
       <div class="card-sub">請填入付款後收到的訂單編號，以及你的 TradingView 帳號名稱，系統管理員將以此授權指標。</div>
 
-      <label class="field-label">訂單編號（必填）</label>
+      <label class="field-label">綠界訂單編號（必填）</label>
       <input type="text" id="tradeNoInput" placeholder="例：BITO20240616143022ABCD" maxlength="30">
 
       <label class="field-label">TradingView 帳號名稱（必填）</label>
@@ -461,6 +486,17 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 let currentAmount = 3600;
 let currentUserId = null;
 let verifiedCode = '';
+let selectedPayment = 'Credit';
+
+function selectPayment(type, el) {
+  selectedPayment = type;
+  document.querySelectorAll('.pay-opt').forEach(o => {
+    o.style.border = '2px solid var(--border)';
+    o.style.background = 'transparent';
+  });
+  el.style.border = '2px solid var(--ranger)';
+  el.style.background = 'rgba(74,122,106,.08)';
+}
 
 // ── Init ──
 async function init() {
@@ -468,7 +504,7 @@ async function init() {
   const { data: { session } } = await sb.auth.getSession();
   if (session) currentUserId = session.user.id;
 
-  // 檢查 URL 參數（付款後回來）
+  // 檢查 URL 參數（綠界付款後回來）
   const params = new URLSearchParams(window.location.search);
   const result = params.get('result');
   const tradeNo = params.get('no');
@@ -533,7 +569,7 @@ async function goCheckout() {
     const res = await fetch(`${API}/indicator/checkout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ referral_code: verifiedCode }),
+      body: JSON.stringify({ referral_code: verifiedCode, payment_type: selectedPayment }),
     });
 
     if (!res.ok) throw new Error('建立訂單失敗');
@@ -546,7 +582,7 @@ async function goCheckout() {
   } catch (e) {
     showToast('建立訂單失敗，請稍後再試', 'error');
     btn.disabled = false;
-    btn.innerHTML = '🔐 前往付款';
+    btn.innerHTML = '🔐 前往綠界付款';
   }
 }
 
