@@ -317,10 +317,10 @@
       </div>
 
       <div class="card">
-        <div class="card-title">⚔️ 各盟主直客統計</div>
+        <div class="card-title">⚔️ 各盟主會員統計</div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>盟主</th><th>團隊名稱</th><th>直客數</th><th>待審 VIP</th><th>操作</th></tr></thead>
+            <thead><tr><th>盟主</th><th>團隊名稱</th><th>會員數</th><th>待審 VIP</th><th>操作</th></tr></thead>
             <tbody id="masterStatsBody"><tr><td colspan="5"><div class="loading">載入中…</div></td></tr></tbody>
           </table>
         </div>
@@ -412,7 +412,7 @@
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>盟主</th><th>Email</th><th>團隊名稱</th><th>直客數</th><th>加入時間</th><th>操作</th></tr></thead>
+            <thead><tr><th>盟主</th><th>Email</th><th>團隊名稱</th><th>會員數</th><th>加入時間</th><th>操作</th></tr></thead>
             <tbody id="mastersListBody"><tr><td colspan="6"><div class="loading">載入中…</div></td></tr></tbody>
           </table>
         </div>
@@ -620,7 +620,7 @@ async function loadOverview() {
       <td>${esc(m.team_name || '（未設定）')}</td>
       <td><strong>${m.memberCount ?? 0}</strong></td>
       <td>${m.vipPending > 0 ? `<span style="color:var(--danger);font-weight:700">${m.vipPending}</span>` : '0'}</td>
-      <td><button class="btn btn-ghost btn-sm" onclick="goToMasterMembers('${m.id}')">查看直客</button></td>
+      <td><button class="btn btn-ghost btn-sm" onclick="goToMasterMembers('${m.id}')">查看會員</button></td>
     </tr>
   `).join('');
 }
@@ -1121,7 +1121,7 @@ function showToast(msg, type = 'success') {
 
 // ── Helpers ──
 const RANK_MAP = {
-  miner:'⛏️ 礦工', knight:'⚔️ 騎士', wargod:'⚡ 戰神',
+  miner:'⛏️ 布衣', knight:'⚔️ 騎士', wargod:'⚡ 戰神',
   wizard:'🔮 術士', king:'👑 天王', elder:'🏯 長老',
   master:'🐉 宗師', supreme:'✨ 至尊',
 };
@@ -1141,12 +1141,12 @@ function statusBadge(s) {
   return `<span class="status-badge ${c}">${l}</span>`;
 }
 function masterStatusLabel(s) {
-  return {null:'—',pending:'申請中',recommended:'已推薦，待毛哥審核',approved:'已核准',rejected:'已拒絕'}[s]||s;
+  return {null:'—',pending:'申請中',recommended:'已推薦，待系統管理員審核',approved:'已核准',rejected:'已拒絕'}[s]||s;
 }
 function masterStatusBadge(s) {
   const map = {
     pending:['⏳ 申請中','s-pending'],
-    recommended:['📨 待毛哥審核','s-recommended'],
+    recommended:['📨 待系統管理員審核','s-recommended'],
     approved:['✅ 已核准','s-approved'],
     rejected:['❌ 已拒絕','s-rejected'],
   };
