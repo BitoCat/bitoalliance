@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>比特聯盟 · BitoCat 指標申請</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg: #edd4be;
+    --bg-card: #f5e8d8;
+    --bg-dark: #1a1008;
+    --accent: #8b5e3c;
+    --accent-light: #c49a6c;
+    --accent-gold: #d4a843;
+    --ranger: #4a7a6a;       /* 遊俠專屬色：深青綠 */
+    --ranger-light: #7ab8a4;
+    --ranger-bg: #d4ede6;
+    --text: #2a1f14;
+    --text-muted: #7a5c42;
+    --border: #d4b896;
+    --success: #5a8a5a;
+    --danger: #a84444;
+    --radius: 12px;
+    --shadow: 0 4px 20px rgba(42,31,20,.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Helvetica Neue','PingFang TC','Microsoft JhengHei',sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--bg-dark);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo { font-size: 18px; font-weight: 700; color: var(--accent-gold); letter-spacing: 1px; }
+  .header-nav a {
+    color: #cbb898; font-size: 13px; text-decoration: none;
+    margin-left: 20px; transition: color .2s;
+  }
+  .header-nav a:hover { color: #f5e8d8; }
+
+  /* ── Hero ── */
+  .hero {
+    background: linear-gradient(135deg, #1a1008 0%, #2d1f10 50%, #1a2a20 100%);
+    padding: 60px 24px 50px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '🗡️';
+    position: absolute;
+    font-size: 200px;
+    opacity: .04;
+    top: -20px; right: -20px;
+    pointer-events: none;
+  }
+  .hero-tag {
+    display: inline-block;
+    background: var(--ranger);
+    color: #fff;
+    font-size: 11px; font-weight: 700; letter-spacing: 2px;
+    padding: 4px 14px; border-radius: 20px;
+    margin-bottom: 16px; text-transform: uppercase;
+  }
+  .hero h1 {
+    font-size: 36px; font-weight: 800;
+    color: #f5e8d8; line-height: 1.2;
+    margin-bottom: 12px;
+  }
+  .hero h1 span { color: var(--accent-gold); }
+  .hero p {
+    font-size: 15px; color: #b0907a;
+    max-width: 480px; margin: 0 auto 28px; line-height: 1.7;
+  }
+  .price-display {
+    display: inline-flex; align-items: baseline; gap: 6px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 10px; padding: 12px 24px; margin-bottom: 8px;
+  }
+  .price-num { font-size: 42px; font-weight: 800; color: var(--accent-gold); }
+  .price-unit { font-size: 16px; color: #b0907a; }
+  .price-sub { font-size: 12px; color: #7a6050; margin-top: 4px; }
+
+  /* ── Main layout ── */
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+  }
+
+  /* ── Steps indicator ── */
+  .steps {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0; margin-bottom: 36px;
+  }
+  .step {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    flex: 1; position: relative;
+  }
+  .step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 16px; left: calc(50% + 16px);
+    width: calc(100% - 32px); height: 2px;
+    background: var(--border);
+  }
+  .step.done:not(:last-child)::after { background: var(--ranger); }
+  .step-dot {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--bg-card); border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; color: var(--text-muted);
+    position: relative; z-index: 1;
+    transition: all .3s;
+  }
+  .step.active .step-dot { background: var(--ranger); border-color: var(--ranger); color: #fff; }
+  .step.done .step-dot { background: var(--success); border-color: var(--success); color: #fff; }
+  .step-label { font-size: 11px; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
+  .step.active .step-label { color: var(--ranger); }
+  .step.done .step-label { color: var(--success); }
+
+  /* ── Card ── */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-size: 16px; font-weight: 700; color: var(--text);
+    margin-bottom: 6px; display: flex; align-items: center; gap: 8px;
+  }
+  .card-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.6; }
+
+  /* ── Form ── */
+  label.field-label {
+    display: block; font-size: 12px; font-weight: 600;
+    color: var(--text-muted); margin-bottom: 5px; letter-spacing: .3px;
+  }
+  input[type=text], input[type=email] {
+    width: 100%; padding: 11px 14px;
+    border: 1px solid var(--border); border-radius: 8px;
+    background: #fffaf5; color: var(--text);
+    font-size: 15px; font-family: inherit;
+    outline: none; transition: border .2s; margin-bottom: 16px;
+  }
+  input:focus { border-color: var(--ranger); box-shadow: 0 0 0 3px rgba(74,122,106,.1); }
+
+  /* ── Coupon row ── */
+  .coupon-row { display: flex; gap: 10px; margin-bottom: 16px; }
+  .coupon-row input { margin-bottom: 0; flex: 1; text-transform: uppercase; }
+  .btn-verify {
+    padding: 11px 18px; border-radius: 8px;
+    background: var(--accent); color: #fff;
+    border: none; font-size: 14px; font-weight: 600;
+    cursor: pointer; white-space: nowrap; transition: background .2s;
+    flex-shrink: 0;
+  }
+  .btn-verify:hover { background: #7a5235; }
+
+  /* ── Discount display ── */
+  .discount-box {
+    display: none;
+    background: var(--ranger-bg);
+    border: 1px solid var(--ranger-light);
+    border-radius: 8px; padding: 12px 16px;
+    margin-bottom: 16px; font-size: 13px; color: var(--ranger);
+    font-weight: 600;
+  }
+  .discount-box.show { display: flex; align-items: center; gap: 8px; }
+  .discount-err {
+    display: none; font-size: 12px; color: var(--danger);
+    margin-top: -12px; margin-bottom: 12px;
+  }
+  .discount-err.show { display: block; }
+
+  /* ── Amount summary ── */
+  .amount-summary {
+    background: #f0e4d0;
+    border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 18px;
+    margin-bottom: 20px;
+  }
+  .amount-row { display: flex; justify-content: space-between; font-size: 14px; padding: 3px 0; }
+  .amount-row.total { font-size: 18px; font-weight: 700; color: var(--accent); border-top: 1px solid var(--border); padding-top: 10px; margin-top: 6px; }
+  .amount-row .strike { text-decoration: line-through; color: var(--text-muted); font-size: 12px; }
+
+  /* ── Buttons ── */
+  .btn-pay {
+    width: 100%; padding: 15px;
+    background: linear-gradient(135deg, var(--ranger), #3a6a5a);
+    color: #fff; border: none; border-radius: 10px;
+    font-size: 17px; font-weight: 700; cursor: pointer;
+    letter-spacing: .5px; transition: opacity .2s, transform .1s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-pay:hover { opacity: .9; }
+  .btn-pay:active { transform: scale(.98); }
+  .btn-pay:disabled { opacity: .5; cursor: default; }
+
+  .btn-submit {
+    width: 100%; padding: 14px;
+    background: var(--accent-gold); color: #1a1008;
+    border: none; border-radius: 10px;
+    font-size: 16px; font-weight: 700; cursor: pointer;
+    transition: opacity .2s, transform .1s;
+  }
+  .btn-submit:hover { opacity: .9; }
+  .btn-submit:active { transform: scale(.98); }
+  .btn-submit:disabled { opacity: .5; cursor: default; }
+
+  /* ── Info notice ── */
+  .notice {
+    background: rgba(74,122,106,.08);
+    border-left: 3px solid var(--ranger);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px; font-size: 13px;
+    color: var(--text-muted); line-height: 1.6;
+    margin-bottom: 20px;
+  }
+
+  /* ── Feature list ── */
+  .feature-list { list-style: none; margin-bottom: 20px; }
+  .feature-list li {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 8px 0; border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .feature-list li:last-child { border-bottom: none; }
+  .feature-list .fi { font-size: 18px; flex-shrink: 0; }
+
+  /* ── Result panel ── */
+  .result-panel {
+    display: none;
+    text-align: center; padding: 40px 20px;
+  }
+  .result-panel.show { display: block; }
+  .result-icon { font-size: 56px; margin-bottom: 16px; }
+  .result-title { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+  .result-sub { font-size: 14px; color: var(--text-muted); line-height: 1.7; }
+
+  /* ── Order status card ── */
+  .order-status {
+    background: var(--ranger-bg);
+    border: 1px solid var(--ranger-light);
+    border-radius: 10px; padding: 20px;
+    margin-top: 20px; text-align: left;
+  }
+  .order-status-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; }
+  .order-status-row .label { color: var(--text-muted); }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+  .badge-paid { background: #d4f0d4; color: #2a7a2a; }
+  .badge-pending-pay { background: #f0e4c4; color: #8a6214; }
+  .badge-granted { background: linear-gradient(90deg,#d4a843,#e8c060); color: #1a1008; }
+  .badge-pending-grant { background: #e4d4f0; color: #6a3a8a; }
+
+  /* ── Toast ── */
+  .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+  .toast {
+    background: var(--bg-dark); color: #f5e8d8;
+    padding: 12px 20px; border-radius: 8px;
+    font-size: 13px; max-width: 300px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.3);
+    animation: slideIn .25s ease;
+  }
+  .toast.success { border-left: 3px solid var(--success); }
+  .toast.error   { border-left: 3px solid var(--danger); }
+  @keyframes slideIn { from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none} }
+
+  /* ── Ranger badge ── */
+  .ranger-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--ranger); color: #fff;
+    padding: 4px 12px; border-radius: 20px;
+    font-size: 12px; font-weight: 700; margin-bottom: 16px;
+  }
+
+  footer {
+    text-align: center; padding: 24px;
+    font-size: 12px; color: var(--text-muted);
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">⚔️ 比特聯盟</div>
+  <nav class="header-nav">
+    <a href="index.html">會員中心</a>
+    <a href="login.html">登入</a>
+  </nav>
+</header>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-tag">🗡️ 遊俠方案</div>
+  <h1>BitoCat <span>指標授權</span></h1>
+  <p>不加入任何門派，自由行走江湖。<br>訂閱 BitoCat 指標，一年授權，隨時掌握市場動向。</p>
+  <div class="price-display">
+    <div class="price-num" id="heroPrice">$3,600</div>
+    <div class="price-unit">TWD / 年</div>
+  </div>
+  <div class="price-sub">持有盟主優惠碼可折抵 $1,200</div>
+</div>
+
+<!-- Main -->
+<div class="container">
+
+  <!-- Steps -->
+  <div class="steps" id="stepsBar">
+    <div class="step active" id="step1">
+      <div class="step-dot">1</div>
+      <div class="step-label">付款</div>
+    </div>
+    <div class="step" id="step2">
+      <div class="step-dot">2</div>
+      <div class="step-label">填資料</div>
+    </div>
+    <div class="step" id="step3">
+      <div class="step-dot">3</div>
+      <div class="step-label">等待授權</div>
+    </div>
+  </div>
+
+  <!-- ── STEP 1：付款 ── -->
+  <div id="panelPay">
+
+    <!-- 特點說明 -->
+    <div class="card">
+      <div class="card-title">🗡️ 遊俠方案包含</div>
+      <ul class="feature-list">
+        <li><span class="fi">📊</span><span>BitoCat 系列 TradingView 指標一年授權（含三貓咪隧道等全系列）</span></li>
+        <li><span class="fi">🌐</span><span>比特聯盟網站遊俠功能開放</span></li>
+        <li><span class="fi">🔔</span><span>指標快訊推播</span></li>
+        <li><span class="fi">🗡️</span><span>不須加入任何盟主，自由身份</span></li>
+      </ul>
+    </div>
+
+    <!-- 付款表單 -->
+    <div class="card">
+      <div class="card-title">💳 付款資訊</div>
+      <div class="card-sub">填入優惠碼可享折扣（選填），確認後點下方付款按鈕跳轉綠界。</div>
+
+      <label class="field-label">盟主優惠碼（選填）</label>
+      <div class="coupon-row">
+        <input type="text" id="couponInput" placeholder="例：BITO-A3K9" maxlength="12" oninput="this.value=this.value.toUpperCase()">
+        <button class="btn-verify" onclick="verifyCoupon()">套用</button>
+      </div>
+      <div class="discount-box" id="discountBox"></div>
+      <div class="discount-err" id="discountErr"></div>
+
+      <div class="amount-summary">
+        <div class="amount-row">
+          <span>BitoCat 指標年費</span>
+          <span id="origPrice">$3,600</span>
+        </div>
+        <div class="amount-row" id="discountRow" style="display:none;color:var(--ranger);">
+          <span>優惠碼折抵</span>
+          <span>－$1,200</span>
+        </div>
+        <div class="amount-row total">
+          <span>應付金額</span>
+          <span id="finalPrice">$3,600</span>
+        </div>
+      </div>
+
+      <div class="notice">
+        付款完成後請回到此頁面，填寫訂單編號與 TradingView 帳號，毛哥收到後將手動授權指標。
+      </div>
+
+      <button class="btn-pay" id="payBtn" onclick="goCheckout()">
+        🔐 前往綠界付款
+      </button>
+    </div>
+
+  </div>
+
+  <!-- ── STEP 2：填資料 ── -->
+  <div id="panelSubmit" style="display:none;">
+    <div class="card">
+      <div class="ranger-badge">✅ 付款成功</div>
+      <div class="card-title">📋 填寫申請資料</div>
+      <div class="card-sub">請填入付款後收到的訂單編號，以及你的 TradingView 帳號名稱，毛哥將以此授權指標。</div>
+
+      <label class="field-label">綠界訂單編號（必填）</label>
+      <input type="text" id="tradeNoInput" placeholder="例：BITO20240616143022ABCD" maxlength="30">
+
+      <label class="field-label">TradingView 帳號名稱（必填）</label>
+      <input type="text" id="tvUsernameInput" placeholder="你在 TradingView 的用戶名稱">
+
+      <div class="notice">
+        TradingView 帳號名稱在 TradingView 右上角點個人頭像可以看到，格式通常是英數字。
+      </div>
+
+      <button class="btn-submit" id="submitBtn" onclick="submitApplication()">
+        📨 送出申請
+      </button>
+    </div>
+  </div>
+
+  <!-- ── STEP 3：完成 ── -->
+  <div id="panelDone" style="display:none;">
+    <div class="card">
+      <div class="result-panel show">
+        <div class="result-icon">🗡️</div>
+        <div class="result-title">申請已送出！</div>
+        <div class="result-sub">
+          毛哥收到你的申請後，將在 TradingView 手動授權指標。<br>
+          授權完成後你就能在 TradingView 使用 BitoCat 全系列指標。<br><br>
+          <strong>請留意你的 TradingView 通知。</strong>
+        </div>
+        <div class="order-status" id="orderStatusBox" style="display:none;">
+          <div class="order-status-row"><span class="label">訂單編號</span><span id="doneTradeNo">—</span></div>
+          <div class="order-status-row"><span class="label">TradingView 帳號</span><span id="doneTvUsername">—</span></div>
+          <div class="order-status-row"><span class="label">付款狀態</span><span id="donePayStatus">—</span></div>
+          <div class="order-status-row"><span class="label">指標授權</span><span id="doneGrantStatus">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 查詢訂單狀態（獨立區塊） -->
+  <div class="card" id="checkOrderCard">
+    <div class="card-title">🔍 查詢訂單狀態</div>
+    <div class="card-sub">已送出申請？輸入訂單編號查詢授權進度。</div>
+    <div class="coupon-row">
+      <input type="text" id="checkTradeNo" placeholder="BITO20240616143022ABCD" maxlength="30">
+      <button class="btn-verify" onclick="checkOrder()">查詢</button>
+    </div>
+    <div id="checkResult" style="display:none;"></div>
+  </div>
+
+</div>
+
+<footer>
+  © 比特聯盟 BitoAlliance · BitoCat 指標系列 · 推薦碼 <strong>Pooc</strong> 在 Bitunix 交易所享優惠
+</footer>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+const API = 'https://web-production-f4735.up.railway.app';
+const SUPABASE_URL = 'https://kldumnxdlgovaxtiszyn.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsZHVtbnhkbGdvdmF4dGlzenluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjIyNDgsImV4cCI6MjA5MzY5ODI0OH0.P_anfYpSV2tgCPIQ7uZDVBjUFY3UhfEXk9u3XjlzBHI';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+let currentAmount = 3600;
+let currentUserId = null;
+let verifiedCode = '';
+
+// ── Init ──
+async function init() {
+  // 取得登入狀態
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) currentUserId = session.user.id;
+
+  // 檢查 URL 參數（綠界付款後回來）
+  const params = new URLSearchParams(window.location.search);
+  const result = params.get('result');
+  const tradeNo = params.get('no');
+
+  if (result === 'success' && tradeNo) {
+    // 付款成功，跳到填資料
+    goToStep2(tradeNo);
+  }
+}
+
+// ── 優惠碼驗證 ──
+async function verifyCoupon() {
+  const code = document.getElementById('couponInput').value.trim();
+  const discountBox = document.getElementById('discountBox');
+  const discountErr = document.getElementById('discountErr');
+  discountBox.classList.remove('show');
+  discountErr.classList.remove('show');
+
+  if (!code) {
+    discountErr.textContent = '請輸入優惠碼';
+    discountErr.classList.add('show');
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API}/indicator/verify-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ referral_code: code }),
+    });
+    const data = await res.json();
+
+    if (data.valid) {
+      verifiedCode = code;
+      currentAmount = data.amount;
+      discountBox.innerHTML = `✅ ${data.message}｜由 <strong>${data.master_name}</strong> 推薦`;
+      discountBox.classList.add('show');
+      document.getElementById('discountRow').style.display = 'flex';
+      document.getElementById('finalPrice').textContent = `$${currentAmount.toLocaleString()}`;
+      document.getElementById('heroPrice').textContent = `$${currentAmount.toLocaleString()}`;
+    } else {
+      verifiedCode = '';
+      currentAmount = 3600;
+      discountErr.textContent = data.message || '優惠碼無效';
+      discountErr.classList.add('show');
+      document.getElementById('discountRow').style.display = 'none';
+      document.getElementById('finalPrice').textContent = '$3,600';
+    }
+  } catch (e) {
+    discountErr.textContent = '驗證失敗，請稍後再試';
+    discountErr.classList.add('show');
+  }
+}
+
+// ── 前往付款 ──
+async function goCheckout() {
+  const btn = document.getElementById('payBtn');
+  btn.disabled = true;
+  btn.textContent = '建立訂單中…';
+
+  try {
+    const res = await fetch(`${API}/indicator/checkout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ referral_code: verifiedCode }),
+    });
+
+    if (!res.ok) throw new Error('建立訂單失敗');
+
+    // 後端回傳 HTML form，直接寫進 document 觸發送出
+    const html = await res.text();
+    document.open();
+    document.write(html);
+    document.close();
+  } catch (e) {
+    showToast('建立訂單失敗，請稍後再試', 'error');
+    btn.disabled = false;
+    btn.innerHTML = '🔐 前往綠界付款';
+  }
+}
+
+// ── 跳到 Step2 ──
+function goToStep2(tradeNo) {
+  document.getElementById('panelPay').style.display = 'none';
+  document.getElementById('panelSubmit').style.display = 'block';
+  document.getElementById('panelDone').style.display = 'none';
+  document.getElementById('checkOrderCard').style.display = 'none';
+
+  setStep(2);
+
+  if (tradeNo) {
+    document.getElementById('tradeNoInput').value = tradeNo;
+  }
+}
+
+// ── 送出申請 ──
+async function submitApplication() {
+  const tradeNo = document.getElementById('tradeNoInput').value.trim();
+  const tvUsername = document.getElementById('tvUsernameInput').value.trim();
+
+  if (!tradeNo) { showToast('請填入訂單編號', 'error'); return; }
+  if (!tvUsername) { showToast('請填入 TradingView 帳號名稱', 'error'); return; }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '送出中…';
+
+  try {
+    const res = await fetch(`${API}/indicator/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        merchant_trade_no: tradeNo,
+        tv_username: tvUsername,
+        user_id: currentUserId || undefined,
+      }),
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      goToStep3(tradeNo, tvUsername);
+    } else {
+      showToast(data.message || '送出失敗', 'error');
+      btn.disabled = false;
+      btn.textContent = '📨 送出申請';
+    }
+  } catch (e) {
+    showToast('網路錯誤，請稍後再試', 'error');
+    btn.disabled = false;
+    btn.textContent = '📨 送出申請';
+  }
+}
+
+// ── 跳到 Step3 ──
+function goToStep3(tradeNo, tvUsername) {
+  document.getElementById('panelPay').style.display = 'none';
+  document.getElementById('panelSubmit').style.display = 'none';
+  document.getElementById('panelDone').style.display = 'block';
+  document.getElementById('checkOrderCard').style.display = 'none';
+
+  setStep(3);
+
+  if (tradeNo) {
+    document.getElementById('orderStatusBox').style.display = 'block';
+    document.getElementById('doneTradeNo').textContent = tradeNo;
+    document.getElementById('doneTvUsername').textContent = tvUsername || '—';
+    document.getElementById('donePayStatus').innerHTML = '<span class="badge badge-paid">✅ 已付款</span>';
+    document.getElementById('doneGrantStatus').innerHTML = '<span class="badge badge-pending-grant">⏳ 待授權</span>';
+  }
+}
+
+// ── 查詢訂單 ──
+async function checkOrder() {
+  const tradeNo = document.getElementById('checkTradeNo').value.trim();
+  if (!tradeNo) { showToast('請輸入訂單編號', 'error'); return; }
+
+  const resultDiv = document.getElementById('checkResult');
+  resultDiv.style.display = 'block';
+  resultDiv.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">查詢中…</div>';
+
+  try {
+    const res = await fetch(`${API}/indicator/check?no=${encodeURIComponent(tradeNo)}`);
+    const data = await res.json();
+
+    if (!data.ok) {
+      resultDiv.innerHTML = `<div style="color:var(--danger);font-size:13px;">❌ ${data.message || '找不到訂單'}</div>`;
+      return;
+    }
+
+    const o = data.order;
+    const payBadge = o.payment_status === 'paid'
+      ? '<span class="badge badge-paid">✅ 已付款</span>'
+      : '<span class="badge badge-pending-pay">⏳ 待付款</span>';
+    const grantBadge = o.indicator_status === 'granted'
+      ? '<span class="badge badge-granted">🗡️ 已授權</span>'
+      : '<span class="badge badge-pending-grant">⏳ 待授權</span>';
+
+    resultDiv.innerHTML = `
+      <div class="order-status">
+        <div class="order-status-row"><span class="label">訂單編號</span><span style="font-size:12px;">${esc(o.merchant_trade_no)}</span></div>
+        <div class="order-status-row"><span class="label">金額</span><span>$${Number(o.amount).toLocaleString()}</span></div>
+        <div class="order-status-row"><span class="label">TradingView 帳號</span><span>${esc(o.tv_username || '（尚未填寫）')}</span></div>
+        <div class="order-status-row"><span class="label">付款狀態</span>${payBadge}</div>
+        <div class="order-status-row"><span class="label">指標授權</span>${grantBadge}</div>
+        ${o.granted_at ? `<div class="order-status-row"><span class="label">授權時間</span><span style="font-size:12px;">${fmtDate(o.granted_at)}</span></div>` : ''}
+      </div>
+      ${o.payment_status === 'paid' && !o.tv_username ? `
+        <div style="margin-top:12px;">
+          <button class="btn-submit" style="font-size:14px;padding:10px;" onclick="goToStep2('${esc(o.merchant_trade_no)}')">
+            📋 填寫 TradingView 帳號
+          </button>
+        </div>` : ''}
+    `;
+  } catch (e) {
+    resultDiv.innerHTML = '<div style="color:var(--danger);font-size:13px;">查詢失敗，請稍後再試</div>';
+  }
+}
+
+// ── Step indicator ──
+function setStep(n) {
+  for (let i = 1; i <= 3; i++) {
+    const el = document.getElementById('step' + i);
+    el.classList.remove('active', 'done');
+    if (i < n) el.classList.add('done'), el.querySelector('.step-dot').textContent = '✓';
+    else if (i === n) el.classList.add('active');
+  }
+}
+
+// ── Toast ──
+function showToast(msg, type = 'success') {
+  const c = document.getElementById('toastContainer');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  c.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('zh-TW', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+}
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+init();
+</script>
+</body>
+</html>
