@@ -270,6 +270,56 @@ body {
     </div>
   </div>
 
+  <!-- VIP 等級申請 -->
+  <div class="card">
+    <div class="card-title">🏆 申請 Bitunix VIP 等級認證</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6;">
+      上傳你在 Bitunix App 的 VIP 等級截圖，盟主審核後會為你更新比特聯盟稱號。<br>
+      截圖路徑：Bitunix App → 個人頭像 → VIP 等級
+    </p>
+
+    <!-- 目前等級顯示 -->
+    <div style="background:var(--bg);border-radius:10px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">目前比特聯盟稱號</div>
+        <div style="font-size:18px;font-weight:600;color:var(--text);" id="currentRank">⛏️ 礦工</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">有效期限</div>
+        <div style="font-size:13px;font-weight:500;color:var(--text);" id="rankExpiry">—</div>
+      </div>
+    </div>
+
+    <!-- 截圖上傳 -->
+    <div class="form-group">
+      <label class="form-label">VIP 等級截圖</label>
+      <div id="uploadArea" onclick="document.getElementById('vipFile').click()"
+        style="border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:border-color .2s;"
+        onmouseover="this.style.borderColor='var(--accent)'"
+        onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:28px;margin-bottom:8px;">📸</div>
+        <div style="font-size:14px;font-weight:500;color:var(--text);">點擊上傳截圖</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;">支援 JPG、PNG，最大 5MB</div>
+      </div>
+      <input type="file" id="vipFile" accept="image/*" style="display:none;" onchange="previewFile(this)">
+    </div>
+
+    <!-- 預覽 -->
+    <div id="previewArea" style="display:none;margin-bottom:16px;">
+      <img id="previewImg" style="max-width:100%;border-radius:8px;border:1px solid var(--border);">
+      <button onclick="clearFile()" style="margin-top:8px;background:transparent;border:none;color:var(--muted);font-size:12px;cursor:pointer;">✕ 重新選擇</button>
+    </div>
+
+    <!-- 申請說明 -->
+    <div class="form-group">
+      <label class="form-label">備註（選填）</label>
+      <input class="form-input" type="text" id="rankNote" placeholder="例如：這是我的 VIP3 截圖，請審核">
+    </div>
+
+    <button class="btn btn-accent" id="btnSubmitRank" onclick="submitRank()">提交審核</button>
+    <div class="msg" id="msgRank"></div>
+  </div>
+
   <!-- 修改密碼 -->
   <div class="card">
     <div class="card-title">🔒 修改密碼</div>
@@ -341,6 +391,9 @@ async function loadProfile() {
 
   // UID 申請狀態
   renderUidStatus(profile.bitunix_uid, isDirect);
+
+  // VIP 等級
+  loadRank();
 }
 
 function renderUidStatus(uid, isDirect) {
@@ -413,6 +466,87 @@ async function savePassword() {
   showMsg('msgPwd', '✅ 密碼已更新', 'success');
   document.getElementById('newPassword').value  = '';
   document.getElementById('newPassword2').value = '';
+}
+
+// ── VIP 等級 ──
+let selectedFile = null;
+
+function previewFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { alert('檔案大小不能超過 5MB'); return; }
+  selectedFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('previewImg').src = e.target.result;
+    document.getElementById('previewArea').style.display = '';
+    document.getElementById('uploadArea').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearFile() {
+  selectedFile = null;
+  document.getElementById('vipFile').value = '';
+  document.getElementById('previewArea').style.display = 'none';
+  document.getElementById('uploadArea').style.display = '';
+}
+
+async function loadRank() {
+  const { data } = await sb.from('member_ranks')
+    .select('rank, expires_at, granted_by')
+    .eq('user_id', currentUser.id)
+    .single();
+  if (!data) return;
+  const rankMap = {
+    miner: '⛏️ 礦工', knight: '⚔️ 騎士', wargod: '⚡ 戰神',
+    wizard: '🔮 術士', king: '👑 天王', elder: '🏯 長老',
+    master: '🐉 宗師', supreme: '✨ 至尊'
+  };
+  const el = document.getElementById('currentRank');
+  const ex = document.getElementById('rankExpiry');
+  if (el) el.textContent = rankMap[data.rank] || '⛏️ 礦工';
+  if (ex && data.expires_at) {
+    const d = new Date(data.expires_at);
+    const isExpired = d < new Date();
+    ex.textContent = isExpired ? '已到期' : d.toLocaleDateString('zh-TW', {year:'numeric',month:'long',day:'numeric'});
+    ex.style.color = isExpired ? 'var(--down)' : 'var(--up)';
+  }
+}
+
+async function submitRank() {
+  if (!selectedFile) { showMsg('msgRank', '請先上傳截圖', 'error'); return; }
+  setLoading('btnSubmitRank', true, '提交審核');
+
+  // 上傳截圖到 Storage
+  const ext = selectedFile.name.split('.').pop();
+  const path = `${currentUser.id}/vip_${Date.now()}.${ext}`;
+  const { error: uploadErr } = await sb.storage
+    .from('vip-screenshots')
+    .upload(path, selectedFile, { upsert: true });
+
+  if (uploadErr) {
+    setLoading('btnSubmitRank', false, '提交審核');
+    showMsg('msgRank', '上傳失敗：' + uploadErr.message, 'error');
+    return;
+  }
+
+  // 寫入 member_ranks（pending 狀態）
+  const note = document.getElementById('rankNote').value.trim();
+  const { error: rankErr } = await sb.from('member_ranks')
+    .upsert({
+      user_id: currentUser.id,
+      rank: 'miner',
+      screenshot_path: path,
+      note: note,
+      status: 'pending',
+      expires_at: null,
+    }, { onConflict: 'user_id' });
+
+  setLoading('btnSubmitRank', false, '提交審核');
+  if (rankErr) { showMsg('msgRank', rankErr.message, 'error'); return; }
+  showMsg('msgRank', '✅ 已提交！盟主審核後會更新你的稱號', 'success');
+  clearFile();
 }
 
 // ── 工具 ──
