@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>比特聯盟 · 登入</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #edd4be;
+  --card: #f5e8d8;
+  --dark: #1a1008;
+  --accent: #8b5e3c;
+  --accent-gold: #d4a843;
+  --text: #2a1f14;
+  --muted: #7a5c42;
+  --border: #d4b896;
+  --success: #5a8a5a;
+  --danger: #a84444;
+  --radius: 12px;
+}
+body {
+  background: var(--bg);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: -apple-system, 'Helvetica Neue', 'PingFang TC', sans-serif;
+  padding: 24px 16px;
+}
+
+/* ── Logo area ── */
+.brand {
+  text-align: center;
+  margin-bottom: 28px;
+}
+.brand-icon {
+  font-size: 48px;
+  margin-bottom: 8px;
+}
+.brand-name {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--dark);
+  letter-spacing: 1px;
+}
+.brand-sub {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* ── Card ── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px 28px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 4px 24px rgba(42,31,20,.12);
+}
+
+/* ── Tabs ── */
+.tabs {
+  display: flex;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 24px;
+}
+.tab {
+  flex: 1;
+  text-align: center;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all .2s;
+}
+.tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* ── Form ── */
+.form-panel { display: none; }
+.form-panel.active { display: block; }
+
+label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 5px;
+  letter-spacing: .3px;
+}
+input[type=email], input[type=password], input[type=text] {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fffaf5;
+  color: var(--text);
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+  transition: border .2s;
+  margin-bottom: 16px;
+}
+input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(139,94,60,.1); }
+
+/* ── Buttons ── */
+.btn-primary {
+  width: 100%;
+  padding: 13px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 9px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity .2s;
+  margin-bottom: 12px;
+}
+.btn-primary:hover { opacity: .88; }
+.btn-primary:disabled { opacity: .5; cursor: default; }
+
+.btn-google {
+  width: 100%;
+  padding: 12px;
+  background: #fff;
+  color: #3c3c3c;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: background .2s;
+  margin-bottom: 12px;
+}
+.btn-google:hover { background: #f5f5f5; }
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0 16px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.divider::before, .divider::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Forgot / links ── */
+.forgot {
+  text-align: right;
+  margin-top: -10px;
+  margin-bottom: 16px;
+}
+.forgot a, .link {
+  font-size: 12px;
+  color: var(--accent);
+  text-decoration: none;
+  cursor: pointer;
+}
+.forgot a:hover, .link:hover { text-decoration: underline; }
+
+/* ── Messages ── */
+.msg {
+  display: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+.msg.error   { background: #f8e8e8; color: var(--danger); border: 1px solid #e8c8c8; display: block; }
+.msg.success { background: #e8f5e8; color: var(--success); border: 1px solid #c8e8c8; display: block; }
+
+/* ── Reset panel ── */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+.back-link:hover { color: var(--accent); }
+
+footer {
+  margin-top: 24px;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+</style>
+</head>
+<body>
+
+<div class="brand">
+  <img src="BitoAlliance_logo_PNG.png" alt="BitoAlliance" style="width:80px;height:80px;border-radius:50%;margin-bottom:10px;display:block;margin-left:auto;margin-right:auto;">
+  <div class="brand-name">比特聯盟 BitoAlliance</div>
+  <div class="brand-sub">加密貨幣資訊平台</div>
+</div>
+
+<div class="card" id="authCard">
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('login')">登入</div>
+    <div class="tab" onclick="switchTab('register')">註冊</div>
+  </div>
+
+  <!-- ── 登入 ── -->
+  <div class="form-panel active" id="panel-login">
+    <div class="msg" id="loginMsg"></div>
+
+    <button class="btn-google" onclick="signInGoogle()">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#4285F4" d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z"/><path fill="#34A853" d="M6.3 14.7l7 5.1C15 16.1 19.1 13 24 13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2c-7.6 0-14.2 4.3-17.7 10.7z"/><path fill="#FBBC05" d="M24 46c5.9 0 11-2 14.7-5.3l-6.8-5.6C29.8 36.7 27 37.5 24 37.5c-6 0-11.1-4-12.9-9.5l-7 5.4C7.8 41.7 15.4 46 24 46z"/><path fill="#EA4335" d="M44.5 20H24v8.5h11.8c-.8 2.3-2.3 4.3-4.3 5.7l6.8 5.6C42 36 46 30.5 46 24c0-1.3-.2-2.7-.5-4z"/></svg>
+      使用 Google 帳號登入
+    </button>
+
+    <div class="divider">或使用 Email 登入</div>
+
+    <label>Email</label>
+    <input type="email" id="loginEmail" placeholder="your@gmail.com" autocomplete="email">
+
+    <label>密碼</label>
+    <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+
+    <div class="forgot"><a onclick="showReset()">忘記密碼？</a></div>
+
+    <button class="btn-primary" onclick="signIn()" id="loginBtn">登入</button>
+
+    <div style="text-align:center;font-size:13px;color:var(--muted);">
+      還沒有帳號？<span class="link" onclick="switchTab('register')">立即註冊</span>
+    </div>
+  </div>
+
+  <!-- ── 註冊 ── -->
+  <div class="form-panel" id="panel-register">
+    <div class="msg" id="registerMsg"></div>
+
+    <button class="btn-google" onclick="signInGoogle()">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#4285F4" d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z"/><path fill="#34A853" d="M6.3 14.7l7 5.1C15 16.1 19.1 13 24 13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2c-7.6 0-14.2 4.3-17.7 10.7z"/><path fill="#FBBC05" d="M24 46c5.9 0 11-2 14.7-5.3l-6.8-5.6C29.8 36.7 27 37.5 24 37.5c-6 0-11.1-4-12.9-9.5l-7 5.4C7.8 41.7 15.4 46 24 46z"/><path fill="#EA4335" d="M44.5 20H24v8.5h11.8c-.8 2.3-2.3 4.3-4.3 5.7l6.8 5.6C42 36 46 30.5 46 24c0-1.3-.2-2.7-.5-4z"/></svg>
+      使用 Google 帳號註冊
+    </button>
+
+    <div class="divider">或使用 Email 註冊</div>
+
+    <label>Email</label>
+    <input type="email" id="registerEmail" placeholder="your@gmail.com" autocomplete="email">
+
+    <label>密碼（至少 8 位）</label>
+    <input type="password" id="registerPassword" placeholder="••••••••" autocomplete="new-password">
+
+    <label>確認密碼</label>
+    <input type="password" id="registerPassword2" placeholder="••••••••" autocomplete="new-password">
+
+    <button class="btn-primary" onclick="signUp()" id="registerBtn">建立帳號</button>
+
+    <div style="text-align:center;font-size:13px;color:var(--muted);">
+      已有帳號？<span class="link" onclick="switchTab('login')">直接登入</span>
+    </div>
+  </div>
+
+  <!-- ── 忘記密碼 ── -->
+  <div class="form-panel" id="panel-reset">
+    <div class="back-link" onclick="showLogin()">← 返回登入</div>
+    <div class="msg" id="resetMsg"></div>
+
+    <label>請輸入你的 Email</label>
+    <input type="email" id="resetEmail" placeholder="your@gmail.com">
+
+    <button class="btn-primary" onclick="resetPassword()" id="resetBtn">發送重設連結</button>
+  </div>
+
+</div>
+
+<footer>© 比特聯盟 BitoAlliance · BitoCat 指標系列</footer>
+
+<script>
+const SUPABASE_URL  = 'https://kldumnxdlgovaxtiszyn.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsZHVtbnhkbGdvdmF4dGlzenluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjIyNDgsImV4cCI6MjA5MzY5ODI0OH0.P_anfYpSV2tgCPIQ7uZDVBjUFY3UhfEXk9u3XjlzBHI';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// 已登入直接跳首頁
+sb.auth.getSession().then(({ data }) => {
+  if (data.session) window.location.href = 'index.html';
+});
+
+// ── Tab 切換 ──
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'register' && i === 1));
+  });
+  document.getElementById('panel-login').classList.toggle('active', tab === 'login');
+  document.getElementById('panel-register').classList.toggle('active', tab === 'register');
+  document.getElementById('panel-reset').classList.remove('active');
+}
+
+function showReset() {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.form-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-reset').classList.add('active');
+}
+
+function showLogin() { switchTab('login'); }
+
+// ── 工具 ──
+function showMsg(id, text, type) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = 'msg ' + type;
+}
+function clearMsg(id) {
+  const el = document.getElementById(id);
+  el.textContent = '';
+  el.className = 'msg';
+}
+
+function errText(e) {
+  const msg = e?.message || '';
+  if (msg.includes('Invalid login')) return 'Email 或密碼錯誤，請重新確認。';
+  if (msg.includes('Email not confirmed')) return '請先確認你的 Email，再嘗試登入。';
+  if (msg.includes('User already registered')) return '此 Email 已註冊，請直接登入。';
+  if (msg.includes('Password should be')) return '密碼至少需要 8 個字元。';
+  if (msg.includes('rate limit')) return '嘗試次數過多，請稍後再試。';
+  return msg || '發生錯誤，請稍後再試。';
+}
+
+// ── Email 登入 ──
+async function signIn() {
+  clearMsg('loginMsg');
+  const email    = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  if (!email || !password) { showMsg('loginMsg', '請填寫 Email 和密碼', 'error'); return; }
+
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true; btn.textContent = '登入中…';
+
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) {
+    showMsg('loginMsg', errText(error), 'error');
+    btn.disabled = false; btn.textContent = '登入';
+  } else {
+    window.location.href = 'index.html';
+  }
+}
+
+// ── Google 登入 ──
+async function signInGoogle() {
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: 'https://bitocat.github.io/bitoalliance/index.html' }
+  });
+  if (error) showMsg('loginMsg', errText(error), 'error');
+}
+
+// ── 註冊 ──
+async function signUp() {
+  clearMsg('registerMsg');
+  const email = document.getElementById('registerEmail').value.trim();
+  const pw1   = document.getElementById('registerPassword').value;
+  const pw2   = document.getElementById('registerPassword2').value;
+
+  if (!email || !pw1) { showMsg('registerMsg', '請填寫 Email 和密碼', 'error'); return; }
+  if (pw1 !== pw2)    { showMsg('registerMsg', '兩次密碼不一致', 'error'); return; }
+  if (pw1.length < 8) { showMsg('registerMsg', '密碼至少需要 8 個字元', 'error'); return; }
+
+  const btn = document.getElementById('registerBtn');
+  btn.disabled = true; btn.textContent = '建立中…';
+
+  const { error } = await sb.auth.signUp({ email, password: pw1 });
+  if (error) {
+    showMsg('registerMsg', errText(error), 'error');
+    btn.disabled = false; btn.textContent = '建立帳號';
+  } else {
+    showMsg('registerMsg', '✅ 帳號建立成功！請檢查 Email 收件匣確認帳號，再回來登入。', 'success');
+    btn.disabled = false; btn.textContent = '建立帳號';
+  }
+}
+
+// ── 忘記密碼 ──
+async function resetPassword() {
+  clearMsg('resetMsg');
+  const email = document.getElementById('resetEmail').value.trim();
+  if (!email) { showMsg('resetMsg', '請填寫 Email', 'error'); return; }
+
+  const btn = document.getElementById('resetBtn');
+  btn.disabled = true; btn.textContent = '發送中…';
+
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: 'https://bitocat.github.io/bitoalliance/login.html'
+  });
+
+  if (error) {
+    showMsg('resetMsg', errText(error), 'error');
+  } else {
+    showMsg('resetMsg', '✅ 重設連結已發送！請檢查你的 Email 收件匣。', 'success');
+  }
+  btn.disabled = false; btn.textContent = '發送重設連結';
+}
+
+// Enter 鍵送出
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const active = document.querySelector('.form-panel.active');
+  if (active?.id === 'panel-login')    signIn();
+  if (active?.id === 'panel-register') signUp();
+  if (active?.id === 'panel-reset')    resetPassword();
+});
+</script>
+</body>
+</html>
