@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>比特聯盟 · 概念板塊排行</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #edd4be; --panel: #f5e8d8; --dark: #1a1008;
+  --accent: #8b5e3c; --gold: #d4a843;
+  --text: #2a1f14; --muted: #7a5c42; --border: #d4b896;
+  --up: #27AE60; --dn: #C0392B; --radius: 12px;
+  --shadow: 0 2px 12px rgba(42,31,20,.08);
+}
+body { background: var(--bg); font-family: -apple-system,'Helvetica Neue','PingFang TC',sans-serif; min-height:100vh; color:var(--text); }
+
+.navbar { background:var(--dark); height:56px; display:flex; align-items:center; padding:0 24px; gap:14px; position:sticky; top:0; z-index:100; }
+.nav-logo { font-size:18px; font-weight:700; color:var(--gold); }
+.nav-spacer { flex:1; }
+.nav-badge { font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; background:var(--accent); color:#fff; }
+.nav-badge.ranger { background:#4a7a6a; }
+.nav-badge.master { background:var(--gold); color:#1a1008; }
+.btn-back { background:transparent; border:1px solid #444; color:#aaa; padding:5px 14px; border-radius:7px; font-size:13px; text-decoration:none; }
+.update-badge { font-size:10px; color:#7a6050; }
+
+.layout { max-width:1400px; margin:0 auto; padding:20px 24px 48px; }
+.section-title { font-size:11px; font-weight:700; letter-spacing:1.5px; color:var(--muted); text-transform:uppercase; margin-bottom:12px; }
+
+/* ── 板塊總覽 ── */
+.sector-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:24px; }
+.sector-card {
+  background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+  box-shadow:var(--shadow); overflow:hidden; cursor:pointer; transition:all .2s;
+}
+.sector-card:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(42,31,20,.12); border-color:var(--accent); }
+.sector-card.selected { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent); }
+.sector-header { padding:14px 16px 10px; display:flex; align-items:center; justify-content:space-between; }
+.sector-icon { font-size:24px; }
+.sector-name { font-size:14px; font-weight:700; color:var(--text); margin-top:4px; }
+.sector-chg  { font-size:22px; font-weight:800; font-variant-numeric:tabular-nums; }
+.sector-bar-wrap { height:4px; background:rgba(0,0,0,.08); }
+.sector-bar { height:100%; transition:width .5s; }
+.sector-coins { padding:8px 16px 12px; display:flex; flex-wrap:wrap; gap:4px; }
+.coin-chip {
+  font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px;
+  background:rgba(0,0,0,.06); color:var(--muted);
+}
+.coin-chip.up { background:rgba(39,174,96,.12); color:#1a6630; }
+.coin-chip.dn { background:rgba(192,57,43,.12); color:#8a1a1a; }
+
+/* ── 板塊詳情 ── */
+.detail-panel { background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:24px; overflow:hidden; display:none; }
+.detail-panel.show { display:block; }
+.detail-header { padding:16px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.detail-title { font-size:18px; font-weight:700; }
+.detail-body { padding:20px; display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+
+/* ── 幣種列表 ── */
+.coin-table { width:100%; border-collapse:collapse; font-size:13px; }
+.coin-table th { background:#e4cdb0; color:var(--muted); font-size:10px; font-weight:700; letter-spacing:.5px; text-align:left; padding:8px 12px; text-transform:uppercase; }
+.coin-table td { padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:middle; }
+.coin-table tr:last-child td { border-bottom:none; }
+.coin-table tr:hover td { background:rgba(139,94,60,.04); }
+
+/* ── 資金流向圖 ── */
+.flow-bar { display:flex; align-items:center; gap:8px; margin-bottom:6px; font-size:12px; }
+.flow-bar-name { min-width:60px; font-weight:600; }
+.flow-bar-wrap { flex:1; height:18px; background:rgba(0,0,0,.06); border-radius:4px; overflow:hidden; }
+.flow-bar-fill { height:100%; border-radius:4px; transition:width .5s; }
+.flow-bar-val { min-width:55px; text-align:right; font-weight:700; font-variant-numeric:tabular-nums; }
+
+/* ── 熱力圖 ── */
+.heatmap { display:grid; gap:4px; margin-bottom:20px; }
+.heat-cell {
+  border-radius:6px; padding:8px 10px; text-align:center;
+  cursor:pointer; transition:opacity .15s; position:relative; overflow:hidden;
+}
+.heat-cell:hover { opacity:.85; }
+.heat-sym { font-size:12px; font-weight:700; color:#fff; }
+.heat-chg { font-size:11px; color:rgba(255,255,255,.85); margin-top:2px; }
+
+/* ── 輪動分析 ── */
+.rotation-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:24px; }
+.rotation-card { background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; box-shadow:var(--shadow); }
+.rotation-label { font-size:10px; font-weight:700; letter-spacing:.5px; color:var(--muted); text-transform:uppercase; margin-bottom:8px; }
+.rotation-item { display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px solid var(--border); font-size:13px; }
+.rotation-item:last-child { border-bottom:none; }
+
+.skeleton { background:linear-gradient(90deg,var(--border) 25%,var(--bg) 50%,var(--border) 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; border-radius:6px; height:16px; margin-bottom:6px; }
+@keyframes shimmer { to { background-position:-200% 0; } }
+
+.up { color:var(--up); } .dn { color:var(--dn); }
+
+@media(max-width:1100px){ .sector-grid{grid-template-columns:repeat(2,1fr);} .rotation-grid{grid-template-columns:repeat(2,1fr);} }
+@media(max-width:700px){ .layout{padding:12px;} .sector-grid{grid-template-columns:1fr 1fr;} .rotation-grid{grid-template-columns:1fr;} .detail-body{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <span class="nav-logo">⚔️ 比特聯盟</span>
+  <div class="nav-spacer"></div>
+  <span class="update-badge" id="updateBadge">—</span>
+  <span class="nav-badge" id="navBadge">載入中</span>
+  <a href="signals.html" class="btn-back">← 儀表板</a>
+</nav>
+
+<div class="layout">
+
+  <!-- ── 板塊總覽 ── -->
+  <div class="section-title">板塊漲跌總覽</div>
+  <div class="section-title" style="font-size:10px;margin-top:-8px;margin-bottom:12px;color:#b0907a;">點擊板塊查看詳情</div>
+  <div class="sector-grid" id="sectorGrid">
+    <div class="sector-card"><div class="sector-header"><div><div class="sector-icon">⏳</div><div class="sector-name">載入中...</div></div></div></div>
+  </div>
+
+  <!-- ── 板塊詳情 ── -->
+  <div class="detail-panel" id="detailPanel">
+    <div class="detail-header">
+      <div>
+        <div class="detail-title" id="detailTitle">—</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:2px;" id="detailSub">—</div>
+      </div>
+      <button onclick="closeDetail()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:7px;cursor:pointer;font-size:13px;">✕ 關閉</button>
+    </div>
+    <div class="detail-body">
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.5px;margin-bottom:10px;">幣種表現</div>
+        <table class="coin-table">
+          <thead><tr><th>幣種</th><th>現價</th><th>24h 漲跌</th><th>成交量</th></tr></thead>
+          <tbody id="detailCoins"></tbody>
+        </table>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.5px;margin-bottom:10px;">板塊資金流向（成交量）</div>
+        <div id="detailFlow"></div>
+        <div style="margin-top:16px;">
+          <div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.5px;margin-bottom:10px;">24h 漲跌熱力圖</div>
+          <div class="heatmap" id="detailHeatmap" style="grid-template-columns:repeat(3,1fr);"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 資金輪動 ── -->
+  <div class="section-title">資金輪動分析</div>
+  <div class="rotation-grid">
+    <div class="rotation-card">
+      <div class="rotation-label">🔥 強勢板塊 Top 3</div>
+      <div id="rotationStrong"><div class="skeleton"></div></div>
+    </div>
+    <div class="rotation-card">
+      <div class="rotation-label">❄️ 弱勢板塊 Bottom 3</div>
+      <div id="rotationWeak"><div class="skeleton"></div></div>
+    </div>
+    <div class="rotation-card">
+      <div class="rotation-label">⚡ 量能最大板塊 Top 3</div>
+      <div id="rotationVolume"><div class="skeleton"></div></div>
+    </div>
+  </div>
+
+  <!-- ── 板塊資金流入流出 ── -->
+  <div class="section-title">板塊成交量排行</div>
+  <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin-bottom:24px;">
+    <div id="volumeFlow"><div class="skeleton"></div><div class="skeleton" style="width:80%"></div><div class="skeleton" style="width:60%"></div></div>
+  </div>
+
+  <!-- ── 全市場熱力圖 ── -->
+  <div class="section-title">全市場漲跌熱力圖</div>
+  <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin-bottom:24px;">
+    <div class="heatmap" id="globalHeatmap" style="grid-template-columns:repeat(6,1fr);"></div>
+  </div>
+
+  <!-- ── 板塊對比圖 ── -->
+  <div class="section-title">板塊平均漲跌對比</div>
+  <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);">
+    <canvas id="sectorChart" height="80"></canvas>
+  </div>
+
+</div>
+
+<script>
+const SUPABASE_URL  = 'https://kldumnxdlgovaxtiszyn.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsZHVtbnhkbGdvdmF4dGlzenluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjIyNDgsImV4cCI6MjA5MzY5ODI0OH0.P_anfYpSV2tgCPIQ7uZDVBjUFY3UhfEXk9u3XjlzBHI';
+const BITO_API = 'https://web-production-f4735.up.railway.app';
+
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// 板塊定義
+const SECTORS = [
+  { id:'ai',      name:'AI 人工智慧', icon:'🤖', coins:['FETUSDT','AGIXUSDT','RNDRUSDT','TAOUSDT','WLDUSDT','AKTUSDT'] },
+  { id:'defi',    name:'DeFi',       icon:'🏦', coins:['UNIUSDT','AAVEUSDT','CRVUSDT','MKRUSDT','COMPUSDT','LDOUSDT'] },
+  { id:'l2',      name:'Layer 2',    icon:'⚡', coins:['ARBUSDT','OPUSDT','MATICUSDT','IMXUSDT','STRKUSDT','ZKSYNCUSDT'] },
+  { id:'l1',      name:'公鏈 L1',   icon:'🔗', coins:['SOLUSDT','AVAXUSDT','DOTUSDT','ATOMUSDT','NEARUSDT','SUIUSDT'] },
+  { id:'meme',    name:'Meme 幣',   icon:'🐸', coins:['DOGEUSDT','SHIBUSDT','PEPEUSDT','FLOKIUSDT','BONKUSDT','WIFUSDT'] },
+  { id:'btceco',  name:'BTC 生態',  icon:'₿',  coins:['ORDIUSDT','SATSUSDT','RUNESUSDT','MUBIUSDT'] },
+  { id:'gamefi',  name:'GameFi',    icon:'🎮', coins:['AXSUSDT','SANDUSDT','MANAUSDT','GALAUSDT','YGGUSDT'] },
+  { id:'rwa',     name:'RWA / Oracle',icon:'🏛️',coins:['LINKUSDT','GRTUSDT','API3USDT','BANDUSDT'] },
+];
+
+let tickerMap = {};
+let sectorData = [];
+let sectorChart = null;
+
+// ── Init ──
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { window.location.href = 'login.html'; return; }
+  const { data: profile } = await sb.from('profiles').select('plan, is_direct_client').eq('id', session.user.id).single();
+  const plan = profile?.plan || 'free';
+  const isDirect = profile?.is_direct_client;
+  if (plan === 'free' && !isDirect) { window.location.href = 'index.html'; return; }
+
+  const b = document.getElementById('navBadge');
+  if (plan === 'admin')       { b.textContent = '系統管理員'; b.className = 'nav-badge master'; }
+  else if (plan === 'master') { b.textContent = '⚔️ 盟主';   b.className = 'nav-badge master'; }
+  else if (plan === 'ranger') { b.textContent = '🗡️ 遊俠';   b.className = 'nav-badge ranger'; }
+  else { b.textContent = '⚔️ 會員'; b.className = 'nav-badge'; }
+
+  await loadData();
+  setInterval(loadData, 60000);
+}
+
+async function loadData() {
+  const now = new Date().toLocaleTimeString('zh-TW', {hour:'2-digit',minute:'2-digit'});
+  document.getElementById('updateBadge').textContent = `更新 ${now}`;
+  await fetchAllTickers();
+  calcSectors();
+  renderSectorGrid();
+  renderRotation();
+  renderVolumeFlow();
+  renderGlobalHeatmap();
+  renderSectorChart();
+}
+
+// ── 取得所有 Ticker ──
+async function fetchAllTickers() {
+  try {
+    const r = await fetch(`${BITO_API}/live-data?symbol=BTCUSDT`);
+    // live-data 只回傳固定幣種，改直接打 Bitunix
+    const r2 = await fetch('https://fapi.bitunix.com/api/v1/futures/market/tickers');
+    const data = await r2.json();
+    const list = data.data || [];
+    tickerMap = {};
+    list.forEach(t => { tickerMap[t.symbol] = t; });
+  } catch(e) {
+    console.error('fetchAllTickers error:', e);
+  }
+}
+
+// ── 計算板塊數據 ──
+function calcSectors() {
+  sectorData = SECTORS.map(sector => {
+    const coins = sector.coins.map(sym => {
+      const t = tickerMap[sym];
+      if (!t) return null;
+      const price = parseFloat(t.lastPrice || 0);
+      const open  = parseFloat(t.open || price);
+      const chg   = open > 0 ? (price - open) / open * 100 : 0;
+      const vol   = parseFloat(t.quoteVol || 0);
+      return { sym: sym.replace('USDT',''), price, chg, vol, raw: t };
+    }).filter(Boolean);
+
+    if (!coins.length) return { ...sector, avgChg: 0, totalVol: 0, coins: [] };
+
+    const avgChg   = coins.reduce((s,c) => s + c.chg, 0) / coins.length;
+    const totalVol = coins.reduce((s,c) => s + c.vol, 0);
+    return { ...sector, avgChg, totalVol, coins };
+  });
+}
+
+// ── 板塊總覽 ──
+function renderSectorGrid() {
+  const maxVol = Math.max(...sectorData.map(s => s.totalVol));
+  document.getElementById('sectorGrid').innerHTML = sectorData.map(s => {
+    const chgColor = s.avgChg >= 0 ? 'var(--up)' : 'var(--dn)';
+    const barColor = s.avgChg >= 0 ? 'var(--up)' : 'var(--dn)';
+    const barW     = maxVol > 0 ? (s.totalVol / maxVol * 100).toFixed(0) : 0;
+    const chips    = s.coins.slice(0,4).map(c =>
+      `<span class="coin-chip ${c.chg>=0?'up':'dn'}">${c.sym} ${c.chg>=0?'+':''}${c.chg.toFixed(1)}%</span>`
+    ).join('');
+    return `<div class="sector-card" onclick="showDetail('${s.id}')">
+      <div class="sector-header">
+        <div>
+          <div class="sector-icon">${s.icon}</div>
+          <div class="sector-name">${s.name}</div>
+        </div>
+        <div class="sector-chg" style="color:${chgColor}">${s.avgChg>=0?'+':''}${s.avgChg.toFixed(2)}%</div>
+      </div>
+      <div class="sector-bar-wrap"><div class="sector-bar" style="width:${barW}%;background:${barColor};"></div></div>
+      <div class="sector-coins">${chips || '<span style="font-size:11px;color:var(--muted)">數據載入中</span>'}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── 板塊詳情 ──
+function showDetail(id) {
+  const s = sectorData.find(x => x.id === id);
+  if (!s) return;
+
+  document.querySelectorAll('.sector-card').forEach(c => c.classList.remove('selected'));
+  document.querySelectorAll('.sector-card').forEach(c => {
+    if (c.querySelector('.sector-name')?.textContent === s.name) c.classList.add('selected');
+  });
+
+  document.getElementById('detailTitle').textContent = `${s.icon} ${s.name}`;
+  document.getElementById('detailSub').textContent = `${s.coins.length} 個幣種 · 平均 ${s.avgChg>=0?'+':''}${s.avgChg.toFixed(2)}% · 總成交量 $${fmtB(s.totalVol)}`;
+
+  // 幣種表格
+  const sorted = [...s.coins].sort((a,b) => b.chg - a.chg);
+  document.getElementById('detailCoins').innerHTML = sorted.map(c => `<tr>
+    <td style="font-weight:700">${c.sym}</td>
+    <td style="font-variant-numeric:tabular-nums;">$${fmtPrice(c.price)}</td>
+    <td style="font-weight:700;color:${c.chg>=0?'var(--up)':'var(--dn)'}">${c.chg>=0?'+':''}${c.chg.toFixed(2)}%</td>
+    <td style="color:var(--muted)">$${fmtB(c.vol)}</td>
+  </tr>`).join('');
+
+  // 資金流向
+  const maxVol = Math.max(...s.coins.map(c => c.vol));
+  document.getElementById('detailFlow').innerHTML = sorted.map(c => {
+    const pct = maxVol > 0 ? (c.vol / maxVol * 100).toFixed(0) : 0;
+    const col = c.chg >= 0 ? 'var(--up)' : 'var(--dn)';
+    return `<div class="flow-bar">
+      <div class="flow-bar-name">${c.sym}</div>
+      <div class="flow-bar-wrap"><div class="flow-bar-fill" style="width:${pct}%;background:${col};"></div></div>
+      <div class="flow-bar-val" style="color:${col}">$${fmtB(c.vol)}</div>
+    </div>`;
+  }).join('');
+
+  // 熱力圖
+  document.getElementById('detailHeatmap').innerHTML = s.coins.map(c => {
+    const intensity = Math.min(Math.abs(c.chg) / 10, 1);
+    const r = c.chg >= 0
+      ? `rgba(39,174,96,${0.3 + intensity * 0.6})`
+      : `rgba(192,57,43,${0.3 + intensity * 0.6})`;
+    return `<div class="heat-cell" style="background:${r}">
+      <div class="heat-sym">${c.sym}</div>
+      <div class="heat-chg">${c.chg>=0?'+':''}${c.chg.toFixed(2)}%</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('detailPanel').classList.add('show');
+  document.getElementById('detailPanel').scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function closeDetail() {
+  document.getElementById('detailPanel').classList.remove('show');
+  document.querySelectorAll('.sector-card').forEach(c => c.classList.remove('selected'));
+}
+
+// ── 輪動分析 ──
+function renderRotation() {
+  const sorted = [...sectorData].sort((a,b) => b.avgChg - a.avgChg);
+  const byVol  = [...sectorData].sort((a,b) => b.totalVol - a.totalVol);
+
+  const mkRow = (s, showVol=false) => `<div class="rotation-item">
+    <span>${s.icon} ${s.name}</span>
+    <span style="font-weight:700;color:${s.avgChg>=0?'var(--up)':'var(--dn)'}">
+      ${showVol ? '$'+fmtB(s.totalVol) : (s.avgChg>=0?'+':'')+s.avgChg.toFixed(2)+'%'}
+    </span>
+  </div>`;
+
+  document.getElementById('rotationStrong').innerHTML = sorted.slice(0,3).map(s => mkRow(s)).join('');
+  document.getElementById('rotationWeak').innerHTML   = sorted.slice(-3).reverse().map(s => mkRow(s)).join('');
+  document.getElementById('rotationVolume').innerHTML = byVol.slice(0,3).map(s => mkRow(s, true)).join('');
+}
+
+// ── 成交量排行 ──
+function renderVolumeFlow() {
+  const sorted = [...sectorData].sort((a,b) => b.totalVol - a.totalVol);
+  const maxVol = sorted[0]?.totalVol || 1;
+  document.getElementById('volumeFlow').innerHTML = sorted.map(s => {
+    const pct = (s.totalVol / maxVol * 100).toFixed(0);
+    const col = s.avgChg >= 0 ? 'var(--up)' : 'var(--dn)';
+    return `<div class="flow-bar" style="margin-bottom:8px;">
+      <div class="flow-bar-name" style="min-width:80px;">${s.icon} ${s.name}</div>
+      <div class="flow-bar-wrap" style="height:22px;"><div class="flow-bar-fill" style="width:${pct}%;background:${col};height:100%;"></div></div>
+      <div class="flow-bar-val" style="color:${col};min-width:80px;">$${fmtB(s.totalVol)}</div>
+      <div style="min-width:60px;text-align:right;font-size:12px;font-weight:700;color:${col}">${s.avgChg>=0?'+':''}${s.avgChg.toFixed(2)}%</div>
+    </div>`;
+  }).join('');
+}
+
+// ── 全市場熱力圖 ──
+function renderGlobalHeatmap() {
+  const allCoins = sectorData.flatMap(s => s.coins).sort((a,b) => b.vol - a.vol).slice(0,30);
+  document.getElementById('globalHeatmap').innerHTML = allCoins.map(c => {
+    const intensity = Math.min(Math.abs(c.chg) / 15, 1);
+    const r = c.chg >= 0
+      ? `rgba(39,174,96,${0.25 + intensity * 0.7})`
+      : `rgba(192,57,43,${0.25 + intensity * 0.7})`;
+    return `<div class="heat-cell" style="background:${r}" onclick="showSectorByCoin('${c.sym}')">
+      <div class="heat-sym">${c.sym}</div>
+      <div class="heat-chg">${c.chg>=0?'+':''}${c.chg.toFixed(1)}%</div>
+    </div>`;
+  }).join('');
+}
+
+function showSectorByCoin(sym) {
+  const sector = sectorData.find(s => s.coins.some(c => c.sym === sym));
+  if (sector) showDetail(sector.id);
+}
+
+// ── 板塊對比圖 ──
+function renderSectorChart() {
+  const sorted = [...sectorData].sort((a,b) => b.avgChg - a.avgChg);
+  const labels = sorted.map(s => s.icon + ' ' + s.name);
+  const values = sorted.map(s => parseFloat(s.avgChg.toFixed(2)));
+  const colors = values.map(v => v >= 0 ? 'rgba(39,174,96,.7)' : 'rgba(192,57,43,.7)');
+  const borders = values.map(v => v >= 0 ? '#27AE60' : '#C0392B');
+
+  if (sectorChart) sectorChart.destroy();
+  sectorChart = new Chart(document.getElementById('sectorChart').getContext('2d'), {
+    type: 'bar',
+    data: { labels, datasets: [{ data: values, backgroundColor: colors, borderColor: borders, borderWidth: 1 }] },
+    options: {
+      responsive: true, indexAxis: 'y',
+      plugins: { legend: { display:false }, tooltip: { callbacks: { label: ctx => `${ctx.parsed.x>=0?'+':''}${ctx.parsed.x.toFixed(2)}%` } } },
+      scales: {
+        x: { grid: { color:'rgba(0,0,0,.05)' }, ticks: { callback: v => `${v>=0?'+':''}${v}%`, font:{size:11} } },
+        y: { grid: { display:false }, ticks: { font:{size:12} } }
+      }
+    }
+  });
+}
+
+// ── Helpers ──
+function fmtB(v) {
+  if (v >= 1e9) return (v/1e9).toFixed(2)+'B';
+  if (v >= 1e6) return (v/1e6).toFixed(2)+'M';
+  if (v >= 1e3) return (v/1e3).toFixed(1)+'K';
+  return v.toFixed(0);
+}
+function fmtPrice(v) {
+  if (v >= 100) return v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  if (v >= 1)   return v.toLocaleString('en-US',{minimumFractionDigits:3,maximumFractionDigits:4});
+  return v.toLocaleString('en-US',{minimumFractionDigits:4,maximumFractionDigits:6});
+}
+
+init();
+</script>
+</body>
+</html>
