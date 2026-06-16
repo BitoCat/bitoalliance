@@ -611,6 +611,55 @@ async function submitRank() {
   clearFile();
 }
 
+// ── Groq Key ──
+async function loadGroqKey() {
+  const { data } = await sb.from('profiles').select('groq_api_key').eq('id', currentUser.id).single();
+  const key = data?.groq_api_key;
+  if (key) {
+    document.getElementById('groqKey').value = key;
+    document.getElementById('groqStatus').textContent = '✅ 已設定 Groq Key';
+    document.getElementById('groqStatus').style.color = 'var(--up)';
+    document.getElementById('btnClearGroq').style.display = 'inline-block';
+  }
+}
+
+async function saveGroqKey() {
+  const key = document.getElementById('groqKey').value.trim();
+  if (!key) { showMsg('msgGroq', '請填入 Groq API Key', 'error'); return; }
+  if (!key.startsWith('gsk_')) { showMsg('msgGroq', 'Key 格式不對，應以 gsk_ 開頭', 'error'); return; }
+  setLoading('btnSaveGroq', true, '💾 儲存 Key');
+  const { error } = await sb.from('profiles').update({ groq_api_key: key }).eq('id', currentUser.id);
+  setLoading('btnSaveGroq', false, '💾 儲存 Key');
+  if (error) { showMsg('msgGroq', error.message, 'error'); return; }
+  showMsg('msgGroq', '✅ Groq Key 已儲存！', 'success');
+  document.getElementById('groqStatus').textContent = '✅ 已設定 Groq Key';
+  document.getElementById('groqStatus').style.color = 'var(--up)';
+  document.getElementById('btnClearGroq').style.display = 'inline-block';
+}
+
+async function clearGroqKey() {
+  if (!confirm('確定要刪除 Groq Key？刪除後無法使用 AI 解讀功能。')) return;
+  const { error } = await sb.from('profiles').update({ groq_api_key: null }).eq('id', currentUser.id);
+  if (error) { showMsg('msgGroq', error.message, 'error'); return; }
+  document.getElementById('groqKey').value = '';
+  document.getElementById('groqStatus').textContent = '尚未設定';
+  document.getElementById('groqStatus').style.color = '';
+  document.getElementById('btnClearGroq').style.display = 'none';
+  showMsg('msgGroq', '✅ 已刪除 Groq Key', 'success');
+}
+
+function toggleGroqKey() {
+  const input = document.getElementById('groqKey');
+  const btn = document.getElementById('toggleGroqBtn');
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '🙈 隱藏';
+  } else {
+    input.type = 'password';
+    btn.textContent = '👁 顯示';
+  }
+}
+  
 // ── 工具 ──
 function showMsg(id, text, type) {
   const el = document.getElementById(id);
