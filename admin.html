@@ -527,32 +527,55 @@
     <!-- ── 推薦新盟主 ── -->
     <div class="panel" id="panel-recommend-master">
       <div class="page-title">推薦新盟主</div>
-      <div class="page-subtitle">填入你想推薦的人選資料，送出後毛哥會收到通知並進行最終審核。</div>
+      <div class="page-subtitle">填入人選資料送出後，毛哥會進行最終審核。</div>
 
+      <!-- 我底下的盟主 -->
+      <div class="card">
+        <div class="card-title">⚔️ 我底下的盟主</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>顯示名稱</th><th>Email</th><th>Bitunix UID</th><th>團隊名稱</th><th>狀態</th></tr>
+            </thead>
+            <tbody id="subMastersBody">
+              <tr><td colspan="5"><div class="loading">載入中…</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 推薦表單 -->
       <div class="card">
         <div class="card-title">🌟 填寫推薦資料</div>
-        <label class="field-label">被推薦人 Email（必填）</label>
-        <input type="email" id="rec-email" placeholder="推薦對象的 Email（需已註冊）">
-        <label class="field-label">推薦理由</label>
-        <textarea id="rec-reason" placeholder="請說明為何推薦此人成為盟主…"></textarea>
+        <div class="grid-2">
+          <div>
+            <label class="field-label">姓名／暱稱（必填）</label>
+            <input type="text" id="rec-name" placeholder="對方的真實姓名或暱稱">
+          </div>
+          <div>
+            <label class="field-label">Bitunix UID（必填）</label>
+            <input type="text" id="rec-bitunix-uid" placeholder="對方的 Bitunix 帳號 UID">
+          </div>
+        </div>
+        <label class="field-label">Email（必填，需已在比特聯盟註冊）</label>
+        <input type="email" id="rec-email" placeholder="對方的註冊 Email">
         <label class="field-label">建議團隊名稱（可選）</label>
         <input type="text" id="rec-team" placeholder="建議的團隊名稱">
+        <label class="field-label">推薦理由（可選）</label>
+        <textarea id="rec-reason" placeholder="說明為何推薦此人成為盟主…"></textarea>
         <button class="btn btn-gold" onclick="submitRecommendation()">📨 送出推薦</button>
       </div>
 
+      <!-- 推薦紀錄 -->
       <div class="card">
         <div class="card-title">📋 我的推薦紀錄</div>
         <div class="table-wrap">
           <table>
             <thead>
-              <tr>
-                <th>被推薦人 Email</th>
-                <th>推薦時間</th>
-                <th>審核狀態</th>
-              </tr>
+              <tr><th>姓名／暱稱</th><th>Email</th><th>Bitunix UID</th><th>推薦時間</th><th>審核狀態</th></tr>
             </thead>
             <tbody id="recHistoryBody">
-              <tr><td colspan="3"><div class="loading">載入中…</div></td></tr>
+              <tr><td colspan="5"><div class="loading">載入中…</div></td></tr>
             </tbody>
           </table>
         </div>
@@ -604,6 +627,7 @@ async function init() {
     loadUidReview(),
     loadVipReview(),
     loadMembers(),
+    loadSubMasters(),
     loadRecHistory()
   ]);
 }
@@ -811,34 +835,62 @@ async function removeMember(userId, name) {
 }
 
 // ── Recommend Master ──
-async function loadRecHistory() {
-  // master_status = pending/recommended by this master
+async function loadSubMasters() {
+  // 我底下已核准的盟主（parent_id = me, master_status = approved）
   const { data } = await sb.from('profiles')
-    .select('email, master_status, updated_at')
+    .select('id, email, display_name, bitunix_uid, team_name, master_status, updated_at')
+    .eq('parent_id', currentUser.id)
+    .eq('master_status', 'approved')
+    .order('updated_at', { ascending: false });
+
+  const tbody = document.getElementById('subMastersBody');
+  if (!data || !data.length) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="emoji">🏯</div><p>目前底下尚無已核准的盟主</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map(m => `
+    <tr>
+      <td>${esc(m.display_name || '—')}</td>
+      <td style="font-size:12px;">${esc(m.email)}</td>
+      <td><code style="font-size:12px;">${esc(m.bitunix_uid || '—')}</code></td>
+      <td>${esc(m.team_name || '—')}</td>
+      <td>${masterStatusBadge(m.master_status)}</td>
+    </tr>`).join('');
+}
+
+async function loadRecHistory() {
+  const { data } = await sb.from('profiles')
+    .select('email, display_name, bitunix_uid, master_status, updated_at')
     .eq('parent_id', currentUser.id)
     .order('updated_at', { ascending: false });
 
   const tbody = document.getElementById('recHistoryBody');
   if (!data || !data.length) {
-    tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state"><div class="emoji">📋</div><p>尚無推薦紀錄</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="emoji">📋</div><p>尚無推薦紀錄</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = data.map(r => `
     <tr>
-      <td>${esc(r.email)}</td>
+      <td>${esc(r.display_name || '—')}</td>
+      <td style="font-size:12px;">${esc(r.email)}</td>
+      <td><code style="font-size:12px;">${esc(r.bitunix_uid || '—')}</code></td>
       <td style="font-size:12px;color:var(--text-muted)">${fmtDate(r.updated_at)}</td>
       <td>${masterStatusBadge(r.master_status)}</td>
     </tr>`).join('');
 }
 
 async function submitRecommendation() {
+  const name = document.getElementById('rec-name').value.trim();
+  const uid = document.getElementById('rec-bitunix-uid').value.trim();
   const email = document.getElementById('rec-email').value.trim();
   const reason = document.getElementById('rec-reason').value.trim();
   const teamName = document.getElementById('rec-team').value.trim();
-  if (!email) { showToast('請填入被推薦人 Email', 'error'); return; }
 
-  // Find the user by email
-  const { data: target } = await sb.from('profiles').select('id, master_status').eq('email', email).single();
+  if (!name) { showToast('請填入姓名／暱稱', 'error'); return; }
+  if (!uid)  { showToast('請填入 Bitunix UID', 'error'); return; }
+  if (!email) { showToast('請填入 Email', 'error'); return; }
+
+  const { data: target } = await sb.from('profiles').select('id, display_name, bitunix_uid, master_status').eq('email', email).single();
   if (!target) { showToast('找不到此 Email 的用戶，請確認對方已註冊', 'error'); return; }
   if (target.master_status === 'approved') { showToast('此用戶已是盟主', 'error'); return; }
   if (target.master_status === 'pending' || target.master_status === 'recommended') {
@@ -848,6 +900,8 @@ async function submitRecommendation() {
   const updates = {
     parent_id: currentUser.id,
     master_status: 'recommended',
+    display_name: target.display_name || name,   // 不覆蓋已有名稱
+    bitunix_uid: target.bitunix_uid || uid,       // 不覆蓋已有 UID
   };
   if (teamName) updates.team_name = teamName;
 
@@ -855,10 +909,13 @@ async function submitRecommendation() {
   if (error) { showToast('推薦失敗：' + error.message, 'error'); return; }
 
   showToast('🌟 推薦已送出，等待毛哥審核！', 'success');
+  document.getElementById('rec-name').value = '';
+  document.getElementById('rec-bitunix-uid').value = '';
   document.getElementById('rec-email').value = '';
   document.getElementById('rec-reason').value = '';
   document.getElementById('rec-team').value = '';
   await loadRecHistory();
+  await loadSubMasters();
 }
 
 // ── Auth ──
