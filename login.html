@@ -294,6 +294,70 @@ footer {
 <footer>© 比特聯盟 BitoAlliance · BitoCat 指標系列</footer>
 
 <script>
+// ── 偵測 Line / WebView 內建瀏覽器 ──
+(function() {
+  const ua = navigator.userAgent || '';
+  const isLine = /Line\//i.test(ua);
+  const isWebView = /FB_IAB|FBAN|FBAV|Instagram|WebView|wv\b/.test(ua) && !/Chrome\//.test(ua);
+
+  if (isLine || isWebView) {
+    document.body.innerHTML = `
+      <div style="min-height:100vh;background:#edd4be;display:flex;align-items:center;justify-content:center;padding:24px;font-family:-apple-system,'PingFang TC',sans-serif;">
+        <div style="max-width:380px;width:100%;text-align:center;">
+          <div style="font-size:64px;margin-bottom:16px;">🌐</div>
+          <div style="font-size:22px;font-weight:800;color:#2a1f14;margin-bottom:10px;">請用外部瀏覽器開啟</div>
+          <div style="font-size:14px;color:#7a5c42;line-height:1.8;margin-bottom:24px;">
+            Google 登入不支援 LINE 內建瀏覽器，<br>
+            這是 <strong>Google 的安全政策</strong>，非網站問題。<br><br>
+            請複製連結後用 <strong>Safari</strong> 或 <strong>Chrome</strong> 開啟。
+          </div>
+
+          <!-- iOS Line：右上角更多 -->
+          <div style="background:#f5e8d8;border-radius:12px;padding:16px 20px;margin-bottom:16px;text-align:left;border:1px solid #d4b896;">
+            <div style="font-size:12px;font-weight:700;color:#8b5e3c;margin-bottom:8px;letter-spacing:.5px;">📱 iPhone / iPad</div>
+            <div style="font-size:13px;color:#2a1f14;line-height:1.8;">
+              點右下角 <strong>「···」</strong> → <strong>「以瀏覽器開啟」</strong>
+            </div>
+          </div>
+
+          <div style="background:#f5e8d8;border-radius:12px;padding:16px 20px;margin-bottom:24px;text-align:left;border:1px solid #d4b896;">
+            <div style="font-size:12px;font-weight:700;color:#8b5e3c;margin-bottom:8px;letter-spacing:.5px;">🤖 Android</div>
+            <div style="font-size:13px;color:#2a1f14;line-height:1.8;">
+              點右上角 <strong>「⋮」</strong> → <strong>「以瀏覽器開啟」</strong>
+            </div>
+          </div>
+
+          <button onclick="copyLink()" style="width:100%;padding:14px;background:#8b5e3c;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;">
+            📋 複製網址
+          </button>
+          <div id="copyMsg" style="font-size:13px;color:#5a8a5a;margin-top:6px;display:none;">✅ 已複製！請貼到 Safari 或 Chrome 開啟</div>
+
+          <div style="margin-top:20px;font-size:12px;color:#b0907a;">
+            ⚔️ 比特聯盟 BitoAlliance
+          </div>
+        </div>
+      </div>`;
+
+    window.copyLink = function() {
+      const url = window.location.href;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(() => {
+          document.getElementById('copyMsg').style.display = 'block';
+        });
+      } else {
+        const el = document.createElement('textarea');
+        el.value = url;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        document.getElementById('copyMsg').style.display = 'block';
+      }
+    };
+  }
+})();
+</script>
+<script>
 const SUPABASE_URL  = 'https://kldumnxdlgovaxtiszyn.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsZHVtbnhkbGdvdmF4dGlzenluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjIyNDgsImV4cCI6MjA5MzY5ODI0OH0.P_anfYpSV2tgCPIQ7uZDVBjUFY3UhfEXk9u3XjlzBHI';
 const { createClient } = supabase;
