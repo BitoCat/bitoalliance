@@ -263,6 +263,7 @@ async function init() {
 async function loadMessages(before = null) {
   let query = sb.from('messages')
     .select('id, user_id, content, image_path, created_at')
+    .eq('platform', 'bitoalliance')
     .order('created_at', { ascending: false })
     .limit(PAGE_SIZE + 1);
   if (before) query = query.lt('created_at', before);
@@ -398,8 +399,8 @@ function getImgUrl(path) {
 
 // ── 即時訂閱 ──
 function subscribeRealtime() {
-  sb.channel('chat-messages')
-    .on('postgres_changes', { event:'INSERT', schema:'public', table:'messages' }, async payload => {
+  sb.channel('chat-messages-bitoalliance')
+    .on('postgres_changes', { event:'INSERT', schema:'public', table:'messages', filter:'platform=eq.bitoalliance' }, async payload => {
       const msg = payload.new;
       if (msg.user_id === currentUser.id) return; // 自己的訊息已即時顯示
       const wrap = document.getElementById('messagesWrap');
@@ -457,6 +458,7 @@ async function sendMsg() {
     user_id: currentUser.id,
     content: content || null,
     image_path,
+    platform: 'bitoalliance',
   });
 
   btn.disabled = false;
