@@ -878,9 +878,9 @@ async function reviewMasterApply(action) {
 async function loadMasterReview() {
   // Pending
   const { data: pending } = await sb.from('profiles')
-    .select('id, email, display_name, team_name, updated_at, parent_id')
+    .select('id, email, display_name, team_name, created_at, parent_id')
     .eq('master_status', 'recommended')
-    .order('updated_at', { ascending: false });
+    .order('created_at', { ascending: false });
 
   const tbody = document.getElementById('masterPendingBody');
   if (!pending || !pending.length) {
@@ -900,7 +900,7 @@ async function loadMasterReview() {
         <td>${esc(m.display_name || '—')}</td>
         <td>${rec ? esc(rec.display_name || rec.email) : '—'}</td>
         <td>${esc(m.team_name || '—')}</td>
-        <td style="font-size:12px;color:var(--text-muted)">${fmtDate(m.updated_at)}</td>
+        <td style="font-size:12px;color:var(--text-muted)">${fmtDate(m.created_at)}</td>
         <td style="display:flex;gap:6px;padding-top:8px;">
           <button class="btn btn-success btn-sm" onclick="reviewMaster('${m.id}','approved')">✅ 核准</button>
           <button class="btn btn-danger btn-sm" onclick="reviewMaster('${m.id}','rejected')">❌ 拒絕</button>
@@ -911,9 +911,9 @@ async function loadMasterReview() {
 
   // History
   const { data: history } = await sb.from('profiles')
-    .select('email, master_status, updated_at, parent_id')
+    .select('email, master_status, created_at, parent_id')
     .in('master_status', ['approved', 'rejected'])
-    .order('updated_at', { ascending: false })
+    .order('created_at', { ascending: false })
     .limit(30);
 
   const histTbody = document.getElementById('masterHistoryBody');
@@ -932,7 +932,7 @@ async function loadMasterReview() {
         <td>${esc(h.email)}</td>
         <td>${masterStatusBadge(h.master_status)}</td>
         <td>${rec ? esc(rec.display_name || rec.email) : '—'}</td>
-        <td style="font-size:12px;color:var(--text-muted)">${fmtDate(h.updated_at)}</td>
+        <td style="font-size:12px;color:var(--text-muted)">${fmtDate(h.created_at)}</td>
       </tr>`;
     }).join('');
   }
@@ -963,7 +963,7 @@ function genReferralCode() {
 async function loadAllVip() {
   const status = document.getElementById('vipStatusFilter').value;
   const { data } = await sb.from('member_ranks')
-    .select('id, rank, status, screenshot_path, created_at, updated_at, user_id, granted_by, profiles!user_id(email, display_name, bitunix_uid)')
+    .select('id, rank, status, screenshot_path, created_at, created_at, user_id, granted_by, profiles!user_id(email, display_name, bitunix_uid)')
     .eq('status', status)
     .order('created_at', { ascending: false })
     .limit(100);
@@ -1017,7 +1017,7 @@ function filterVipTable() {
 // ── All Members ──
 async function loadAllMembers(filterMasterId = null) {
   let query = sb.from('profiles')
-    .select('id, email, display_name, plan, bitunix_uid, is_direct_client, master_id, updated_at')
+    .select('id, email, display_name, plan, bitunix_uid, is_direct_client, master_id, created_at')
     .not('bitunix_uid', 'is', null)
     .order('created_at', { ascending: false })
     .limit(200);
@@ -1112,9 +1112,9 @@ async function saveMemberEdit() {
 // ── Masters List ──
 async function loadMastersList() {
   const { data: masters } = await sb.from('profiles')
-    .select('id, email, display_name, team_name, updated_at')
+    .select('id, email, display_name, team_name, created_at')
     .eq('plan', 'master')
-    .order('updated_at', { ascending: false });
+    .order('created_at', { ascending: false });
 
   const tbody = document.getElementById('mastersListBody');
   if (!masters || !masters.length) {
@@ -1133,7 +1133,7 @@ async function loadMastersList() {
       <td style="font-size:12px">${esc(m.email)}</td>
       <td>${esc(m.team_name||'—')}</td>
       <td><strong>${m.memberCount ?? 0}</strong></td>
-      <td style="font-size:12px;color:var(--text-muted)">${fmtDate(m.updated_at)}</td>
+      <td style="font-size:12px;color:var(--text-muted)">${fmtDate(m.created_at)}</td>
       <td>
         <button class="btn btn-danger btn-sm" onclick="demoteMaster('${m.id}','${esc(m.display_name||m.email)}')">降級</button>
       </td>
@@ -1160,12 +1160,12 @@ async function loadActivity() {
 
   if (type === 'all' || type === 'vip') {
     const { data: vips } = await sb.from('member_ranks')
-      .select('id, rank, status, created_at, updated_at, profiles!user_id(email, display_name)')
-      .order('updated_at', { ascending: false })
+      .select('id, rank, status, created_at, created_at, profiles!user_id(email, display_name)')
+      .order('created_at', { ascending: false })
       .limit(50);
     (vips||[]).forEach(v => {
       events.push({
-        time: v.updated_at,
+        time: v.created_at,
         icon: v.status === 'approved' ? '✅' : v.status === 'rejected' ? '❌' : '📸',
         cls: v.status,
         title: `${v.profiles?.display_name || v.profiles?.email || '—'} 的 VIP 申請`,
@@ -1176,13 +1176,13 @@ async function loadActivity() {
 
   if (type === 'all' || type === 'master') {
     const { data: ms } = await sb.from('profiles')
-      .select('email, display_name, master_status, updated_at')
+      .select('email, display_name, master_status, created_at')
       .not('master_status', 'is', null)
-      .order('updated_at', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(50);
     (ms||[]).forEach(m => {
       events.push({
-        time: m.updated_at,
+        time: m.created_at,
         icon: m.master_status === 'approved' ? '🌟' : m.master_status === 'rejected' ? '❌' : '📨',
         cls: m.master_status === 'approved' ? 'approved' : m.master_status === 'rejected' ? 'rejected' : 'pending',
         title: `${m.display_name || m.email} 盟主申請`,
@@ -1293,7 +1293,7 @@ async function grantIndicator(orderId) {
   const { error } = await sb.from('indicator_orders').update({
     indicator_status: 'granted',
     granted_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    created_at: new Date().toISOString(),
   }).eq('id', orderId);
   if (error) { showToast('操作失敗：' + error.message, 'error'); return; }
   showToast('🗡️ 已標記授權完成！', 'success');
@@ -1305,7 +1305,7 @@ async function loadReferralCodes() {
   const { data: masters } = await sb.from('profiles')
     .select('id, email, display_name, referral_code')
     .eq('plan', 'master')
-    .order('updated_at', { ascending: false });
+    .order('created_at', { ascending: false });
 
   const tbody = document.getElementById('referralCodesBody');
   if (!masters || !masters.length) {
