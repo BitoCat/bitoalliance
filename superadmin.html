@@ -1348,12 +1348,33 @@ async function addBitoMember() {
     });
     const data = await res.json();
     if (data.ok) {
-      result.textContent = `✅ ${data.message}`;
-      result.style.color = 'var(--success)';
+      showToast('✅ 新增成功！', 'success');
       document.getElementById('bito-name').value = '';
       document.getElementById('bito-email').value = '';
       document.getElementById('bito-note').value = '';
       document.getElementById('bito-days').value = '365';
+
+      // 顯示可複製的通知訊息
+      const msg = `🎉 您好！您的比特聯盟頻道入群資格已開通。
+
+請依照以下步驟加入頻道：
+
+1️⃣ 開啟 Telegram，搜尋 @Boss1688Bot
+2️⃣ 點擊「開始」或輸入 /start
+3️⃣ 輸入您的 Gmail：${email}
+4️⃣ Bot 將自動發送頻道邀請連結給您
+
+⚠️ 注意：
+• 邀請連結限一人使用，請勿分享
+• 連結 3 天內有效，請盡快加入
+• 如有問題請聯繫客服`;
+
+      result.style.color = 'var(--success)';
+      result.innerHTML = `
+        <div style="margin-top:4px;font-weight:600;">✅ 新增成功！到期日 ${data.expires_at ? data.expires_at.slice(0,10) : '—'}</div>
+        <div style="margin-top:12px;background:#f0e8d8;border-radius:8px;padding:14px;font-size:12px;line-height:1.8;white-space:pre-wrap;color:var(--text);">${msg}</div>
+        <button onclick="navigator.clipboard.writeText(${JSON.stringify(msg)}).then(()=>showToast('✅ 已複製！','success'))" class="btn btn-ghost btn-sm" style="margin-top:8px;">📋 複製通知訊息</button>`;
+
       showToast('✅ 新增成功！', 'success');
       await loadBitoMembers();
     } else {
