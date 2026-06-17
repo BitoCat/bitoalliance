@@ -295,6 +295,9 @@
       <span class="icon">🗡️</span> 指標申請管理
       <span class="sidebar-badge" id="badge-indicator" style="display:none">0</span>
     </div>
+    <div class="sidebar-item" onclick="switchPanel('referral-codes',this)">
+      <span class="icon">🎟️</span> 盟主優惠碼管理
+    </div>
     <div class="sidebar-item" onclick="switchPanel('bito-members',this)">
       <span class="icon">📨</span> Telegram 會員管理
     </div>
@@ -476,14 +479,18 @@
         </div>
       </div>
 
-      <!-- 優惠碼管理 -->
+      <!-- 優惠碼管理已移至獨立分頁 -->
+    </div>
+
+    <!-- ── 盟主優惠碼管理 ── -->
+    <div class="panel" id="panel-referral-codes">
+      <div class="page-title">盟主優惠碼管理</div>
+      <div class="page-subtitle">管理所有盟主的專屬優惠碼，可重新配發新碼。使用優惠碼租用指標可折抵 $1,200。</div>
       <div class="card">
-        <div class="card-title">🎟️ 盟主優惠碼管理</div>
+        <div class="card-title">🎟️ 盟主優惠碼列表</div>
         <div class="table-wrap">
           <table>
-            <thead>
-              <tr><th>盟主</th><th>Email</th><th>優惠碼</th><th>推薦成功次數</th><th>操作</th></tr>
-            </thead>
+            <thead><tr><th>盟主</th><th>Email</th><th>優惠碼</th><th>推薦成功次數</th><th>操作</th></tr></thead>
             <tbody id="referralCodesBody">
               <tr><td colspan="5"><div class="loading">載入中…</div></td></tr>
             </tbody>
@@ -647,6 +654,7 @@ function switchPanel(name, el) {
   if (name === 'masters-list') loadMastersList();
   if (name === 'activity') loadActivity();
   if (name === 'indicator-orders') loadIndicatorOrders();
+  if (name === 'referral-codes') loadReferralCodes();
   if (name === 'bito-members') loadBitoMembers();
 }
 
@@ -1061,7 +1069,6 @@ async function loadIndicatorOrders() {
   indicatorCache = indicatorCache.map(o => ({ ...o, masterInfo: masterMap[o.referred_by] }));
 
   renderIndicatorTable(indicatorCache);
-  await loadReferralCodes();
 }
 
 function renderIndicatorTable(rows) {
