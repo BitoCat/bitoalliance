@@ -451,12 +451,12 @@
     <!-- ── 盟主列表 ── -->
     <div class="panel" id="panel-masters-list">
       <div class="page-title">盟主列表</div>
-      <div class="page-subtitle">現任所有盟主，可手動升降級。</div>
+      <div class="page-subtitle">現任所有盟主組織架構，縮排代表層級關係。</div>
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>盟主</th><th>Email</th><th>團隊名稱</th><th>會員數</th><th>加入時間</th><th>操作</th></tr></thead>
-            <tbody id="mastersListBody"><tr><td colspan="6"><div class="loading">載入中…</div></td></tr></tbody>
+            <thead><tr><th>盟主</th><th>Email</th><th>團隊名稱</th><th>層級</th><th>上級盟主</th><th>成員數</th><th>操作</th></tr></thead>
+            <tbody id="mastersListBody"><tr><td colspan="7"><div class="loading">載入中…</div></td></tr></tbody>
           </table>
         </div>
       </div>
@@ -1112,29 +1112,73 @@ async function saveMemberEdit() {
 // ── Masters List ──
 async function loadMastersList() {
   const { data: masters } = await sb.from('profiles')
-    .select('id, email, display_name, team_name, created_at')
+    .select('id, email, display_name, team_name, created_at, parent_id, master_id')
     .eq('plan', 'master')
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: true });
 
   const tbody = document.getElementById('mastersListBody');
   if (!masters || !masters.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="emoji">🏯</div><p>尚無盟主</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="emoji">🏯</div><p>尚無盟主</p></div></td></tr>`;
     return;
   }
 
+  // 取每個盟主的直客數和下線盟主數
   const rows = await Promise.all(masters.map(async m => {
-    const { count } = await sb.from('profiles').select('id', { count: 'exact', head: true }).eq('master_id', m.id);
-    return { ...m, memberCount: count };
+    const { count: memberCount } = await sb.from('profiles')
+      .select('id', { count:'exact', head:true })
+      .eq('master_id', m.id)
+      .eq('is_direct_client', true);
+    const { count: subMasterCount } = await sb.from('profiles')
+      .select('id', { count:'exact', head:true })
+      .eq('parent_id', m.id)
+      .eq('plan', 'master');
+    return { ...m, memberCount: memberCount||0, subMasterCount: subMasterCount||0 };
   }));
 
-  tbody.innerHTML = rows.map(m => `
-    <tr>
-      <td>${esc(m.display_name||'—')}</td>
-      <td style="font-size:12px">${esc(m.email)}</td>
-      <td>${esc(m.team_name||'—')}</td>
-      <td><strong>${m.memberCount ?? 0}</strong></td>
-      <td style="font-size:12px;color:var(--text-muted)">${fmtDate(m.created_at)}</td>
+  // 計算層級（往上追 parent_id）
+  const masterMap = {};
+  rows.forEach(m => { masterMap[m.id] = m; });
+
+  function getLevel(m, visited = new Set()) {
+    if (!m.parent_id || visited.has(m.id)) return 1;
+    visited.add(m.id);
+    const parent = masterMap[m.parent_id];
+    if (!parent) return 2;
+    return 1 + getLevel(parent, visited);
+  }
+
+  // 排序：先第一層，再第二層，依此類推
+  const withLevel = rows.map(m => ({ ...m, level: getLevel(m) }));
+  withLevel.sort((a,b) => a.level - b.level || a.created_at.localeCompare(b.created_at));
+
+  // 找上級盟主名稱
+  function parentName(m) {
+    if (!m.parent_id) return '—';
+    const p = masterMap[m.parent_id];
+    return p ? (p.display_name || p.email) : '—';
+  }
+
+  const levelIcon = { 1:'🥇', 2:'🥈', 3:'🥉' };
+  const levelLabel = l => `${levelIcon[l]||'⭐'} 第 ${l} 層`;
+
+  tbody.innerHTML = withLevel.map(m => `
+    <tr style="${m.level > 1 ? 'background:rgba(139,94,60,.04)' : ''}">
       <td>
+        <div style="display:flex;align-items:center;gap:6px;padding-left:${(m.level-1)*16}px">
+          <span style="font-size:11px;opacity:.5">${m.level > 1 ? '└─' : ''}</span>
+          <span style="font-weight:700">${esc(m.display_name||'—')}</span>
+        </div>
+      </td>
+      <td style="font-size:12px;color:var(--text-muted)">${esc(m.email)}</td>
+      <td>${esc(m.team_name||'—')}</td>
+      <td><span style="font-size:12px;font-weight:600;color:var(--accent)">${levelLabel(m.level)}</span></td>
+      <td style="font-size:12px;color:var(--text-muted)">${parentName(m)}</td>
+      <td style="text-align:center">
+        <strong>${m.memberCount}</strong> 直客
+        ${m.subMasterCount > 0 ? `<span style="font-size:11px;color:var(--muted)"> / ${m.subMasterCount} 下線盟主</span>` : ''}
+      </td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="loadAllMembers('${m.id}')">查看直客</button>
         <button class="btn btn-danger btn-sm" onclick="demoteMaster('${m.id}','${esc(m.display_name||m.email)}')">降級</button>
       </td>
     </tr>
