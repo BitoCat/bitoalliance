@@ -207,18 +207,51 @@ URL：`https://web-production-f4735.up.railway.app/webhook`
 | `whale.html` | ✅ 完成 | 鯨魚追蹤（OI/大戶持倉/爆倉/大單）|
 | `concepts.html` | ✅ 完成 | 概念板塊排行（8板塊/熱力圖/輪動）|
 | `diagnosis.html` | ✅ 完成 | 幣種技術診斷（多時框+AI解讀）|
+| `chat.html` | ✅ 完成 | 即時聊天室（Supabase Realtime、頭銜顯示、圖片上傳）|
 | `groq-guide.html` | ✅ 完成 | Groq Key 申請教學 |
 | `admin.html` | ✅ 完成 | 盟主後台 |
 | `superadmin.html` | ✅ 完成 | 系統管理員後台 |
 
 ## Navbar 導覽（所有功能頁共用）
-首頁 · 市場儀表板 · 幣種掃描 · 鯨魚追蹤 · 板塊排行 · 技術診斷
+首頁 · 市場儀表板 · 幣種掃描 · 鯨魚追蹤 · 板塊排行 · 技術診斷 · 💬 聊天室
+
+## 即時聊天室
+- 頁面：`chat.html`
+- Supabase `messages` 表（欄位：id, user_id, content, image_path, platform, created_at）
+- `platform = 'bitoalliance'`（與交易大師分離）
+- Storage bucket：`chat-images`（Public）
+- 權限：遊俠/會員以上才能進入，布衣看到封鎖畫面
+- 頭銜顯示：Bitunix VIP 稱號 + 盟主/遊俠身份
+- 盟主/管理員可刪除任何留言
+
+## 盟主申請體系
+- **會員自主申請**：`profile.html` → 填申請資料 → superadmin「盟主申請審核」→ 核准自動升 master + 配發優惠碼
+- **盟主推薦直客**：`admin.html` → 「推薦新盟主」→ superadmin「盟主推薦審核」→ 核准
+- **分層架構**：`parent_id` 記錄直屬上級盟主，支援無限層級
+- **盟主列表**：superadmin 顯示層級縮排、第幾層、上級盟主、直客數
+
+## profiles 表新增欄位（盟主申請）
+```
+master_apply_reason, master_apply_intro, master_apply_clients,
+master_apply_contact, master_apply_at, master_apply_status
+-- status: none / pending / approved / rejected
+```
 
 ---
 
 ## 待修清單
-- [ ] 各頁面「直客」→「會員」
-- [ ] 其他個人色彩文字清理
+- [ ] admin.html 讓系統管理員也能進入查看
+
+## 已完成重要里程碑
+- [x] 完整會員體系（布衣/遊俠/會員/盟主）
+- [x] 綠界付款（MerchantID 3189236，四種付款方式）
+- [x] 會員申請 + superadmin 審核
+- [x] 盟主申請（自主申請 + 推薦）+ 分層架構
+- [x] 全功能市場頁面（市場/掃描/鯨魚/板塊/診斷）
+- [x] AI 即時技術分析（Groq Key）
+- [x] 即時聊天室（頭銜顯示 + 圖片）
+- [x] LINE 封鎖引導
+- [x] Telegram 頻道整合
 
 ## Google OAuth
 - Supabase：已啟用 Google provider
