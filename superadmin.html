@@ -705,8 +705,8 @@ async function loadOverview() {
     { count: pendingMaster },
     { count: pendingVip }
   ] = await Promise.all([
-    sb.from('profiles').select('id', { count: 'exact', head: true }),
-    sb.from('profiles').select('id, email, display_name, team_name, updated_at').eq('plan', 'master'),
+    sb.from('profiles').select('id', { count: 'exact', head: true }).not('bitunix_uid', 'is', null),
+    sb.from('profiles').select('id, email, display_name, team_name, created_at').eq('plan', 'master'),
     sb.from('profiles').select('id', { count: 'exact', head: true }).eq('master_status', 'recommended'),
     sb.from('member_ranks').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
   ]);
@@ -1019,7 +1019,7 @@ async function loadAllMembers(filterMasterId = null) {
   let query = sb.from('profiles')
     .select('id, email, display_name, plan, bitunix_uid, is_direct_client, master_id, updated_at')
     .not('bitunix_uid', 'is', null)
-    .order('updated_at', { ascending: false })
+    .order('created_at', { ascending: false })
     .limit(200);
   if (filterMasterId) query = query.eq('master_id', filterMasterId);
   const { data } = await query;
