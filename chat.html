@@ -400,8 +400,9 @@ function getImgUrl(path) {
 // ── 即時訂閱 ──
 function subscribeRealtime() {
   sb.channel('chat-messages-bitoalliance')
-    .on('postgres_changes', { event:'INSERT', schema:'public', table:'messages', filter:'platform=eq.bitoalliance' }, async payload => {
+    .on('postgres_changes', { event:'INSERT', schema:'public', table:'messages' }, async payload => {
       const msg = payload.new;
+      if (msg.platform !== 'bitoalliance') return; // 過濾其他平台
       if (msg.user_id === currentUser.id) return; // 自己的訊息已即時顯示
       const wrap = document.getElementById('messagesWrap');
       const el = await buildMsgEl(msg);
