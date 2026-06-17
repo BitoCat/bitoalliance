@@ -276,8 +276,12 @@
     </div>
     <div class="sidebar-label" style="margin-top:12px;">審核</div>
     <div class="sidebar-item" onclick="switchPanel('master-review',this)">
-      <span class="icon">🌟</span> 盟主申請審核
+      <span class="icon">🌟</span> 盟主推薦審核
       <span class="sidebar-badge" id="badge-master" style="display:none">0</span>
+    </div>
+    <div class="sidebar-item" onclick="switchPanel('master-apply-review',this)">
+      <span class="icon">📋</span> 盟主申請審核
+      <span class="sidebar-badge" id="badge-master-apply" style="display:none">0</span>
     </div>
     <div class="sidebar-item" onclick="switchPanel('vip-overview',this)">
       <span class="icon">👑</span> 全體 VIP 申請
@@ -335,7 +339,7 @@
 
     <!-- ── 盟主申請審核 ── -->
     <div class="panel" id="panel-master-review">
-      <div class="page-title">盟主申請審核</div>
+      <div class="page-title">盟主推薦審核</div>
       <div class="page-subtitle">審核各盟主推薦的新盟主人選，核准後對方帳號升級為 plan=master。</div>
       <div class="card">
         <div class="card-title">⏳ 待審核（recommended）</div>
@@ -356,6 +360,39 @@
             <tbody id="masterHistoryBody"><tr><td colspan="4"><div class="loading">載入中…</div></td></tr></tbody>
           </table>
         </div>
+      </div>
+    </div>
+
+    <!-- ── 會員自主申請盟主 ── -->
+    <div class="panel" id="panel-master-apply-review">
+      <div class="page-title">盟主申請審核</div>
+      <div class="page-subtitle">審核會員在帳號設定中主動提交的盟主申請，了解後決定是否核准。</div>
+      <div class="card">
+        <div class="card-title">⏳ 待審核</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>姓名</th><th>Email</th><th>聯絡方式</th><th>潛在客戶</th><th>申請時間</th><th>操作</th></tr></thead>
+            <tbody id="masterApplyPendingBody"><tr><td colspan="6"><div class="loading">載入中…</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 已處理</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>姓名</th><th>Email</th><th>狀態</th><th>申請時間</th></tr></thead>
+            <tbody id="masterApplyHistoryBody"><tr><td colspan="4"><div class="loading">載入中…</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 申請詳情 Modal -->
+    <div class="modal-overlay" id="masterApplyDetailModal" onclick="closeMasterApplyDetail()">
+      <div class="modal-box" onclick="event.stopPropagation()" style="max-width:560px;">
+        <div class="modal-title">📋 盟主申請詳情</div>
+        <div id="masterApplyDetailContent"></div>
+        <div style="display:flex;gap:10px;margin-top:16px;" id="masterApplyDetailBtns"></div>
       </div>
     </div>
 
@@ -649,6 +686,8 @@ function switchPanel(name, el) {
   document.getElementById('panel-' + name).classList.add('active');
   el.classList.add('active');
   if (name === 'master-review') loadMasterReview();
+  if (name === 'master-apply-review') loadMasterApplyReview();
+  if (name === 'master-apply-review') loadMasterApplyReview();
   if (name === 'vip-overview') loadAllVip();
   if (name === 'all-members') loadAllMembers();
   if (name === 'masters-list') loadMastersList();
@@ -718,6 +757,121 @@ function goToMasterMembers(masterId) {
   document.getElementById('memberSearch').value = '';
   switchPanel('all-members', document.querySelector('[onclick*="all-members"]'));
   loadAllMembers(masterId);
+}
+
+// ── 會員自主申請盟主審核 ──
+async function loadMasterApplyReview() {
+  const { data: pending } = await sb.from('profiles')
+    .select('id, email, display_name, master_apply_contact, master_apply_clients, master_apply_intro, master_apply_reason, master_apply_at')
+    .eq('master_apply_status', 'pending')
+    .order('master_apply_at', { ascending: true });
+
+  const { data: history } = await sb.from('profiles')
+    .select('id, email, display_name, master_apply_status, master_apply_at')
+    .in('master_apply_status', ['approved','rejected'])
+    .order('master_apply_at', { ascending: false })
+    .limit(20);
+
+  const cnt = (pending||[]).length;
+  const badge = document.getElementById('badge-master-apply');
+  if (badge) { badge.textContent = cnt; badge.style.display = cnt > 0 ? 'inline-block' : 'none'; }
+
+  const tbody = document.getElementById('masterApplyPendingBody');
+  if (!tbody) return;
+  if (!(pending||[]).length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="emoji">✅</div><p>目前無待審核申請</p></div></td></tr>';
+  } else {
+    tbody.innerHTML = pending.map(m => `<tr>
+      <td style="font-weight:600">${esc(m.display_name||'—')}</td>
+      <td style="font-size:12px">${esc(m.email)}</td>
+      <td style="font-size:12px">${esc(m.master_apply_contact||'—')}</td>
+      <td style="font-size:12px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(m.master_apply_clients||'')}">${esc(m.master_apply_clients||'—')}</td>
+      <td style="font-size:11px;color:var(--text-muted)">${m.master_apply_at ? m.master_apply_at.slice(0,10) : '—'}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="openMasterApplyDetail('${m.id}')">📋 查看詳情</button></td>
+    </tr>`).join('');
+  }
+
+  const hbody = document.getElementById('masterApplyHistoryBody');
+  if (!hbody) return;
+  if (!(history||[]).length) {
+    hbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="emoji">📭</div><p>尚無記錄</p></div></td></tr>';
+  } else {
+    hbody.innerHTML = history.map(m => `<tr>
+      <td>${esc(m.display_name||'—')}</td>
+      <td style="font-size:12px">${esc(m.email)}</td>
+      <td><span class="status-badge ${m.master_apply_status==='approved'?'s-approved':'s-rejected'}">${m.master_apply_status==='approved'?'✅ 核准':'❌ 拒絕'}</span></td>
+      <td style="font-size:11px;color:var(--text-muted)">${m.master_apply_at ? m.master_apply_at.slice(0,10) : '—'}</td>
+    </tr>`).join('');
+  }
+}
+
+let currentApplyId = null;
+
+function openMasterApplyDetail(id) {
+  currentApplyId = id;
+  sb.from('profiles')
+    .select('id, email, display_name, master_apply_contact, master_apply_intro, master_apply_clients, master_apply_reason, master_apply_at')
+    .eq('id', id).single()
+    .then(({ data: m }) => {
+      if (!m) return;
+      document.getElementById('masterApplyDetailContent').innerHTML = `
+        <div style="display:grid;gap:10px;">
+          <div style="background:var(--bg);border-radius:8px;padding:14px;">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">申請人</div>
+            <div style="font-weight:700">${esc(m.display_name||'—')}</div>
+            <div style="font-size:12px;color:var(--text-muted)">${esc(m.email)}</div>
+          </div>
+          <div style="background:var(--bg);border-radius:8px;padding:14px;">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">聯絡方式</div>
+            <div style="font-size:14px;font-weight:600">${esc(m.master_apply_contact||'—')}</div>
+          </div>
+          <div style="background:var(--bg);border-radius:8px;padding:14px;">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">自我介紹</div>
+            <div style="font-size:13px;line-height:1.7">${esc(m.master_apply_intro||'—')}</div>
+          </div>
+          <div style="background:var(--bg);border-radius:8px;padding:14px;">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">潛在客戶 / 資源</div>
+            <div style="font-size:13px;line-height:1.7">${esc(m.master_apply_clients||'—')}</div>
+          </div>
+          <div style="background:var(--bg);border-radius:8px;padding:14px;">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">申請理由</div>
+            <div style="font-size:13px;line-height:1.7">${esc(m.master_apply_reason||'—')}</div>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);">申請時間：${m.master_apply_at ? m.master_apply_at.slice(0,16).replace('T',' ') : '—'}</div>
+        </div>`;
+      document.getElementById('masterApplyDetailBtns').innerHTML = `
+        <button class="btn btn-success" onclick="reviewMasterApply('approved')">✅ 核准升為盟主</button>
+        <button class="btn btn-danger"  onclick="reviewMasterApply('rejected')">❌ 拒絕</button>
+        <button class="btn btn-ghost"   onclick="closeMasterApplyDetail()">取消</button>`;
+      document.getElementById('masterApplyDetailModal').classList.add('open');
+    });
+}
+
+function closeMasterApplyDetail() {
+  document.getElementById('masterApplyDetailModal').classList.remove('open');
+  currentApplyId = null;
+}
+
+async function reviewMasterApply(action) {
+  if (!currentApplyId) return;
+  if (action === 'approved') {
+    const code = 'BITO-' + Math.random().toString(36).substring(2,6).toUpperCase();
+    const { data: masterData } = await sb.from('profiles').select('master_id').eq('id', currentApplyId).single();
+    const { error } = await sb.from('profiles').update({
+      plan: 'master',
+      master_apply_status: 'approved',
+      referral_code: code,
+      parent_id: masterData?.master_id || null,
+    }).eq('id', currentApplyId);
+    if (error) { showToast('操作失敗：'+error.message, 'error'); return; }
+    showToast(`✅ 已核准！自動配發優惠碼 ${code}`, 'success');
+  } else {
+    const { error } = await sb.from('profiles').update({ master_apply_status: 'rejected' }).eq('id', currentApplyId);
+    if (error) { showToast('操作失敗：'+error.message, 'error'); return; }
+    showToast('已拒絕申請', 'success');
+  }
+  closeMasterApplyDetail();
+  await loadMasterApplyReview();
 }
 
 // ── Master Review ──
