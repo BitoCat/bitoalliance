@@ -538,7 +538,7 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>姓名</th><th>Gmail</th><th>類型</th><th>Telegram</th><th>到期日</th><th>狀態</th></tr>
+              <tr><th>姓名</th><th>Gmail</th><th>類型</th><th>Telegram</th><th>到期日</th><th>狀態</th><th>操作</th></tr>
             </thead>
             <tbody id="bitoMembersBody">
               <tr><td colspan="6"><div class="loading">載入中…</div></td></tr>
@@ -549,6 +549,26 @@
     </div>
 
   </main>
+</div>
+
+<!-- Bito Member Edit Modal -->
+<div class="modal-overlay" id="bitoEditModal" onclick="closeBitoEditModal()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-title">✏️ 編輯 Telegram 會員</div>
+    <input type="hidden" id="bitoEditId">
+    <label class="field-label">姓名</label>
+    <input type="text" id="bitoEditName">
+    <label class="field-label">Gmail</label>
+    <input type="email" id="bitoEditEmail">
+    <label class="field-label">到期日</label>
+    <input type="date" id="bitoEditExpiry">
+    <label class="field-label">延長天數（加在現有到期日上）</label>
+    <input type="text" id="bitoExtendDays" placeholder="例：365，留空則不延長">
+    <div style="display:flex;gap:10px;margin-top:6px;">
+      <button class="btn btn-primary" onclick="saveBitoEdit()">💾 儲存</button>
+      <button class="btn btn-ghost" onclick="closeBitoEditModal()">取消</button>
+    </div>
+  </div>
 </div>
 
 <!-- Edit Member Modal -->
@@ -1157,6 +1177,88 @@ async function loadIndicatorBadge() {
   }
 }
 
+// ── Bito Member Edit ──
+function openBitoEdit(id, name, email, expiry) {
+  document.getElementById('bitoEditId').value = id;
+  document.getElementById('bitoEditName').value = name;
+  document.getElementById('bitoEditEmail').value = email;
+  document.getElementById('bitoEditExpiry').value = expiry;
+  document.getElementById('bitoExtendDays').value = '';
+  document.getElementById('bitoEditModal').classList.add('open');
+}
+function closeBitoEditModal() {
+  document.getElementById('bitoEditModal').classList.remove('open');
+}
+
+async function saveBitoEdit() {
+  const id      = document.getElementById('bitoEditId').value;
+  const name    = document.getElementById('bitoEditName').value.trim();
+  const email   = document.getElementById('bitoEditEmail').value.trim();
+  const expiry  = document.getElementById('bitoEditExpiry').value;
+  const extDays = parseInt(document.getElementById('bitoExtendDays').value) || 0;
+
+  if (!name || !email) { showToast('請填寫姓名和 Gmail', 'error'); return; }
+
+  // 計算新到期日
+  let newExpiry = expiry;
+  if (extDays > 0 && expiry) {
+    const base = new Date(expiry);
+    base.setDate(base.getDate() + extDays);
+    newExpiry = base.toISOString().slice(0, 10);
+  }
+
+  try {
+    const res = await fetch(`${API}/bito/edit-member`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, name, email, expires_at: newExpiry + 'T00:00:00', is_active: true }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      showToast('✅ 已更新', 'success');
+      closeBitoEditModal();
+      await loadBitoMembers();
+    } else {
+      showToast(data.message || '更新失敗', 'error');
+    }
+  } catch(e) {
+    showToast('連線失敗', 'error');
+  }
+}
+
+async function disableBitoMember(id, name) {
+  if (!confirm(`確定要停用「${name}」的入群資格？`)) return;
+  try {
+    const res = await fetch(`${API}/bito/edit-member`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, is_active: false }),
+    });
+    const data = await res.json();
+    if (data.ok) { showToast('✅ 已停用', 'success'); await loadBitoMembers(); }
+    else showToast(data.message || '操作失敗', 'error');
+  } catch(e) { showToast('連線失敗', 'error'); }
+}
+
+async function extendBitoMember(id, name) {
+  const days = prompt(`延長「${name}」幾天？`, '365');
+  if (!days || isNaN(parseInt(days))) return;
+  const m = bitoMembersCache.find(x => x.id === id);
+  const base = m?.expires_at ? new Date(m.expires_at) : new Date();
+  base.setDate(base.getDate() + parseInt(days));
+  const newExpiry = base.toISOString().slice(0, 10);
+  try {
+    const res = await fetch(`${API}/bito/edit-member`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, expires_at: newExpiry + 'T00:00:00', is_active: true }),
+    });
+    const data = await res.json();
+    if (data.ok) { showToast(`✅ 已延長至 ${newExpiry}`, 'success'); await loadBitoMembers(); }
+    else showToast(data.message || '操作失敗', 'error');
+  } catch(e) { showToast('連線失敗', 'error'); }
+}
+
 // ── Bito Telegram Members ──
 let bitoMembersCache = [];
 
@@ -1180,7 +1282,7 @@ async function loadBitoMembers() {
 function renderBitoMembers(rows) {
   const tbody = document.getElementById('bitoMembersBody');
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="emoji">📭</div><p>尚無會員</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="emoji">📭</div><p>尚無會員</p></div></td></tr>`;
     return;
   }
   const now = new Date();
@@ -1201,6 +1303,13 @@ function renderBitoMembers(rows) {
       <td>${tgLabel}</td>
       <td style="font-size:12px;color:var(--text-muted);">${m.expires_at ? m.expires_at.slice(0,10) : '—'}</td>
       <td>${statusBadge}</td>
+      <td style="display:flex;gap:4px;flex-wrap:wrap;padding-top:6px;">
+        <button class="btn btn-ghost btn-sm" onclick="openBitoEdit('${m.id}','${esc(m.name)}','${esc(m.email)}','${m.expires_at?m.expires_at.slice(0,10):''}')">✏️ 編輯</button>
+        ${isActive
+          ? `<button class="btn btn-danger btn-sm" onclick="disableBitoMember('${m.id}','${esc(m.name)}')">⛔ 停用</button>`
+          : `<button class="btn btn-success btn-sm" onclick="extendBitoMember('${m.id}','${esc(m.name)}')">⏰ 延長</button>`
+        }
+      </td>
     </tr>`;
   }).join('');
 }
