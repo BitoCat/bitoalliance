@@ -440,9 +440,9 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>顯示名稱</th><th>Email</th><th>方案</th><th>所屬盟主</th><th>Bitunix UID</th><th>操作</th></tr>
+              <tr><th>顯示名稱</th><th>Email</th><th>方案</th><th>所屬盟主</th><th>Bitunix UID</th><th>狀態</th><th>操作</th></tr>
             </thead>
-            <tbody id="allMembersBody"><tr><td colspan="6"><div class="loading">載入中…</div></td></tr></tbody>
+            <tbody id="allMembersBody"><tr><td colspan="7"><div class="loading">載入中…</div></td></tr></tbody>
           </table>
         </div>
       </div>
@@ -1016,7 +1016,11 @@ function filterVipTable() {
 
 // ── All Members ──
 async function loadAllMembers(filterMasterId = null) {
-  let query = sb.from('profiles').select('id, email, display_name, plan, bitunix_uid, master_id, updated_at').order('updated_at', { ascending: false }).limit(200);
+  let query = sb.from('profiles')
+    .select('id, email, display_name, plan, bitunix_uid, is_direct_client, master_id, updated_at')
+    .not('bitunix_uid', 'is', null)
+    .order('updated_at', { ascending: false })
+    .limit(200);
   if (filterMasterId) query = query.eq('master_id', filterMasterId);
   const { data } = await query;
   allMembersCache = data || [];
@@ -1035,21 +1039,39 @@ async function loadAllMembers(filterMasterId = null) {
 function renderMemberTable(rows) {
   const tbody = document.getElementById('allMembersBody');
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="emoji">👥</div><p>沒有會員</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="emoji">👥</div><p>沒有會員</p></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = rows.map(m => `
-    <tr>
+  tbody.innerHTML = rows.map(m => {
+    const statusBadge = m.is_direct_client
+      ? '<span class="status-badge s-approved">✅ 已核准</span>'
+      : m.bitunix_uid
+        ? '<span class="status-badge s-pending">⏳ 待審核</span>'
+        : '<span class="status-badge">—</span>';
+    return `<tr>
       <td>${esc(m.display_name||'—')}</td>
       <td style="font-size:12px">${esc(m.email)}</td>
       <td>${planBadge(m.plan)}</td>
       <td style="font-size:12px;color:var(--text-muted)">${esc(m.masterInfo?.display_name || m.masterInfo?.email || '—')}</td>
-      <td><code>${esc(m.bitunix_uid||'—')}</code></td>
-      <td>
+      <td><code style="font-size:11px">${esc(m.bitunix_uid||'—')}</code></td>
+      <td>${statusBadge}</td>
+      <td style="display:flex;gap:4px;flex-wrap:wrap;">
+        ${!m.is_direct_client && m.bitunix_uid ? `<button class="btn btn-success btn-sm" onclick="approveMember('${m.id}','${esc(m.display_name||m.email)}')">✅ 核准</button>` : ''}
         <button class="btn btn-ghost btn-sm" onclick="openEditModal('${m.id}','${esc(m.display_name||'')}','${m.plan||'free'}','${esc(m.bitunix_uid||'')}')">✏️ 編輯</button>
       </td>
-    </tr>
-  `).join('');
+    </tr>`;
+  }).join('');
+}
+
+async function approveMember(id, name) {
+  if (!confirm(`確定核准「${name}」成為正式會員？`)) return;
+  const { error } = await sb.from('profiles').update({
+    is_direct_client: true,
+    plan: 'direct',
+  }).eq('id', id);
+  if (error) { showToast('操作失敗：'+error.message, 'error'); return; }
+  showToast(`✅ 已核准 ${name} 成為正式會員！`, 'success');
+  await loadAllMembers();
 }
 
 function filterMemberTable() {
