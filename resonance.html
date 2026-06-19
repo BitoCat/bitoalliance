@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>比特聯盟 · 時框共振</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --bg:     #edd4be;
+  --card:   #faf3ec;
+  --border: #d4a882;
+  --text:   #3a2a1a;
+  --text2:  #7a5a3a;
+  --accent: #c07840;
+  --dark:   #2a1a0a;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: -apple-system, 'Helvetica Neue', sans-serif; min-height: 100vh; }
+
+header { background: var(--dark); color: #edd4be; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
+header h1 { font-size: 17px; font-weight: 600; }
+header .sub { font-size: 11px; color: #c8a87a; margin-bottom: 2px; }
+.hdr-right { display: flex; align-items: center; gap: 10px; }
+.refresh-btn { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 6px 14px; font-size: 13px; cursor: pointer; }
+.refresh-btn:hover { background: #a86030; }
+.refresh-btn:disabled { opacity: 0.5; cursor: default; }
+
+.main { padding: 14px 16px; max-width: 1100px; margin: 0 auto; }
+
+/* ── 控制列 ── */
+.controls { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.ctrl-group { display: flex; flex-direction: column; gap: 4px; }
+.ctrl-group label { font-size: 11px; color: var(--text2); font-weight: 500; }
+.ctrl-group input,
+.ctrl-group select { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 13px; color: var(--text); }
+.ctrl-group input { width: 180px; }
+.add-btn { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 7px 14px; font-size: 13px; cursor: pointer; }
+.add-btn:hover { background: #a86030; }
+.tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.tag { background: var(--dark); color: #edd4be; border-radius: 20px; padding: 3px 10px 3px 12px; font-size: 12px; display: flex; align-items: center; gap: 5px; }
+.tag-rm { cursor: pointer; opacity: 0.55; font-size: 15px; line-height: 1; }
+.tag-rm:hover { opacity: 1; }
+
+/* ── 凡例 ── */
+.legend { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; align-items: center; font-size: 11px; color: var(--text2); }
+.ld { width: 12px; height: 12px; border-radius: 3px; display: inline-block; vertical-align: middle; margin-right: 3px; }
+
+/* ── 表格 ── */
+.table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+col.col-sym  { width: 110px; }
+col.col-tf   { width: calc((100% - 110px) / 4); }
+
+thead { background: var(--dark); color: #edd4be; }
+thead th { padding: 9px 8px; font-size: 12px; font-weight: 500; text-align: center; letter-spacing: 0.05em; }
+thead th:first-child { text-align: left; padding-left: 14px; }
+
+tbody tr { border-bottom: 1px solid var(--border); }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: #f5ece0; }
+td { padding: 6px 5px; vertical-align: top; }
+td:first-child { padding-left: 14px; vertical-align: middle; }
+
+/* ── 幣種欄 ── */
+.sym-name { font-size: 15px; font-weight: 700; }
+.sym-badges { margin-top: 4px; display: flex; flex-direction: column; gap: 3px; }
+.badge { font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: 600; white-space: nowrap; display: inline-block; }
+.b-full  { background: #1a5c2a; color: #d4f0dc; }
+.b-strong{ background: #2e8c42; color: #eaf7ee; }
+.b-dual  { background: #c07840; color: #fff3e0; }
+
+/* ── 指標格 ── */
+.tf-cell { display: flex; flex-direction: column; gap: 4px; }
+
+.ind-row { border-radius: 5px; padding: 5px 7px; }
+.ind-name { font-size: 9px; font-weight: 600; letter-spacing: 0.06em; opacity: 0.75; margin-bottom: 2px; }
+.ind-val  { font-size: 13px; font-weight: 700; line-height: 1; }
+.ind-sub  { font-size: 10px; margin-top: 2px; opacity: 0.85; }
+.ind-lbl  { font-size: 9px; margin-top: 1px; opacity: 0.7; }
+
+/* 顏色主題 */
+.deep-os  { background: #1a5c2a; color: #d4f0dc; }
+.mid-os   { background: #2e8c42; color: #eaf7ee; }
+.low-os   { background: #a8dbb0; color: #1a4a22; }
+.neutral  { background: #ece9e2; color: #555; border: 1px solid #d8d5ce; }
+.low-ob   { background: #f5c4b8; color: #7a2a18; }
+.mid-ob   { background: #c04828; color: #fce8e4; }
+
+/* 貓咪隧道特殊 */
+.tunnel-hit  { background: #1a4a7a; color: #c8e0f8; }
+.tunnel-near { background: #3878c0; color: #e8f2fc; }
+.tunnel-miss { background: #ece9e2; color: #555; border: 1px solid #d8d5ce; }
+
+.status-bar { font-size: 11px; color: var(--text2); margin-top: 8px; display: flex; justify-content: space-between; }
+
+.loading-row td { text-align: center; padding: 48px; color: var(--text2); font-size: 14px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="sub">比特聯盟 BitoAlliance</div>
+    <h1>時框共振儀表板</h1>
+  </div>
+  <div class="hdr-right">
+    <span id="nextRefresh" style="font-size:11px;color:#c8a87a"></span>
+    <button class="refresh-btn" id="refreshBtn" onclick="loadAll()">&#8635; 刷新</button>
+  </div>
+</header>
+
+<div class="main">
+
+  <div class="controls">
+    <div class="ctrl-group">
+      <label>新增幣種（USDT 計價）</label>
+      <input type="text" id="symInput" placeholder="BTCUSDT" onkeydown="if(event.key==='Enter')addSym()">
+    </div>
+    <button class="add-btn" onclick="addSym()">+ 加入</button>
+    <div class="ctrl-group" style="margin-left:auto">
+      <label>自動刷新</label>
+      <select id="arSel" onchange="setAR(+this.value)">
+        <option value="0">關閉</option>
+        <option value="60" selected>每 1 分鐘</option>
+        <option value="120">每 2 分鐘</option>
+        <option value="300">每 5 分鐘</option>
+      </select>
+    </div>
+    <div id="tagList" class="tags"></div>
+  </div>
+
+  <div class="legend">
+    <span>貓咪隧道：</span>
+    <span><span class="ld tunnel-hit"></span>觸及下軌</span>
+    <span><span class="ld tunnel-near" style="background:#3878c0"></span>接近下軌</span>
+    <span><span class="ld tunnel-miss" style="background:#ece9e2;border:1px solid #ccc"></span>未到下軌</span>
+    <span style="margin-left:6px">PHL SMI：</span>
+    <span><span class="ld deep-os"></span>&lt;-40 深度超賣</span>
+    <span><span class="ld mid-os" style="background:#2e8c42"></span>-40~-25</span>
+    <span><span class="ld low-os" style="background:#a8dbb0"></span>-25~0</span>
+    <span><span class="ld neutral" style="background:#ece9e2;border:1px solid #ccc"></span>中段</span>
+    <span><span class="ld low-ob" style="background:#f5c4b8"></span>&gt;0 超買中</span>
+    <span><span class="ld mid-ob" style="background:#c04828"></span>&gt;40 深度超買</span>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <colgroup>
+        <col class="col-sym">
+        <col class="col-tf"><col class="col-tf"><col class="col-tf"><col class="col-tf">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>幣種</th>
+          <th>15m</th><th>H1</th><th>H4</th><th>H8</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr class="loading-row"><td colspan="5">請新增幣種開始監控</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="status-bar">
+    <span id="statusTxt">尚未載入</span>
+    <span id="cntDown"></span>
+  </div>
+</div>
+
+<script>
+const BITO_API    = 'https://web-production-f4735.up.railway.app';
+const SUPA_URL    = 'https://kldumnxdlgovaxtiszyn.supabase.co';
+const SUPA_ANON   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsZHVtbnhkbGdvdmF4dGlzenluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjIyNDgsImV4cCI6MjA5MzY5ODI0OH0.P_anfYpSV2tgCPIQ7uZDVBjUFY3UhfEXk9u3XjlzBHI';
+const sb = supabase.createClient(SUPA_URL, SUPA_ANON);
+const TFS = ['15m','H1','H4','H8'];
+
+let symbols = JSON.parse(localStorage.getItem('ba_res_syms') || '["BTCUSDT","ETHUSDT","SOLUSDT"]');
+let arTimer = null, cdTimer = null, cdVal = 0;
+
+function saveSym(){ localStorage.setItem('ba_res_syms', JSON.stringify(symbols)); }
+
+function renderTags(){
+  document.getElementById('tagList').innerHTML = symbols.map((s,i)=>
+    `<div class="tag">${s}<span class="tag-rm" onclick="rmSym(${i})">×</span></div>`
+  ).join('');
+}
+function addSym(){
+  const v = document.getElementById('symInput').value.trim().toUpperCase();
+  if(!v) return;
+  if(!v.endsWith('USDT')){ alert('請輸入 USDT 計價，如 BTCUSDT'); return; }
+  if(symbols.includes(v)){ alert('已在列表'); return; }
+  symbols.push(v); saveSym(); renderTags();
+  document.getElementById('symInput').value = '';
+  loadAll();
+}
+function rmSym(i){ symbols.splice(i,1); saveSym(); renderTags(); loadAll(); }
+
+/* ── 顏色邏輯 ── */
+function smiClass(smi){
+  if(smi===null||smi===undefined) return 'neutral';
+  if(smi < -40) return 'deep-os';
+  if(smi < -25) return 'mid-os';
+  if(smi <   0) return 'low-os';
+  if(smi <=  25) return 'neutral';
+  if(smi <= 40)  return 'low-ob';
+  return 'mid-ob';
+}
+function smiLabel(smi){
+  if(smi===null||smi===undefined) return '---';
+  if(smi < -40) return '深度超賣';
+  if(smi < -25) return '超賣中段';
+  if(smi <   0) return '超賣邊緣';
+  if(smi <=  25) return '中　　段';
+  if(smi <= 40)  return '超買邊緣';
+  return '深度超買';
+}
+function dirStr(d){
+  return {crossup:'↑ 轉折向上', crossdown:'↓ 轉折向下', up:'↑ 持續上', down:'↓ 持續下'}[d] || '';
+}
+function tunnelClass(t){
+  if(!t) return 'tunnel-miss';
+  if(t.at_lower) return 'tunnel-hit';
+  const diff = (t.close - t.lower) / t.lower;
+  if(diff < 0.008) return 'tunnel-near';
+  return 'tunnel-miss';
+}
+function tunnelLabel(t){
+  if(!t) return '---';
+  if(t.at_lower) return '觸及下軌';
+  const diff = ((t.close - t.lower) / t.lower * 100).toFixed(1);
+  return `距下軌 +${diff}%`;
+}
+
+/* ── 渲染單格 ── */
+function renderCell(tfData){
+  if(!tfData || tfData.error){
+    return `<div class="tf-cell">
+      <div class="ind-row neutral"><div class="ind-name">貓咪</div><div class="ind-val">ERR</div></div>
+      <div class="ind-row neutral"><div class="ind-name">PHL V1</div><div class="ind-val">ERR</div></div>
+      <div class="ind-row neutral"><div class="ind-name">PHL V2</div><div class="ind-val">ERR</div></div>
+    </div>`;
+  }
+  const t  = tfData.tunnel;
+  const v1 = tfData.phl_v1;
+  const v2 = tfData.phl_v2;
+  const tc = tunnelClass(t);
+  const tl = tunnelLabel(t);
+  const v1c = v1 ? smiClass(v1.smi)  : 'neutral';
+  const v2c = v2 ? smiClass(v2.smi)  : 'neutral';
+
+  return `<div class="tf-cell">
+    <div class="ind-row ${tc}">
+      <div class="ind-name">貓咪下軌</div>
+      <div class="ind-val">${t ? t.lower.toFixed(1) : '---'}</div>
+      <div class="ind-sub">${tl}</div>
+    </div>
+    <div class="ind-row ${v1c}">
+      <div class="ind-name">PHL V1</div>
+      <div class="ind-val">${v1 ? v1.smi.toFixed(1) : '---'}</div>
+      <div class="ind-sub">${v1 ? dirStr(v1.direction) : ''}</div>
+      <div class="ind-lbl">${v1 ? smiLabel(v1.smi) : ''}</div>
+    </div>
+    <div class="ind-row ${v2c}">
+      <div class="ind-name">PHL V2</div>
+      <div class="ind-val">${v2 ? v2.smi.toFixed(1) : '---'}</div>
+      <div class="ind-sub">${v2 ? dirStr(v2.direction) : ''}</div>
+      <div class="ind-lbl">${v2 ? smiLabel(v2.smi) : ''}</div>
+    </div>
+  </div>`;
+}
+
+/* ── 渲染整列 ── */
+function renderRow(sym, symData){
+  // 統計各時框共振狀態
+  let fullCount = 0, dualCount = 0;
+  TFS.forEach(tf => {
+    const d = symData[tf];
+    if(!d || d.error) return;
+    if(d.full_resonance) fullCount++;
+    if(d.dual_support)   dualCount++;
+  });
+
+  let badges = '';
+  if(fullCount >= 3)      badges += '<span class="badge b-full">三貓+雙PHL共振</span>';
+  else if(fullCount >= 2) badges += '<span class="badge b-strong">2框全共振</span>';
+  if(dualCount >= 3)      badges += '<span class="badge b-dual">3框雙支撐</span>';
+  else if(dualCount >= 2) badges += '<span class="badge b-dual">2框雙支撐</span>';
+
+  const cells = TFS.map(tf => `<td>${renderCell(symData[tf])}</td>`).join('');
+
+  return `<tr>
+    <td>
+      <div class="sym-name">${sym.replace('USDT','')}</div>
+      <div class="sym-badges">${badges}</div>
+    </td>
+    ${cells}
+  </tr>`;
+}
+
+/* ── 載入資料 ── */
+async function loadAll(){
+  if(!symbols.length){
+    document.getElementById('tbody').innerHTML =
+      '<tr class="loading-row"><td colspan="5">請新增幣種</td></tr>';
+    return;
+  }
+  const btn = document.getElementById('refreshBtn');
+  btn.disabled = true; btn.textContent = '載入中...';
+  document.getElementById('tbody').innerHTML =
+    '<tr class="loading-row"><td colspan="5">計算中，請稍候（首次約 15 秒）...</td></tr>';
+
+  try {
+    const url = `${BITO_API}/resonance?symbols=${symbols.join(',')}`;
+    const res  = await fetch(url);
+    const json = await res.json();
+    const data = json.data || {};
+
+    const rows = symbols.map(s => renderRow(s, data[s] || {})).join('');
+    document.getElementById('tbody').innerHTML = rows;
+    document.getElementById('statusTxt').textContent =
+      `最後更新：${new Date().toLocaleTimeString('zh-TW')}`;
+  } catch(e) {
+    document.getElementById('tbody').innerHTML =
+      `<tr class="loading-row"><td colspan="5">載入失敗：${e.message}</td></tr>`;
+  }
+  btn.disabled = false; btn.textContent = '↻ 刷新';
+}
+
+/* ── 自動刷新 ── */
+function setAR(sec){
+  if(arTimer){ clearInterval(arTimer); arTimer=null; }
+  if(cdTimer){ clearInterval(cdTimer); cdTimer=null; }
+  document.getElementById('cntDown').textContent = '';
+  if(!sec) return;
+  cdVal = sec;
+  cdTimer = setInterval(()=>{
+    cdVal--;
+    document.getElementById('cntDown').textContent = `${cdVal}s 後刷新`;
+    if(cdVal<=0) cdVal=sec;
+  },1000);
+  arTimer = setInterval(()=>{ cdVal=sec; loadAll(); }, sec*1000);
+}
+
+/* ── 權限檢查 ── */
+async function checkAuth(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(!session){ location.href='login.html'; return false; }
+  const { data:p } = await sb.from('profiles').select('plan').eq('id',session.user.id).single();
+  if(!p || p.plan==='free'){
+    document.body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:var(--bg);flex-direction:column;gap:14px">
+      <div style="font-size:42px">🔒</div>
+      <div style="font-size:16px">此功能需要遊俠以上身份</div>
+      <a href="index.html" style="color:var(--accent)">返回首頁</a></div>`;
+    return false;
+  }
+  return true;
+}
+
+(async()=>{
+  const ok = await checkAuth();
+  if(!ok) return;
+  renderTags();
+  setAR(60);
+  loadAll();
+})();
+</script>
+</body>
+</html>
