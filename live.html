@@ -6,168 +6,69 @@
 <title>BitoAlliance Live — BitoCat 直播儀表板</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
 body {
   background: #edd4be;
   font-family: -apple-system, 'Helvetica Neue', sans-serif;
-  width: 1920px;
-  height: 1080px;
+  width: 1920px; height: 1080px;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  display: flex; flex-direction: column;
 }
-
-/* ── Header ── */
 .header {
-  background: #3D2B1F;
-  padding: 0 24px;
-  height: 52px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
+  background: #3D2B1F; padding: 0 24px; height: 52px;
+  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
 }
 .header-left { display: flex; align-items: center; gap: 20px; }
 .brand { font-size: 18px; font-weight: 500; color: #EDE0CE; letter-spacing: .04em; }
 .brand-sub { font-size: 13px; color: #6B4C2A; margin-top: 2px; }
 .conn-wrap { display: flex; align-items: center; gap: 8px; }
 .conn-dot { width: 10px; height: 10px; border-radius: 50%; background: #6B4C2A; transition: background .4s; }
-.conn-dot.ok { background: #27AE60; }
-.conn-dot.err { background: #C0392B; }
+.conn-dot.ok { background: #27AE60; } .conn-dot.err { background: #C0392B; }
 .conn-label { font-size: 13px; color: #6B4C2A; }
 .header-right { display: flex; align-items: center; gap: 24px; }
 .clock { font-size: 22px; font-weight: 500; color: #EDE0CE; font-variant-numeric: tabular-nums; letter-spacing: .04em; }
 .date-label { font-size: 13px; color: #6B4C2A; }
-.live-badge {
-  background: #C0392B; color: white;
-  font-size: 14px; font-weight: 500;
-  padding: 6px 16px; border-radius: 5px;
-  letter-spacing: .08em;
-  animation: blink 2s infinite;
-}
+.live-badge { background: #C0392B; color: white; font-size: 14px; font-weight: 500; padding: 6px 16px; border-radius: 5px; letter-spacing: .08em; animation: blink 2s infinite; }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.5} }
-
-/* ── 主體三欄 ── */
-.outer {
-  display: grid;
-  grid-template-columns: 270px 1fr;
-  flex: 1;
-  overflow: hidden;
-  min-height: 0;
-}
-.right-col {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  min-height: 0;
-}
-
-/* ── 面板 ── */
-.panel {
-  background: #f5e8d8;
-  padding: 16px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  overflow: hidden;
-}
-
-.panel.left  { border-right: 1px solid #d4b896; }
-.panel-title {
-  font-size: 11px; font-weight: 500; color: #8B6F47;
-  letter-spacing: .06em; text-transform: uppercase;
-  padding-bottom: 8px; border-bottom: 1px solid #d4b896;
-  flex-shrink: 0;
-}
-
-/* ── 卡片 ── */
-.card { background: #edd4be; border-radius: 8px; padding: 6px 10px; }
-.card.dark { background: #3D2B1F; }
-
-.card-label { font-size: 12px; color: #8B6F47; margin-bottom: 5px; letter-spacing: .03em; }
-.src-tag { font-size: 11px; padding: 2px 8px; border-radius: 3px; display: inline-block; margin-top: 5px; }
-.src-b  { background: #EAF3DE; color: #27500A; }
-.src-bn { background: #FAEEDA; color: #633806; }
-.src-p  { background: #F0E8F8; color: #5B2D8E; }
-.src-f  { background: #E6F1FB; color: #0C447C; }
-
-/* 數值 */
-.val-xl { font-size: 30px; font-weight: 500; font-variant-numeric: tabular-nums; line-height: 1.1; transition: color .5s; }
+.val-xl { font-size: 30px; font-weight: 500; font-variant-numeric: tabular-nums; line-height: 1.1; }
 .val-lg { font-size: 24px; font-weight: 500; font-variant-numeric: tabular-nums; }
 .val-md { font-size: 18px; font-weight: 500; font-variant-numeric: tabular-nums; }
 .val-sm { font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; }
-.sub    { font-size: 12px; color: #8B6F47; margin-top: 3px; }
-.up     { color: #27AE60; }
-.down   { color: #C0392B; }
-.accent { color: #B85C1A; }
-.lite   { color: #EDE0CE; }
-
-/* ── 中間 TV ── */
-.tv-area {
-  background: #edd4be;
-  display: flex; align-items: center; justify-content: center;
-  flex-direction: column; gap: 10px;
-}
-.tv-hint { font-size: 13px; color: #c9a88a; }
-.tv-sub  { font-size: 11px; color: #d4b896; }
-
-/* ── 多空比 Bar ── */
-.ratio-bar { height: 24px; border-radius: 4px; overflow: hidden; display: flex; margin-top: 4px; }
+.up { color: #27AE60; } .dn { color: #C0392B; } .accent { color: #B85C1A; } .lite { color: #EDE0CE; }
+.card { background: #edd4be; border-radius: 8px; padding: 8px 12px; }
+.card.dark { background: #3D2B1F; }
+.card-label { font-size: 12px; color: #8B6F47; margin-bottom: 4px; letter-spacing: .03em; }
+.ratio-bar { height: 32px; border-radius: 4px; overflow: hidden; display: flex; margin-top: 4px; }
 .ratio-long  { background: #27AE60; display:flex; align-items:center; padding-left:9px; transition: width .6s; }
 .ratio-short { background: #C0392B; display:flex; align-items:center; justify-content:flex-end; padding-right:9px; transition: width .6s; }
-.ratio-label { font-size: 13px; font-weight: 500; color: white; }
-
-/* ── 深度 Bar ── */
-.depth-bar { height: 24px; border-radius: 5px; overflow: hidden; display: flex; margin-top: 6px; }
-
-/* ── QR ── */
-.qr-wrap { margin-top: auto; background: #3D2B1F; border-radius: 10px; padding: 14px; text-align: center; }
-.qr-box { width: 100px; height: 100px; background: white; border-radius: 5px; margin: 0 auto 10px; display:flex; align-items:center; justify-content:center; font-size:11px; color:#8B6F47; }
-.qr-box img { width:100%; height:100%; border-radius:5px; object-fit:contain; }
-.qr-title { font-size: 14px; font-weight: 500; color: #EDE0CE; }
-.qr-sub   { font-size: 11px; color: #6B4C2A; margin-top: 3px; }
-
-
-
-
-/* ── 幣種行情條 ── */
-.ticker-item {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 12px;
-  border-right: 1px solid #5C3D2A;
-}
-.ticker-item:last-child { border-right: none; }
-.tick-sym   { font-size: 15px; font-weight: 500; color: #C4A882; min-width: 40px; }
-.tick-price { font-size: 15px; font-weight: 500; color: #EDE0CE; font-variant-numeric: tabular-nums; }
-.tick-chg   { font-size: 14px; font-weight: 500; }
-
-/* flash */
+.ratio-label { font-size: 16px; font-weight: 500; color: white; }
+.depth-bar { height: 20px; border-radius: 5px; overflow: hidden; display: flex; margin-top: 4px; }
+.src-tag { font-size: 10px; padding: 1px 6px; border-radius: 3px; display: inline-block; margin-top: 3px; }
+.src-b  { background: #EAF3DE; color: #27500A; }
+.src-bn { background: #FAEEDA; color: #633806; }
+.src-p  { background: #F0E8F8; color: #5B2D8E; }
 @keyframes flashUp   { 0%{background:#d6f0de} 100%{background:#edd4be} }
 @keyframes flashDown { 0%{background:#fde8e8} 100%{background:#edd4be} }
-@keyframes signalPop { 0%{transform:scale(1.03)} 100%{transform:scale(1)} }
 .flash-up   { animation: flashUp   1s ease forwards; }
 .flash-down { animation: flashDown 1s ease forwards; }
-.signal-pop { animation: signalPop .4s ease; }
+.pillar-wrap { display:flex; flex-direction:column; align-items:center; gap:1px; }
+.pillar-name { font-size:9px; color:#8B6F47; text-align:center; }
 </style>
 </head>
 <body>
 
-<!-- 標題列（全寬）-->
-<div style="background:#f5e8d8;padding:3px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #d4b896;flex-shrink:0;height:32px;">
+<!-- 標題列 -->
+<div style="background:#f5e8d8;padding:3px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #d4b896;flex-shrink:0;height:30px;">
   <div style="font-size:13px;font-weight:500;color:#3D2B1F;">🐱 BitoCat 加密貨幣交易分析直播</div>
   <div style="font-size:12px;color:#C0392B;font-weight:500;">⚠️ 本直播內容僅供教育參考，不構成任何投資建議，投資有風險，請自行判斷</div>
   <div style="font-size:12px;color:#8B6F47;">Bitunix 推薦碼：<span style="color:#B85C1A;font-weight:600;">見下方說明欄</span></div>
 </div>
 
-<!-- 主體（左側全高 + 右側）-->
+<!-- 主體 -->
 <div style="display:flex;flex:1;overflow:hidden;min-height:0;">
 
   <!-- 左側面板 -->
   <div style="width:270px;flex-shrink:0;background:#f5e8d8;border-right:1px solid #d4b896;padding:8px;display:flex;flex-direction:column;gap:5px;overflow:hidden;">
-    <div class="panel-title">BITUNIX 市場數據</div>
+    <div style="font-size:11px;font-weight:500;color:#8B6F47;letter-spacing:.06em;text-transform:uppercase;padding-bottom:6px;border-bottom:1px solid #d4b896;flex-shrink:0;">BITUNIX 市場數據</div>
 
     <div class="card dark">
       <div class="card-label" style="color:#6B4C2A;">BTC / USDT 永續合約</div>
@@ -198,8 +99,7 @@ body {
       <div style="display:flex;align-items:center;gap:8px;margin-top:2px;">
         <svg id="countdownRing" width="34" height="34" viewBox="0 0 34 34">
           <circle cx="17" cy="17" r="13" fill="none" stroke="#d4b896" stroke-width="4"/>
-          <circle id="countdownArc" cx="17" cy="17" r="13" fill="none" stroke="#B85C1A" stroke-width="4"
-            stroke-dasharray="82 0" stroke-linecap="round" transform="rotate(-90 17 17)"/>
+          <circle id="countdownArc" cx="17" cy="17" r="13" fill="none" stroke="#B85C1A" stroke-width="4" stroke-dasharray="82 0" stroke-linecap="round" transform="rotate(-90 17 17)"/>
           <text id="countdownText" x="17" y="21" text-anchor="middle" font-size="7" font-weight="500" fill="#3D2B1F">--:--</text>
         </svg>
         <div style="font-size:10px;color:#3D2B1F;" id="countdownLabel">下次費率結算</div>
@@ -209,11 +109,11 @@ body {
 
     <div class="card">
       <div class="card-label">買賣掛單深度</div>
-      <div class="depth-bar" style="height:20px;margin-top:3px;">
-        <div class="ratio-long" id="depthBid" style="width:50%;"><span class="ratio-label" style="font-size:11px;" id="depthBidVal">買 —</span></div>
-        <div class="ratio-short" id="depthAsk" style="width:50%;"><span class="ratio-label" style="font-size:11px;" id="depthAskVal">賣 —</span></div>
+      <div class="depth-bar">
+        <div class="ratio-long" id="depthBid" style="width:50%;"><span style="font-size:11px;font-weight:500;color:white;" id="depthBidVal">買 —</span></div>
+        <div class="ratio-short" id="depthAsk" style="width:50%;"><span style="font-size:11px;font-weight:500;color:white;" id="depthAskVal">賣 —</span></div>
       </div>
-      <div class="sub" id="depthSub" style="margin-top:2px;font-size:10px;">載入中...</div>
+      <div style="font-size:10px;color:#8B6F47;margin-top:2px;" id="depthSub">載入中...</div>
       <span class="src-tag src-b">Bitunix</span>
     </div>
 
@@ -222,12 +122,12 @@ body {
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
         <div><div style="font-size:9px;color:#27AE60;">日高</div><div class="val-md up" id="dayHigh">—</div></div>
         <div style="font-size:12px;color:#d4b896;">↔</div>
-        <div style="text-align:right;"><div style="font-size:9px;color:#C0392B;">日低</div><div class="val-md down" id="dayLow">—</div></div>
+        <div style="text-align:right;"><div style="font-size:9px;color:#C0392B;">日低</div><div class="val-md dn" id="dayLow">—</div></div>
       </div>
       <span class="src-tag src-b">Bitunix</span>
     </div>
 
-    <!-- 貓咪隧道快訊（左側底部）-->
+    <!-- 貓咪快訊 -->
     <div class="card" style="flex-shrink:0;">
       <div class="card-label">🐱 BitoCat 貓咪隧道快訊</div>
       <div id="tunnelAlerts" style="display:flex;flex-direction:column;gap:4px;margin-top:4px;">
@@ -247,8 +147,7 @@ body {
         </div>
       </div>
     </div>
-
-  </div><!-- /左側 -->
+  </div>
 
   <!-- 右側 -->
   <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;">
@@ -274,47 +173,45 @@ body {
       </div>
     </div>
 
-    <!-- 數據橫列 -->
-    <div style="background:#f5e8d8;border-bottom:1px solid #d4b896;padding:18px 20px;display:flex;align-items:center;gap:16px;flex-shrink:0;">
+    <!-- ══ 數據橫列（加高，含共振）══ -->
+    <div style="background:#f5e8d8;border-bottom:1px solid #d4b896;padding:10px 16px;display:flex;align-items:stretch;gap:12px;flex-shrink:0;height:190px;">
 
-      <div style="background:#edd4be;border-radius:8px;padding:12px 16px;min-width:220px;">
-        <div style="font-size:14px;color:#8B6F47;margin-bottom:6px;">多空比（Binance）</div>
-        <div class="ratio-bar" style="height:32px;">
-          <div class="ratio-long" id="longBar" style="width:50%;"><span class="ratio-label" style="font-size:16px;" id="longPct">—</span></div>
-          <div class="ratio-short" id="shortBar" style="width:50%;"><span class="ratio-label" style="font-size:16px;" id="shortPct">—</span></div>
+      <!-- 多空比（放大）-->
+      <div class="card" style="min-width:200px;display:flex;flex-direction:column;justify-content:center;">
+        <div class="card-label" style="font-size:13px;">多空比（Binance）</div>
+        <div class="ratio-bar" style="height:40px;margin-top:8px;">
+          <div class="ratio-long" id="longBar" style="width:50%;"><span class="ratio-label" style="font-size:18px;" id="longPct">—</span></div>
+          <div class="ratio-short" id="shortBar" style="width:50%;"><span class="ratio-label" style="font-size:18px;" id="shortPct">—</span></div>
         </div>
-        <div style="font-size:13px;color:#8B6F47;margin-top:5px;" id="ratioSub">—</div>
+        <div style="font-size:14px;color:#8B6F47;margin-top:6px;" id="ratioSub">—</div>
+        <span class="src-tag src-bn" style="margin-top:4px;">Binance</span>
       </div>
 
-      <div style="background:#edd4be;border-radius:8px;padding:12px 16px;min-width:220px;">
-        <div style="font-size:14px;color:#8B6F47;margin-bottom:4px;">未平倉量 OI</div>
-        <svg id="oiSvg" width="178" height="38" viewBox="0 0 178 38" style="display:block;background:rgba(255,255,255,0.5);border-radius:4px;">
-          <text x="89" y="23" text-anchor="middle" font-size="11" fill="#c9a88a">載入中...</text>
+      <!-- OI（放大）-->
+      <div class="card" style="min-width:200px;display:flex;flex-direction:column;justify-content:center;">
+        <div class="card-label" style="font-size:13px;">未平倉量 OI</div>
+        <svg id="oiSvg" width="176" height="50" viewBox="0 0 176 50" style="display:block;background:rgba(255,255,255,0.5);border-radius:4px;margin-top:4px;">
+          <text x="88" y="28" text-anchor="middle" font-size="11" fill="#c9a88a">載入中...</text>
         </svg>
-        <div style="display:flex;justify-content:space-between;margin-top:2px;">
-          <span style="font-size:16px;font-weight:500;color:#1a6fd4;" id="oiVal">—</span>
-          <span style="font-size:16px;font-weight:500;" id="oiChg">—</span>
+        <div style="display:flex;justify-content:space-between;margin-top:4px;">
+          <span style="font-size:20px;font-weight:500;color:#1a6fd4;" id="oiVal">—</span>
+          <span style="font-size:18px;font-weight:500;" id="oiChg">—</span>
         </div>
+        <span class="src-tag src-bn">Binance</span>
       </div>
 
-      <div style="background:#edd4be;border-radius:8px;padding:10px 14px;min-width:150px;">
-        <div style="font-size:14px;color:#8B6F47;margin-bottom:4px;">資金費率</div>
-        <div style="font-size:32px;font-weight:500;color:#B85C1A;" id="fundingRateBar">—</div>
+      <!-- 資金費率（放大）-->
+      <div class="card" style="min-width:160px;display:flex;flex-direction:column;justify-content:center;">
+        <div class="card-label" style="font-size:13px;">資金費率</div>
+        <div style="font-size:38px;font-weight:600;margin-top:4px;" id="fundingRateBar">—</div>
         <div style="font-size:13px;color:#8B6F47;margin-top:4px;" id="fundingCountdownBar">下次結算 —</div>
+        <span class="src-tag src-b">Bitunix</span>
       </div>
 
-      <div style="background:#edd4be;border-radius:8px;padding:10px 14px;flex:1;">
-        <div style="font-size:14px;color:#8B6F47;margin-bottom:6px;">Bitunix 熱門合約 24h</div>
-        <div id="hotList" style="display:flex;gap:0;align-items:center;">
-          <div style="font-size:12px;color:#c9a88a;">載入中...</div>
-        </div>
-      </div>
-
-
-
-      <div style="background:#edd4be;border-radius:8px;padding:10px 12px;min-width:168px;text-align:center;">
-        <div style="font-size:14px;color:#8B6F47;margin-bottom:2px;">恐懼貪婪指數</div>
-        <svg id="fgGauge" width="168" height="84" viewBox="0 0 168 84">
+      <!-- 恐懼貪婪（放大）-->
+      <div class="card" style="min-width:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+        <div class="card-label" style="font-size:13px;text-align:center;">恐懼貪婪指數</div>
+        <svg id="fgGauge" width="150" height="78" viewBox="0 0 168 84">
           <path d="M 10 76 A 64 64 0 0 1 50 14" fill="none" stroke="#C0392B" stroke-width="11" stroke-linecap="round"/>
           <path d="M 50 14 A 64 64 0 0 1 118 14" fill="none" stroke="#d4b896" stroke-width="11"/>
           <path d="M 118 14 A 64 64 0 0 1 158 76" fill="none" stroke="#27AE60" stroke-width="11" stroke-linecap="round"/>
@@ -324,376 +221,320 @@ body {
           <text x="4" y="84" font-size="10" fill="#C0392B">恐懼</text>
           <text x="124" y="84" font-size="10" fill="#27AE60">貪婪</text>
         </svg>
-        <div style="font-size:13px;margin-top:0px;" id="fgLabel">—</div>
+        <div style="font-size:13px;" id="fgLabel">—</div>
+      </div>
+
+      <!-- 分隔線 -->
+      <div style="width:1px;background:#d4b896;flex-shrink:0;"></div>
+
+      <!-- ══ 共振儀表板 ══ -->
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px;min-width:0;">
+        <!-- 標題 + 倒數 -->
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+          <div style="font-size:13px;font-weight:600;color:#3D2B1F;">⚡ 時框共振儀表板</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="font-size:11px;color:#8B6F47;" id="resonanceTime">—</div>
+            <div style="font-size:11px;color:#B85C1A;font-weight:500;" id="resonanceCountdown">⟳ --:--</div>
+          </div>
+        </div>
+        <!-- 圖例 -->
+        <div style="display:flex;gap:8px;font-size:9px;color:#8B6F47;flex-shrink:0;">
+          <span style="display:flex;align-items:center;gap:2px;"><span style="display:inline-block;width:8px;height:8px;background:#0c8e3c;border-radius:1px"></span>超買</span>
+          <span style="display:flex;align-items:center;gap:2px;"><span style="display:inline-block;width:8px;height:8px;background:#d8d5ce;border-radius:1px"></span>中段</span>
+          <span style="display:flex;align-items:center;gap:2px;"><span style="display:inline-block;width:8px;height:8px;background:#e8456a;border-radius:1px"></span>超賣</span>
+          <span>白線=位置 ▲▼=方向</span>
+        </div>
+        <!-- 三組共振 -->
+        <div id="resonanceGrid" style="flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;min-height:0;">
+          <div style="background:#edd4be;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#c9a88a;">載入中...</div>
+          <div style="background:#edd4be;border-radius:6px;"></div>
+          <div style="background:#edd4be;border-radius:6px;"></div>
+        </div>
       </div>
 
     </div>
 
     <!-- TradingView -->
-    <div class="tv-area" style="flex:1;">
+    <div style="flex:1;background:#edd4be;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;">
       <div style="font-size:14px;color:#c9a88a;">OBS 視窗捕捉 TradingView</div>
       <div style="font-size:12px;color:#d4b896;margin-top:4px;">下方可放圖卡或交易實況</div>
     </div>
 
-    <!-- 加入會員 + QR code -->
-    <div style="background:#3D2B1F;padding:8px 20px;display:flex;align-items:center;gap:16px;flex-shrink:0;">
-      <div style="flex:none;width:280px;">
-        <div style="font-size:15px;font-weight:500;color:#EDE0CE;margin-bottom:4px;">🐱 加入比特聯盟會員 · 指標免費使用</div>
-        <div style="font-size:11px;color:#C4A882;line-height:1.7;">
+    <!-- 底部（加入會員 + 熱門合約 + QR）-->
+    <div style="background:#3D2B1F;padding:8px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;">
+
+      <!-- 加入會員說明 -->
+      <div style="flex:none;width:260px;">
+        <div style="font-size:14px;font-weight:500;color:#EDE0CE;margin-bottom:4px;">🐱 加入比特聯盟會員 · 指標免費使用</div>
+        <div style="font-size:10px;color:#C4A882;line-height:1.7;">
           ① 掃描「加入會員」QR code。<br>
-          ① Bitunix 交易所開戶（推薦碼 <span style="color:#B85C1A;font-weight:600;">見下方說明欄</span>）<br>
-          ② 開啟 Telegram，搜尋 @Boss1688Bot → 輸入 /start → 輸入付款時用的 Email<br>
-          ③ 自動收到頻道邀請進群，BitoCat 指標免費使用
+          ① Bitunix 交易所開戶（推薦碼 <span style="color:#B85C1A;font-weight:600;">見說明欄</span>）<br>
+          ② Telegram 搜尋 @Boss1688Bot → /start → 輸入 Email<br>
+          ③ 自動收到頻道邀請，BitoCat 指標免費使用
         </div>
       </div>
 
-      <!-- 今日直播主題（中間）-->
-      <div style="flex:1;display:flex;align-items:center;justify-content:center;text-align:center;border-left:1px solid #5C3D2A;border-right:1px solid #5C3D2A;padding:0 24px;">
+      <!-- 熱門合約 + 今日主題 -->
+      <div style="flex:1;border-left:1px solid #5C3D2A;border-right:1px solid #5C3D2A;padding:0 16px;display:flex;flex-direction:column;gap:6px;">
+        <!-- 熱門合約（從數據列移來）-->
         <div>
-          <div style="font-size:11px;color:#B85C1A;margin-bottom:8px;letter-spacing:.10em;font-weight:600;">📢 TODAY'S TOPIC</div>
-          <div style="font-size:26px;font-weight:700;color:#FFD700;line-height:1.4;text-shadow:0 2px 8px rgba(0,0,0,0.5);" id="liveTitle">BTC 突破關鍵壓力！今晚能否站穩？</div>
+          <div style="font-size:11px;color:#B85C1A;font-weight:500;margin-bottom:4px;letter-spacing:.06em;">🔥 BITUNIX 熱門合約 24H</div>
+          <div id="hotList" style="display:flex;gap:0;align-items:center;">
+            <div style="font-size:11px;color:#c9a88a;">載入中...</div>
+          </div>
+        </div>
+        <!-- 分隔 -->
+        <div style="border-top:1px solid #5C3D2A;"></div>
+        <!-- 今日主題 -->
+        <div style="text-align:center;">
+          <div style="font-size:10px;color:#B85C1A;letter-spacing:.10em;font-weight:600;">📢 TODAY'S TOPIC</div>
+          <div style="font-size:22px;font-weight:700;color:#FFD700;line-height:1.3;text-shadow:0 2px 8px rgba(0,0,0,0.5);" id="liveTitle">BTC 突破關鍵壓力！今晚能否站穩？</div>
         </div>
       </div>
-      <div style="display:flex;gap:14px;align-items:center;flex-shrink:0;">
+
+      <!-- QR Codes -->
+      <div style="display:flex;gap:12px;align-items:center;flex-shrink:0;">
         <div style="text-align:center;">
-          <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAN4AAADeCAIAAADdBSngAAAE7klEQVR4nO3d260jRRRAUQYRCAEQA8ETAwGQiflFaoRKpXpsN2t9j92+462SjqsfPz6fz0/Q8/PtDwD/TppESZMoaRIlTaKkSZQ0iZImUdIkSppESZOoX0b+0e+//br5Y/yXP/78a+JVc5955FjPd5571aqj73uffUY+oVWTKGkSJU2ipEmUNIkamtCf5qbmEXOT49zUvM+qKf7kX1H7Tq2aREmTKGkSJU2ipEnU5IT+tG/Pes6qaXfk7zr5q8LJSf/ud2rVJEqaREmTKGkSJU2ilk3odz2nwud0uWreHJl/V51DPnesu+cPrGLVJEqaREmTKGkSJU2iXjKhz5mbrPfN4/yTVZMoaRIlTaKkSZQ0iVo2oZ/ct61NxHM7+Ksm/X276nf34q2aREmTKGkSJU2ipEnU5IT+jTNy7d+MOHlOe+07tWoSJU2ipEmUNImSJlE/Pp/P7c9wyMnrtfdNu/17wq9i1SRKmkRJkyhpEiVNooYm9H3PDlt13ffJe5U/rTr6qr/07v/qKlZNoqRJlDSJkiZR0iRqckIfcfLs67vz5r5fDO7eSX7fNzjyzlZNoqRJlDSJkiZR0iRq8jr0VfdGe9q3a3zSqjl636w9d/STv4RYNYmSJlHSJEqaREmTqI1PWzt5xfTJJ5KvOvrJcwxW/RVz39fcX2rVJEqaREmTKGkSJU2ihib0k08AP3n1+sir9k3fteu+n/btvI+wahIlTaKkSZQ0iZImURvPcl/1znNHP3ne+76d5X3X4J+ctV2HzqtIkyhpEiVNoqRJ1LLnoe+7D/mqneWTU2rtVXevOreHzqtIkyhpEiVNoqRJ1NCEvu8e4/vm1n3TZe0JaPu+i7vn4Vs1iZImUdIkSppESZOoyevQ5+y7pvvkc8FOPrVt7t+8g1WTKGkSJU2ipEmUNImafB567e7ld+8mt+967Tl3n8a+ilWTKGkSJU2ipEmUNIlaNqHPvar2VLKT++N3rxR4qs31Vk2ipEmUNImSJlHSJOroWe4n33nuWHd3w/vXvI+8zypWTaKkSZQ0iZImUdIkanIP/WnfM7/mnJz9T56dvmr277NqEiVNoqRJlDSJkiZRk3vo+54/vm+KX3Wm974r3PftvI8ca9/vA0/OcueLSZMoaRIlTaKkSdTk09ZG7HuW2Vuf7Hb3rIPabyxWTaKkSZQ0iZImUdIkaugs96eT9/2+ey323Kv6d3gbOdbd3z2smkRJkyhpEiVNoqRJ1Manra3aS717DfXJneWTc/0q+36ZsWoSJU2ipEmUNImSJlGTe+h33b0zW//u7ic/874n6Fk1iZImUdIkSppESZOoZfdy3+fk89D3HX3EvnvZ3b3Tvj10XkWaREmTKGkSJU2ihu4U97Rvbl11H/L+mfmrdrrnzB3r5Ce0ahIlTaKkSZQ0iZImUZMT+tPJHep9c/TJ675r9807eXRnufPFpEmUNImSJlHSJGrZhH7Svt3nfVdVP8298zfef95Z7ryKNImSJlHSJEqaRH3lhF67N9rJ9zm5877qne2h8yrSJEqaREmTKGkStexpa6ucnEn7d0ur/WJwklWTKGkSJU2ipEmUNIma3EO/e3f3u2df79vBnzv608m5foSz3HkVaRIlTaKkSZQ0ifrK56Hzf2DVJEqaREmTKGkSJU2ipEmUNImSJlHSJEqaREmTqL8BTasSkql5xTEAAAAASUVORK5CYII=" style="width:90px;height:90px;border-radius:5px;display:block;">
-          <div style="font-size:10px;color:#EDE0CE;margin-top:3px;font-weight:500;">加入會員</div>
-          <div style="font-size:9px;color:#6B4C2A;">Bitunix 開戶</div>
+          <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAN4AAADeCAIAAADdBSngAAAE7klEQVR4nO3d264jRRRAUQYRCAEQA8ETAwGQiflFaoRKpXpsN2t9j92+462SjqsfPz6fz0/Q8/PtDwD/TppESZMoaRIlTaKkSZQ0iZImUdIkSppESZOoX0b+0e+//br5Y/yXP/78a+JVc5955FjPd5571aqj73fffUY+oVWTKGkSJU2ipEmUNIkamtCf5qbmEXOT49zUvM+qKf7kX1H7Tq2aREmTKGkSJU2ipEnU5IT+tG/Pes6qaXfk7zr5q8LJSf/ud2rVJEqaREmTKGkSJU2iXjKhz5mbrPfN4/yTVZMoaRIlTaKkSZQ0iVo2oZ/ct61NxHM7+Ksm/X276nf34q2aREmTKGkSJU2ipEnU5IT+jTNy7d+MOHlOe+07tWoSJU2ipEmUNImSJlE/Pp/P7c9wyMnrtfdNu/17wq9i1SRKmkRJkyhpEiVNooYm9H3PDlt13ffJe5U/rTr6qr/07v/qKlZNoqRJlDSJkiZR0iRqckIfcfLs67vz5r5fDO7eSX7fNzjyzlZNoqRJlDSJkiZR0iRq8jr0VfdGe9q3a3zSqjl636w9d/STv4RYNYmSJlHSJEqaREmTqI1PWzt5xfTJJ5KvOvrJcwxW/RVz39fcX2rVJEqaREmTKGkSJU2ihib0k08AP3n1+sir9k3fteu+n/btvI+wahIlTaKkSZQ0iZImUROXoq+6N9rT/l3jk1bN0ftm7bmjn/wlxKpJlDSJkiZR0iRqckIfcfLs67vz5r5fDO7eSX7fNzjyzlZNoqRJlDSJkiZR0iRq8jr0VfdGe9q3a3zSqjl636w9d/STv4RYNYmSJlHSJEqaREmTqI1PWzt5xfTJJ5KvOvrJcwxW/RVz39fcX2rVJEqaREmTKGkSJU2ihib0k08AP3n1+sir9k3fteu+n/btvI+wahIlTaKkSZQ0iZImURMXoq+6N9rT/l3jk1bN0ftm7bmjn/wlxKpJlDSJkiZR0iRqckIfcfLs67vz5r5fDO7eSX7fNzjyzlZNoqRJlDSJkiZR0iRq8jr0VfdGe9q3a3zSqjl636w9d/STv4RYNYmSJlHSJEqaREmTqI1PWzt5xfTJJ5KvOvrJcwxW/RVz39fcX2rVJEqaREmTKGkSJU2ihib0k08AP3n1+sir9k3fteu+n/btvI+wahIlTaKkSZQ0iZImURMXoq+6N9rT/l3jk1bN0ftm7bmjn/wlxKpJlDSJkiZR0iRqckIfcfLs67vz5r5fDO7eSX7fNzjyzlZNoqRJlDSJkiZR0iRq8jr0VfdGe9q3a3zSqjl636w9d/STv4RYNYmSJlHSJEqaREmTqI1PWzt5xfTJJ5KvOvrJcwxW/RVz39fcX2rVJEqaREmTKGkSJU2ihib0k08AP3n1+sir9k3fteu+n/btvI+wahIlTaKkSZQ0iZImURMXoq+6N9rT/l3jk1bN0ftm7bmjn/wlxKpJlDSJkiZR0iRqckIfcfLs67vz5r5fDO7eSX7fNzjyzlZNoqRJlDSJkiZR0iRq8jr0VfdGe9q3a3zSqjl636w9d/STv4RYNYmSJlHSJEqaREmTqI1PWzt5xfTJJ5KvOvrJcwxW/RVz39fcX2rVJEqaREmTKGkSJU2ihib0k08AP3n1+sir9k3fteu+n/btvI+wahIlTaKkSZQ0iZImURMXoq+6N9rT/l3jk1bN0ftm7bmjn/wlxKpJlDSJkiZR0iRqckJ/2vfM" style="width:80px;height:80px;border-radius:4px;display:block;">
+          <div style="font-size:9px;color:#EDE0CE;margin-top:2px;font-weight:500;">加入會員</div>
         </div>
         <div style="text-align:center;">
-          <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAN4AAADeCAIAAADdBSngAAAFA0lEQVR4nO3d7Y0kJxRAUa/lQDYAx+DgHYMDcCazAZRlIfSg7rTO+T1TPR9XSDQ0/Pj6+voNen5/+weA/yZNoqRJlDSJkiZR0iRKmkRJkyhpEiVNoqRJ1B8rX/TXnz8P/xj/5+9//t34rufP/HzO3u819ZxzVv5i/f+pUZMoaRIlTaKkSZQ0iVqaoT/tzZpX7M0cV+bjU/bm/nuz5nPvTjzV/qdGTaKkSZQ0iZImUdIkanOG/jS1Hr33WnvPOTez3vuave+qzaynfh6jJlHSJEqaREmTKGkSNTZDr9mb207N2c+tmNd21J9j1CRKmkRJkyhpEiVNoj5khn5uV/nenH1q7fvcjvo+oyZR0iRKmkRJkyhpEjU2Q6/NCvdm3yvP2fuaqX34U0+eevVzjJpESZMoaRIlTaKkSdTmDL2213pvFXtqB/vUSvfNr3mq/U+NmkRJkyhpEiVNoqRJ1NIMvbY+/lQ7y/3ma9VObp9i1CRKmkRJkyhpEiVNojbvQ795J/i53elT3zX1nJsr3Tf/X3uMmkRJkyhpEiVNoqRJVG6X+7m5/80d4yvPOXfa/JSp19r7Gxo1iZImUdIkSppESZOoH19fXyMP+o6fob55G/vNE+BXnPt/Pe39zEZNoqRJlDSJkiZR0iRqaYY+9cnr/glmtbvMvuNffupvaNQkSppESZMoaRIlTaI2Z+gr3l37Pjezrs12956z4uaa/pNRkyhpEiVNoqRJlDSJGltD35vNvbuP+uYJeOd+r3N/+RXn3jEwahIlTaKkSZQ0iZImUWNr6Oc+Uf7unH3qyXuvfu49jafa5/2NmkRJkyhpEiVNoqRJ1Nh96OdO+b75/sDeq9/cUX/O1G/htjU+nDSJkiZR0iRKmkS9vIb+7llk786s392ZX/s0wZNRkyhpEiVNoqRJlDSJ2lxDP/fp7KnnTP2E786Izz3n5s+8x6hJlDSJkiZR0iRKmkSN3Yf+VJsDfsbd6ytPfvdvuPJdK4yaREmTKGkSJU2ipEnUN7gPfcq757A99WfW517LLne+MWkSJU2ipEmUNIkaW0O/uf/53d3XK25+xvzmCflP51bVjZpESZMoaRIlTaKkSdTVk+JW1PaZr7z6d1yhvrmfwRo6H0WaREmTKGkSJU2ilk6Ke5q6uezdW9JWTN22NjWvv3lf/LvnARo1iZImUdIkSppESZOozRn6itpce0X/PYSbOwFungv3ZNQkSppESZMoaRIlTaJyJ8XdvN3s3XXk2i3zK27unzdqEiVNoqRJlDSJkiZRm/eh79lba9578tQt4efWrM9919O5u97O7TowahIlTaKkSZQ0iZImUUsz9HdPSl/ZfX3utZ6mdnq/u8p/86Q4a+h8FGkSJU2ipEmUNIk6eFLcnr112xU3bzbfe/XafvWnm+/VGDWJkiZR0iRKmkRJk6ixk+LePfdsZW777oz43Plye7/7lHPv1Rg1iZImUdIkSppESZOog2e5v2vq8+xPe3P/c2e51+6dn/oUgFGTKGkSJU2ipEmUNIn6kBn6ufPKzn02fOo+9BU370x32xofTppESZMoaRIlTaLGZujndjuvvNbeuvaUqZ3nN9fHb940t8eoSZQ0iZImUdIkSppEbd6HflP//LSnm2v6e6Y+4T71ez0ZNYmSJlHSJEqaREmTqKUZOtxn1CRKmkRJkyhpEiVNoqRJlDSJkiZR0iRKmkRJk6hfmUoYjARRU38AAAAASUVORK5CYII=" style="width:90px;height:90px;border-radius:5px;display:block;">
-          <div style="font-size:10px;color:#EDE0CE;margin-top:3px;font-weight:500;">指標年費</div>
-          <div style="font-size:9px;color:#6B4C2A;">NT$3,600/年</div>
+          <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAN4AAADeCAIAAADdBSngAAAFA0lEQVR4nO3d7Y0kJxRAUa/lQDYAx+DgHYMDcCazAZRlIfSg7rTO+T1TPR9XSDQ0/Pj6+voNen5/+weA/yZNoqRJlDSJkiZR0iRKmkRJkyhpEiVNoqRJ1B8rX/TXnz8P/xj/5+9//t34refP/HzO3u819ZxzVv5i/f+pUZMoaRIlTaKkSZQ0iVqaoT/tzZpX7M0cV+bjU/bm/nuz5nPvTjzV/qdGTaKkSZQ0iZImUdIkanOG/jS1Hr33WnvPOTez3vuave+qzaynfh6jJlHSJEqaREmTKGkSNTZDr9mb207N2c+tmNd21J9j1CRKmkRJkyhpEiVNoj5khn5uV/nenH1q7fvcjvo+oyZR0iRKmkRJkyhpEjU2Q6/NCvdm3yvP2fuaqX34U0+eevVzjJpESZMoaRIlTaKkSdTmDL2213pvFXtqB/vUSvfNr3mq/U+NmkRJkyhpEiVNoqRJ1NIMvbY+/lQ7y/3ma9VObp9i1CRKmkRJkyhpEiVNojbvQ795J/i53elT3zX1nJsr3Tf/X3uMmkRJkyhpEiVNoqRJVG6X+7m5/80d4yvPOXfa/JSp19r7Gxo1iZImUdIkSppESZOoH19fXyMP+o6fob55G/vNE+BXnPt/Pe39zEZNoqRJlDSJkiZR0iRqaYY+9cnr/glmtbvMvuNffupvaNQkSppESZMoaRIlTaI2Z+gr3l37Pjezrs12956z4uaa/pNRkyhpEiVNoqRJlDSJGltD35vNvbuP+uYJeOd+r3N/+RXn3jEwahIlTaKkSZQ0iZImUWNr6Oc+Uf7unH3qyXuvfu49jafa5/2NmkRJkyhpEiVNoqRJ1NiJRecMAAAgAElEQVSJiecMAAIY4P8H" style="width:80px;height:80px;border-radius:4px;display:block;">
+          <div style="font-size:9px;color:#EDE0CE;margin-top:2px;font-weight:500;">指標年費</div>
         </div>
         <div style="text-align:center;">
-          <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAN4AAADeCAIAAADdBSngAAAFCklEQVR4nO3d220tNQBAUS6iEAqgBoqnBgqgk1CAEViWHzuHtb6TmZNkayTHHvvH19fXT9Dz8+sPAP9MmkRJkyhpEiVNoqRJlDSJkiZR0iRKmkRJk6hfZr7o999+Pfwx/s0ff/618F0zn3ntyjP3Gq+89juc+YQzd5/5rptmPqGnJlHSJEqaREmTKGkSNTVCH+0a247WRo67vuvciHi0NorfdfeZz7PL2l/HU5MoaRIlTaKkSZQ0iVocoY/OzRHP3OvcrPGuUfO5n/TcaoGbf9ORpyZR0iRKmkRJkyhpErVthF5zbmx7buZ913XermDfxVOTKGkSJU2ipEmUNIn62BH6mnOr5XfN8n/qeHzkqUmUNImSJlHSJEqaRG0boZ97i/mccyvGd60Pfztmf/s39dQkSppESZMoaRIlTaIWR+ifMW+7a8X42nXOfc2a2t/UU5MoaRIlTaKkSZQ0iZoaoffnx9+Obdesjf1nvmbm5+r/TT01iZImUdIkSppESZOoH19fX//5RW93J6udAvb2Z/+On3mNpyZR0iRKmkRJkyhpErU4h37zFLBz68Nn9OeaR+dOSL957rynJlHSJEqaREmTKGkStTiHPjr3NvSuUfza3Xe5efL7zHVGb/8PM/LUJEqaREmTKGkSJU2iDr6HvjZ2e3tq+a4rj19zc4e3t+8FWOXOh5MmUdIkSppESZOoqRF6fw59dHOkv2vef+3z3LzyrutY5c43Jk2ipEmUNImSJlFTq9zXvJ3bfXuv2rnqa1e+uXZi5KlJlDSJkiZR0iRKmkRtm0Pf5dza+Lfj6M8Yj9/cbc9TkyhpEiVNoqRJlDSJmhqhj86d3nVunHhu1njXXnY318+f4z10Ppw0iZImUdIkSppEbTttbc2uUXNt5/Zzb9PP3GvtyjfXvVvlzjcmTaKkSZQ0iZImUdvm0Hc5t+PcLjdPY5+5+9rXnNtNzhw6H06aREmTKGkSJU2itp2HPjo3St1193P7mY9q+72vcR46SJMqaRIlTaKkSdTiCP3cG9M3T20793OtuTlDvXb3GebQ+XDSJEqaREmTKGkSdfC0tTXnxonn9jO/+b+Ic3vU195n99QkSppESZMoaRIlTaKuzqGfG9vePAWsvxK+/x8DI3S+MWkSJU2ipEmUNIla3CluzbmR481zys6N62+OrG+eauc9dD6KNImSJlHSJEqaRG2bQ9/1XTPXGd08JfztqeVv/xdxc62CpyZR0iRKmkRJkyhpEnV1Dv3cO9Rrdo12z+0v9/Zkt5u75I08NYmSJlHSJEqaREmTqNxOcTPejhxHN083W7v723fMvYfOR5EmUdIkSppESZOoqTn0m+eYj8bRXG1N+9p1RuOVz/3m355zN8NTkyhpEiVNoqRJlDSJWlzl/vZU7rdr0dfG7DP3OrdefXRzH/s1nppESZMoaRIlTaKkSdS299Bv7iG2dvebO5Pv2klv16ry2kh/hqcmUdIkSppESZMoaRJ1dae4m97un3bzbLWbq+5n7PrZPTWJkiZR0iRKmkRJk6gPGaGfW50+49xebed2ib/5mdd4ahIlTaKkSZQ0iZImUdtG6Dd3U7+5w/m5MfLo5r5wo7enn488NYmSJlHSJEqaREmTqMUR+tvd3c/tunZzVn30dr/3c7Pz9nLno0iTKGkSJU2ipEnUtzwPnf8DT02ipEmUNImSJlHSJEqaREmTKGkSJU2ipEmUNIn6Gy0M7gXmWibuAAAAAElFTkSuQmCC" style="width:90px;height:90px;border-radius:5px;display:block;">
-          <div style="font-size:10px;color:#EDE0CE;margin-top:3px;font-weight:500;">網站註冊</div>
-          <div style="font-size:9px;color:#6B4C2A;">BitoAlliance</div>
+          <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAN4AAADeCAIAAADdBSngAAAFCklEQVR4nO3d220tNQBAUS6iEAqgBoqnBgqgk1CAEViWHzuHtb6TmZNkayTHHvvH19fXT9Dz8+sPAP9MmkRJkyhpEiVNoqRJlDSJkiZR0iRKmkRJk6hfZr7o999+Pfwx/s0ff/618F0zn3ntyjP3Gq+89juc+YQzd5/5rptmPqGnJlHSJEqaREmTKGkSNTVCH+0a247WRo67vuvciHi0NorfdfeZz7PL2l/HU5MoaRIlTaKkSZQ0iVocoY/OzRHP3OvcrPGuUfO5n/TcaoGbf9ORpyZR0iRKmkRJkyhpErVthF5zbmx7buZ913XermDfxVOTKGkSJU2ipEmUNIn62BH6mnOr5XfN8n/qeHzkqUmUNImSJlHSJEqaRG0boZ97i/mccyvGd60Pfztmf/s39dQkSppESZMoaRIlTaIWR+ifMW+7a8X42nXOfc2a2t/UU5MoaRIlTaKkSZQ0iZoaoffnx9+Obdesjf1nvmbm5+r/TT01iZImUdIkSppESZOoH19fX//5RW93J6udAvb2Z/+On3mNpyZR0iRKmkRJkyhpErU4h37zFLBz68Nn9OeaR+dOSL957rynJlHSJEqaREmTKGkSNTiHPjr3NvSuUfza3Xe5efL7zHVGb/8PM/LUJEqaREmTKGkSJU2iDr6HvjZ2e3tq+a4rj19zc4e3t+8FWOXOh5MmUdIkSppESZOoqRF6fw59dHOkv2vef+3z3LzyrutY5c43Jk2ipEmUNImSJlFTq9zXvJ3bfXuv2rnqa1e+uXZi5KlJlDSJkiZR0iRKmkRtm0Pf5dza+Lfj6M8Yj9/cbc9TkyhpEiVNoqRJlDSJmhqhj86d3nVunHhu1njXXnY318+f4z10Ppw0iZImUdIkSppEbTttbc2uUXNt5/Zzb9PP3GvtyjfXvVvlzjcmTaKkSZQ0iZImUdvm0Hc5t+PcLjdPY5+5+9rXnNtNzhw6H06aREmTKGkSJU2itp2HPjo3St1193P7mY9q+72vcR46SJMqaRIlTaKkSdTiCP3cG9M3T20793OtuTlDvXb3GebQ+XDSJEqaREmTKGkSdfC0tTXnxonn9jO/+b+Ic3vU195n99QkSppESZMoaRIlTaKuzqGfG9vePAWsvxK+/x8DI3S+MWkSJU2ipEmUNIla3CluzbmR481zys6N62+OrG+eauc9dD6KNImSJlHSJEqaRG2bQ9/1XTPXGd08JfztqeVv/xdxc62CpyZR0iRKmkRJkyhpEnV1Dv3cO9Rrdo12z+0v9/Zkt5u75I08NYmSJlHSJEqaREmTqNxOcTPejhxHN083W7v723fMvYfOR5EmUdIkSppESZOoqTn0m+eYj8bRXG1N+9p1RuOVz/3m355zN8NTkyhpEiVNoqRJlDSJWlzl/vZU7rdr0dfG7DP3OrdevVl7c1fqxo2aREmTKGkSJU2ipEnUtzwPnf8DT02ipEmUNImSJlHSJEqaREmTKGkSJU2ipEmUNIn6Gy0M7gXmWibuAAAAAElFTkSuQmCC" style="width:80px;height:80px;border-radius:4px;display:block;">
+          <div style="font-size:9px;color:#EDE0CE;margin-top:2px;font-weight:500;">網站註冊</div>
         </div>
       </div>
     </div>
 
-  </div><!-- /右側 -->
+  </div>
+</div>
 
-</div><!-- /主體 -->
-
-<!-- 警語列（全寬）-->
+<!-- 警語列 -->
 <div style="background:#3D2B1F;padding:3px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;height:26px;">
   <div style="font-size:11px;color:#C4A882;font-weight:500;">比特聯盟 BitoAlliance · bitocat.github.io/bitoalliance</div>
   <div style="font-size:11px;color:#EDE0CE;">本內容不構成投資建議 · 加密貨幣交易具有高度風險 · 請量力而為</div>
-  <div style="font-size:11px;color:#C4A882;font-weight:500;">Telegram @Boss1688Bot · 加入會員享指標免費使用</div>
+  <div style="font-size:11px;color:#C4A882;font-weight:500;">Telegram @Boss1688Bot · 加入直客享指標免費使用</div>
 </div>
 
 <script>
-// ════════════════════
-// 設定
-// ════════════════════
-const SYMBOL      = 'BTCUSDT';
+const SYMBOL = 'BTCUSDT';
 const SUPABASE_URL = 'https://kldumnxdlgovaxtiszyn.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsZHVtbnhkbGdvdmF4dGlzenluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjIyNDgsImV4cCI6MjA5MzY5ODI0OH0.P_anfYpSV2tgCPIQ7uZDVBjUFY3UhfEXk9u3XjlzBHI';
-const SB_HEADERS  = { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON };
+const SB_HEADERS = { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON };
 const BITUNIX_API = 'https://web-production-f4735.up.railway.app';
-const BINANCE     = 'https://fapi.binance.com/futures/data';
+const BINANCE_FAPI = 'https://fapi.binance.com';
 
-const altCoins = [
-  {sym:'ETH',  priceId:'ethPrice', chgId:'ethChg'},
-  {sym:'SOL',  priceId:'solPrice', chgId:'solChg'},
-  {sym:'BNB',  priceId:'bnbPrice', chgId:'bnbChg'},
-  {sym:'XRP',  priceId:'xrpPrice', chgId:'xrpChg'},
-  {sym:'DOGE', priceId:'dogePrice',chgId:'dogeChg'},
-  {sym:'ADA',  priceId:'adaPrice', chgId:'adaChg'},
-];
-
-// ════════════════════
-// 工具函式
-// ════════════════════
 const fmtB = v => v >= 1e9 ? '$'+(v/1e9).toFixed(2)+'B' : v >= 1e6 ? '$'+(v/1e6).toFixed(1)+'M' : '$'+v.toFixed(0);
 const fmt1 = v => parseFloat(v).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1});
 
 function setConn(ok) {
-  const dot = document.getElementById('dot');
-  const lbl = document.getElementById('connLabel');
-  if (dot) dot.className = 'conn-dot ' + (ok ? 'ok' : 'err');
-  if (lbl) lbl.textContent = ok ? '即時連線中' : '重新連線中...';
+  const dot = document.getElementById('dot'), lbl = document.getElementById('connLabel');
+  if(dot) dot.className = 'conn-dot '+(ok?'ok':'err');
+  if(lbl) lbl.textContent = ok?'即時連線中':'重新連線中...';
 }
-
 function updateClock() {
   const n = new Date();
-  const cl = document.getElementById('clock');
-  const dl = document.getElementById('dateLabel');
-  if (cl) cl.textContent = n.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
-  if (dl) dl.textContent = n.toLocaleDateString('zh-TW',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
+  const cl = document.getElementById('clock'), dl = document.getElementById('dateLabel');
+  if(cl) cl.textContent = n.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+  if(dl) dl.textContent = n.toLocaleDateString('zh-TW',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
 }
-updateClock();
-setInterval(updateClock, 1000);
+updateClock(); setInterval(updateClock, 1000);
 
-// ════════════════════
-// Gauge 工具
-// ════════════════════
-let nextFunding = null;
-let fundingPeriod = 8 * 3600000;
-
+let nextFunding = null, fundingPeriod = 8*3600000;
 setInterval(() => {
-  if (!nextFunding) return;
+  if(!nextFunding) return;
   const diff = Math.max(0, nextFunding - Date.now());
   const h = Math.floor(diff/3600000), m = Math.floor(diff%3600000/60000), s = Math.floor(diff%60000/1000);
   const p2 = n => String(n).padStart(2,'0');
-  const ct = document.getElementById('countdownText');
-  const cl = document.getElementById('countdownLabel');
-  if (ct) ct.textContent = p2(h)+':'+p2(m);
-  if (cl) cl.textContent = '下次結算 '+p2(h)+':'+p2(m)+':'+p2(s);
-  const circ = 2*Math.PI*18;
+  const ct = document.getElementById('countdownText'), cl = document.getElementById('countdownLabel');
+  if(ct) ct.textContent = p2(h)+':'+p2(m);
+  if(cl) cl.textContent = '下次結算 '+p2(h)+':'+p2(m)+':'+p2(s);
+  const fb = document.getElementById('fundingCountdownBar');
+  if(fb) fb.textContent = '下次結算 '+p2(h)+':'+p2(m)+':'+p2(s);
+  const circ = 2*Math.PI*13;
   const elapsed = fundingPeriod - diff;
-  const progress = Math.min(elapsed/fundingPeriod, 1);
+  const progress = Math.min(elapsed/fundingPeriod,1);
   const arc = document.getElementById('countdownArc');
-  if (arc) arc.setAttribute('stroke-dasharray', (circ*progress)+' '+(circ*(1-progress)));
+  if(arc) arc.setAttribute('stroke-dasharray',(circ*progress)+' '+(circ*(1-progress)));
 }, 1000);
 
-function polarPoint(cx, cy, r, deg) {
-  const rad = (deg-90)*Math.PI/180;
-  return {x: cx+r*Math.cos(rad), y: cy+r*Math.sin(rad)};
-}
-function arcPath(cx, cy, r, startDeg, endDeg) {
-  const s = polarPoint(cx,cy,r,startDeg), e = polarPoint(cx,cy,r,endDeg);
-  const large = Math.abs(endDeg-startDeg)>180?1:0;
+function polarPoint(cx,cy,r,deg) { const rad=(deg-90)*Math.PI/180; return {x:cx+r*Math.cos(rad),y:cy+r*Math.sin(rad)}; }
+function arcPath(cx,cy,r,startDeg,endDeg) {
+  const s=polarPoint(cx,cy,r,startDeg), e=polarPoint(cx,cy,r,endDeg);
+  const large=Math.abs(endDeg-startDeg)>180?1:0;
   return `M ${s.x} ${s.y} A ${r} ${r} 0 ${large} 1 ${e.x} ${e.y}`;
 }
 
 function updateFundingGauge(rate) {
-  const pct = (Math.max(-0.05,Math.min(0.10,rate))+0.05)/0.15;
-  const deg = -90+pct*180;
-  const tip = polarPoint(118,70,72,deg);
-  const needle = document.getElementById('fundingNeedle');
-  const arc    = document.getElementById('fundingArc');
-  const val    = document.getElementById('fundingVal');
-  const barEl  = document.getElementById('fundingRateBar');
-  if (needle) { needle.setAttribute('x2',tip.x); needle.setAttribute('y2',tip.y); }
-  if (arc)    { arc.setAttribute('d', arcPath(118,78,86,-90,deg)); arc.setAttribute('stroke', rate>0.03?'#C0392B':rate<0?'#27AE60':'#B85C1A'); }
-  if (val)    { val.textContent=(rate>=0?'+':'')+( rate*100).toFixed(4)+'%'; val.setAttribute('fill',rate>0.03?'#C0392B':rate<0?'#27AE60':'#B85C1A'); }
-  if (barEl)  { barEl.textContent=(rate>=0?'+':'')+( rate*100).toFixed(4)+'%'; barEl.style.color=rate>0.03?'#C0392B':rate<0?'#27AE60':'#B85C1A'; }
+  const pct=(Math.max(-0.05,Math.min(0.10,rate))+0.05)/0.15, deg=-90+pct*180;
+  const tip=polarPoint(118,70,72,deg);
+  const needle=document.getElementById('fundingNeedle'), arc=document.getElementById('fundingArc');
+  const val=document.getElementById('fundingVal'), barEl=document.getElementById('fundingRateBar');
+  const col=rate>0.03?'#C0392B':rate<0?'#27AE60':'#B85C1A';
+  if(needle){needle.setAttribute('x2',tip.x);needle.setAttribute('y2',tip.y);}
+  if(arc){arc.setAttribute('d',arcPath(118,78,86,-90,deg));arc.setAttribute('stroke',col);}
+  if(val){val.textContent=(rate>=0?'+':'')+(rate*100).toFixed(4)+'%';val.setAttribute('fill',col);}
+  if(barEl){barEl.textContent=(rate>=0?'+':'')+(rate*100).toFixed(4)+'%';barEl.style.color=col;}
 }
 
 function updateFgGauge(v) {
-  const deg = -90+(v/100)*180;
-  const tip = polarPoint(84,76,60,deg);
-  const needle = document.getElementById('fgNeedle');
-  const val    = document.getElementById('fgVal');
-  const num    = document.getElementById('fgNum');
-  const lbl    = document.getElementById('fgLabel');
-  const col    = v<=25?'#C0392B':v>=75?'#27AE60':'#B85C1A';
-  if (needle) { needle.setAttribute('x2',tip.x); needle.setAttribute('y2',tip.y); }
-  if (val)    { val.textContent=v; val.setAttribute('fill',col); }
-  if (num)    { num.textContent=v; num.style.color=col; }
-  if (lbl)    { lbl.textContent=''; }
+  const deg=-90+(v/100)*180, tip=polarPoint(84,76,60,deg);
+  const needle=document.getElementById('fgNeedle'), val=document.getElementById('fgVal');
+  const lbl=document.getElementById('fgLabel'), col=v<=25?'#C0392B':v>=75?'#27AE60':'#B85C1A';
+  if(needle){needle.setAttribute('x2',tip.x);needle.setAttribute('y2',tip.y);}
+  if(val){val.textContent=v;val.setAttribute('fill',col);}
+  if(lbl){lbl.textContent='';lbl.style.color=col;}
 }
 
-function drawSparkline(svgId, data, color, opacity) {
-  const svg = document.getElementById(svgId);
-  if (!svg) return;
-  const W = svgId==='sparkSvg' ? 236 : svgId==='oiSvg' ? 178 : 312;
-  const H = svgId==='sparkSvg' ? 36 : 38;
-  const min=Math.min(...data), max=Math.max(...data), range=max-min||1;
-  const pts = data.map((v,i)=>`${(i/(data.length-1))*W},${H-((v-min)/range)*(H-4)-2}`).join(' ');
-  const last = pts.split(' ').pop().split(',');
-  svg.innerHTML = `<polygon points="${pts} ${W},${H} 0,${H}" fill="${color}" opacity="${opacity}"/>
+function drawSparkline(svgId, data, color, opacity, W, H) {
+  const svg=document.getElementById(svgId); if(!svg) return;
+  const min=Math.min(...data),max=Math.max(...data),range=max-min||1;
+  const pts=data.map((v,i)=>`${(i/(data.length-1))*W},${H-((v-min)/range)*(H-4)-2}`).join(' ');
+  const last=pts.split(' ').pop().split(',');
+  svg.innerHTML=`<polygon points="${pts} ${W},${H} 0,${H}" fill="${color}" opacity="${opacity}"/>
     <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>
     <circle cx="${last[0]}" cy="${last[1]}" r="3" fill="${color}"/>`;
 }
 
-// ════════════════════
-// 主數據（/live-data）
-// ════════════════════
 let lastPrice = null;
-
 function processLiveData(d) {
-  if (!d || d.code !== 0) { setConn(false); return; }
+  if(!d||d.code!==0){setConn(false);return;}
   setConn(true);
-
-  // Ticker
-  const t = d.ticker || {};
-  const price = parseFloat(t.lastPrice), open=parseFloat(t.open), high=parseFloat(t.high), low=parseFloat(t.low);
-  if (price > 0) {
-    const el = document.getElementById('btcPrice');
-    if (el) { el.textContent = fmt1(price); }
-    if (lastPrice !== null && lastPrice !== price) {
-      const up = price >= lastPrice;
-      if (el) { el.classList.add(up?'up':'down'); setTimeout(()=>el.classList.remove('up','down'),1200); }
-    }
-    lastPrice = price;
+  const t=d.ticker||{};
+  const price=parseFloat(t.lastPrice),open=parseFloat(t.open),high=parseFloat(t.high),low=parseFloat(t.low);
+  if(price>0) {
+    const el=document.getElementById('btcPrice');
+    if(el){el.textContent=fmt1(price);}
+    if(lastPrice!==null&&lastPrice!==price){const up=price>=lastPrice;if(el){el.classList.add(up?'up':'dn');setTimeout(()=>el.classList.remove('up','dn'),1200);}}
+    lastPrice=price;
   }
-  if (open>0 && price>0) {
-    const chg=((price-open)/open)*100, el=document.getElementById('btcChange');
-    if (el) { el.textContent=(chg>=0?'▲ +':'▼ ')+Math.abs(chg).toFixed(2)+'%  (24h)'; el.className='val-sm '+(chg>=0?'up':'down'); }
-  }
-  const dh=document.getElementById('dayHigh'), dl=document.getElementById('dayLow');
-  if (dh && high>0) dh.textContent=fmt1(high);
-  if (dl && low>0)  dl.textContent=fmt1(low);
-
-  // Kline
+  if(open>0&&price>0){const chg=((price-open)/open)*100,el=document.getElementById('btcChange');if(el){el.textContent=(chg>=0?'▲ +':'▼ ')+Math.abs(chg).toFixed(2)+'%  (24h)';el.className='val-sm '+(chg>=0?'up':'dn');}}
+  const dh=document.getElementById('dayHigh'),dl=document.getElementById('dayLow');
+  if(dh&&high>0) dh.textContent=fmt1(high); if(dl&&low>0) dl.textContent=fmt1(low);
   const klines=d.kline||[];
-  if (klines.length>=2) { const closes=klines.map(k=>parseFloat(k.close)).filter(v=>v>0); if(closes.length>=2) drawSparkline('sparkSvg',closes,'#B85C1A',0.2); }
-
-  // Funding
-  const f=d.funding||{}, rate=parseFloat(f.fundingRate);
-  if (!isNaN(rate)) {
-    updateFundingGauge(rate);
-    if (f.nextFundingTime) nextFunding=parseInt(f.nextFundingTime);
-    if (f.fundingInterval) { fundingPeriod=parseInt(f.fundingInterval)*3600000; const fi=document.getElementById('fundingInterval'); if(fi) fi.textContent=`結算週期 ${f.fundingInterval} 小時`; }
-    // 下方 bar 顯示
-    const fbEl=document.getElementById('fundingRateBar');
-    if(fbEl) { fbEl.textContent=(rate>=0?'+':'')+( rate*100).toFixed(4)+'%'; fbEl.style.color=rate>0.03?'#C0392B':rate<0?'#27AE60':'#B85C1A'; }
-  }
-
-  // Depth
+  if(klines.length>=2){const closes=klines.map(k=>parseFloat(k.close)).filter(v=>v>0);if(closes.length>=2)drawSparkline('sparkSvg',closes,'#B85C1A',0.2,236,36);}
+  const f=d.funding||{},rate=parseFloat(f.fundingRate);
+  if(!isNaN(rate)){updateFundingGauge(rate);if(f.nextFundingTime)nextFunding=parseInt(f.nextFundingTime);if(f.fundingInterval)fundingPeriod=parseInt(f.fundingInterval)*3600000;}
   const dep=d.depth||{};
-  const parseSide=side=>(side||[]).reduce((s,item)=>{ const p=parseFloat(Array.isArray(item)?item[0]:(item.price||0)),q=parseFloat(Array.isArray(item)?item[1]:(item.qty||0)); return s+(isNaN(p*q)?0:p*q); },0);
-  const bv=parseSide(dep.bids), av=parseSide(dep.asks), tot=bv+av;
-  if (tot>0) {
-    const bp=(bv/tot*100).toFixed(0), ap=(av/tot*100).toFixed(0);
-    const db=document.getElementById('depthBid'), da=document.getElementById('depthAsk');
-    const dbv=document.getElementById('depthBidVal'), dav=document.getElementById('depthAskVal'), ds=document.getElementById('depthSub');
-    if(db) db.style.width=bp+'%'; if(da) da.style.width=ap+'%';
-    if(dbv) dbv.textContent=`買 ${bp}%`; if(dav) dav.textContent=`賣 ${ap}%`;
-    if(ds)  ds.textContent=`買方 ${fmtB(bv)} vs 賣方 ${fmtB(av)}`;
-  }
-
-  // OI 和多空比由 fetchOI() / fetchLongShort() 處理（前端直打 Binance）
-
-  // Fear & Greed
-  const fg=d.fg||{};
-  if (fg.value) {
-    const v=parseInt(fg.value); updateFgGauge(v);
-    const lbl=document.getElementById('fgLabel');
-    if(lbl) { lbl.textContent=fg.value_classification||''; lbl.style.color=v<=25?'#C0392B':v>=75?'#27AE60':'#B85C1A'; }
-  }
-
-  // Alt coins
-  (d.alts||[]).forEach(item => {
-    const sym=(item.symbol||'').replace('USDT',''), coin=altCoins.find(c=>c.sym===sym);
-    if (!coin) return;
-    const pr=parseFloat(item.lastPrice), op=parseFloat(item.open);
-    if (isNaN(pr)||pr<=0) return;
-    const chg=op>0?((pr-op)/op*100):0, sign=chg>=0?'+':'';
-    const pe=document.getElementById(coin.priceId), ce=document.getElementById(coin.chgId);
-    if(pe) pe.textContent=pr>=100?fmt1(pr):pr.toLocaleString('en-US',{minimumFractionDigits:3,maximumFractionDigits:4});
-    if(ce) { ce.textContent=sign+Math.abs(chg).toFixed(2)+'%'; ce.style.color=chg>=0?'#27AE60':'#C0392B'; }
-  });
-
-  // Hot list
-  const hot=d.hot||[], hotEl=document.getElementById('hotList');
-  if (hotEl && hot.length>0) {
-    hotEl.innerHTML = hot.map(item => {
-      const sym=(item.symbol||'').replace('USDT',''), pr=parseFloat(item.lastPrice), op=parseFloat(item.open);
-      const chg=op>0?((pr-op)/op*100):0, sign=chg>=0?'+':'', col=chg>=0?'#27AE60':'#C0392B';
-      const prStr=pr>=100?fmt1(pr):pr.toLocaleString('en-US',{minimumFractionDigits:3,maximumFractionDigits:4});
-      return `<div style="text-align:center;padding:0 24px;border-right:1px solid #d4b896;">
-        <div style="font-size:20px;font-weight:500;color:#3D2B1F;">${sym}</div>
-        <div style="font-size:14px;color:#8B6F47;font-variant-numeric:tabular-nums;">${prStr}</div>
-        <div style="font-size:20px;font-weight:600;color:${col};">${sign}${Math.abs(chg).toFixed(2)}%</div>
-      </div>`;
-    }).join('');
-  }
+  const parseSide=side=>(side||[]).reduce((s,item)=>{const p=parseFloat(Array.isArray(item)?item[0]:(item.price||0)),q=parseFloat(Array.isArray(item)?item[1]:(item.qty||0));return s+(isNaN(p*q)?0:p*q);},0);
+  const bv=parseSide(dep.bids),av=parseSide(dep.asks),tot=bv+av;
+  if(tot>0){const bp=(bv/tot*100).toFixed(0),ap=(av/tot*100).toFixed(0);const db=document.getElementById('depthBid'),da=document.getElementById('depthAsk');const dbv=document.getElementById('depthBidVal'),dav=document.getElementById('depthAskVal'),ds=document.getElementById('depthSub');if(db)db.style.width=bp+'%';if(da)da.style.width=ap+'%';if(dbv)dbv.textContent=`買 ${bp}%`;if(dav)dav.textContent=`賣 ${ap}%`;if(ds)ds.textContent=`買方 ${fmtB(bv)} vs 賣方 ${fmtB(av)}`;}
+  const fg=d.fg||{};if(fg.value){const v=parseInt(fg.value);updateFgGauge(v);const lbl=document.getElementById('fgLabel');if(lbl){lbl.textContent=fg.value_classification||'';lbl.style.color=v<=25?'#C0392B':v>=75?'#27AE60':'#B85C1A';}}
+  const hot=d.hot||[],hotEl=document.getElementById('hotList');
+  if(hotEl&&hot.length>0){hotEl.innerHTML=hot.map(item=>{const sym=(item.symbol||'').replace('USDT',''),pr=parseFloat(item.lastPrice),op=parseFloat(item.open);const chg=op>0?((pr-op)/op*100):0,sign=chg>=0?'+':'',col=chg>=0?'#27AE60':'#C0392B';const prStr=pr>=100?fmt1(pr):pr.toLocaleString('en-US',{minimumFractionDigits:3,maximumFractionDigits:4});return `<div style="text-align:center;padding:0 16px;border-right:1px solid #5C3D2A;"><div style="font-size:16px;font-weight:500;color:#EDE0CE;">${sym}</div><div style="font-size:12px;color:#C4A882;">${prStr}</div><div style="font-size:16px;font-weight:600;color:${col};">${sign}${Math.abs(chg).toFixed(2)}%</div></div>`;}).join('');}
 }
 
-async function fetchLiveData() {
-  try {
-    const r = await fetch(`${BITUNIX_API}/live-data?symbol=${SYMBOL}`);
-    const j = await r.json();
-    processLiveData(j);
-  } catch(e) { setConn(false); }
+async function fetchLiveData(){try{const r=await fetch(`${BITUNIX_API}/live-data?symbol=${SYMBOL}`);const j=await r.json();processLiveData(j);}catch(e){setConn(false);}}
+
+async function fetchOI(){try{const r=await fetch(`${BINANCE_FAPI}/futures/data/openInterestHist?symbol=BTCUSDT&period=1h&limit=24`);const data=await r.json();if(!Array.isArray(data)||data.length<2)return;const vals=data.map(x=>parseFloat(x.sumOpenInterestValue));drawSparkline('oiSvg',vals,'#1a6fd4',0.35,176,50);const latest=vals[vals.length-1],prev=vals[0];const chg=((latest-prev)/prev)*100;const ov=document.getElementById('oiVal'),oc=document.getElementById('oiChg');if(ov)ov.textContent=fmtB(latest);if(oc){oc.textContent=(chg>=0?'▲ +':'▼ ')+Math.abs(chg).toFixed(2)+'%';oc.className='val-sm '+(chg>=0?'up':'dn');}}catch(e){}}
+
+async function fetchLongShort(){try{const r=await fetch(`${BINANCE_FAPI}/futures/data/globalLongShortAccountRatio?symbol=BTCUSDT&period=5m&limit=1`);const data=await r.json();const d=Array.isArray(data)?data[0]:data;if(!d)return;const lp=parseFloat(d.longAccount||d.longRatio||0)*100,sp=parseFloat(d.shortAccount||d.shortRatio||0)*100;if(lp<=0||sp<=0)return;const lb=document.getElementById('longBar'),sb=document.getElementById('shortBar'),lpt=document.getElementById('longPct'),spt=document.getElementById('shortPct'),rs=document.getElementById('ratioSub');if(lb)lb.style.width=lp.toFixed(0)+'%';if(sb)sb.style.width=sp.toFixed(0)+'%';if(lpt)lpt.textContent=`多 ${lp.toFixed(0)}%`;if(spt)spt.textContent=`空 ${sp.toFixed(0)}%`;if(rs)rs.textContent=`比例 ${(lp/sp).toFixed(2)} · ${lp>sp?'多方佔優':'空方佔優'}`;}catch(e){}}
+
+let lastTunnelId=null;
+async function fetchTunnelAlerts(){try{const r=await fetch(`${SUPABASE_URL}/rest/v1/bitocat_alerts?type=eq.tunnel&order=created_at.desc&limit=4`,{headers:SB_HEADERS});const data=await r.json();if(!Array.isArray(data)||data.length===0)return;const container=document.getElementById('tunnelAlerts');if(!container)return;if(data[0].id!==lastTunnelId)lastTunnelId=data[0].id;container.innerHTML=data.map(a=>{const isUpper=(a.signal||'').toLowerCase()==='upper';const color=isUpper?'#C0392B':'#27AE60',icon=isUpper?'▲':'▼';const bg=isUpper?'#fdf2f2':'#f2fbf5',border=isUpper?'#C0392B':'#27AE60';const t=new Date(a.created_at),ts=t.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',hour12:false});const price=a.price?` @ ${parseFloat(a.price).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})}`:'';return `<div style="background:${bg};border-left:3px solid ${border};border-radius:6px;padding:6px 8px;"><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:13px;font-weight:600;color:${color};">${icon} ${a.timeframe||''} ${isUpper?'上軌':'下軌'}觸及</span><span style="font-size:10px;color:#8B6F47;">${ts}</span></div><div style="font-size:10px;color:#8B6F47;margin-top:1px;">${a.ticker||'BTCUSDT'}${price}</div></div>`;}).join('');}catch(e){}}
+
+// ══ 共振儀表板 ══
+let resonanceCountdownSec = 120;
+let resonanceTimer = null;
+
+function posColor(pos) {
+  if(pos<0.375) return '#e8456a'; // 超賣（下段桃紅）
+  if(pos>0.625) return '#0c8e3c'; // 超買（上段綠）
+  return '#888780'; // 中段
+}
+function tunnelColor(cs) {
+  const m={'long_cross':'#00ff88','near_lower':'#ffaab8','neutral':'#ffffff','near_upper':'#80d080','short_cross':'#0c8e3c'};
+  return m[cs]||'#ffffff';
 }
 
+function makeLivePillar(pos, dir, crossState, isTunnel, name, thin=false) {
+  const w = thin ? 14 : 20;
+  const h = 60;
+  const top = Math.round((1-pos)*100);
+  const lc = isTunnel ? tunnelColor(crossState) : posColor(pos);
+  const arrow = dir==='up'?'▲':'▼';
+  const arrowCol = dir==='up'?'#0c8e3c':'#C0392B';
+  const triBg = `linear-gradient(to bottom,#0c8e3c 0%,#0c8e3c 37.5%,#d8d5ce 37.5%,#d8d5ce 62.5%,#e8456a 62.5%,#e8456a 100%)`;
+  return `<div class="pillar-wrap">
+    <div style="width:${w}px;height:${h}px;border-radius:3px;position:relative;background:${triBg};">
+      <div style="position:absolute;left:-2px;right:-2px;height:2px;background:${lc};top:${top}%;border-radius:1px;box-shadow:0 0 3px ${lc}"></div>
+    </div>
+    <div style="font-size:13px;font-weight:900;color:${arrowCol};height:16px;line-height:16px;text-align:center;">${arrow}</div>
+    <div style="font-size:8px;color:#8B6F47;text-align:center;width:${w+4}px;">${name}</div>
+  </div>`;
+}
 
+function renderResonanceGroup(g) {
+  if(g.error) return `<div style="background:#edd4be;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#c9a88a;">錯誤</div>`;
+  const isLong = g.long_trigger, isShort = g.short_trigger;
+  const isEscort = g.long_escort || g.short_escort;
+  let border = '1px solid #d4b896', bg = '#edd4be';
+  if(isLong)  { border='2px solid #0c8e3c'; bg='#f0faf2'; }
+  if(isShort) { border='2px solid #C0392B'; bg='#fdf2f0'; }
+  if(!isLong&&!isShort&&isEscort) { border='2px solid #185fa5'; bg='#eef4fc'; }
 
+  const t = g.tunnel||{}, v1 = g.v1||{}, v2 = g.v2||{}, ep = g.escort_pillar;
+  const tunnelData = {pos:t.pos??0.5, direction:t.direction||'up', cross_state:t.cross_state};
 
+  const badge = isLong?`<div style="font-size:9px;background:#0c8e3c;color:#d4f0dc;border-radius:4px;padding:1px 5px;text-align:center;">⚡ 做多</div>`:
+                isShort?`<div style="font-size:9px;background:#C0392B;color:#fce8e4;border-radius:4px;padding:1px 5px;text-align:center;">⚡ 做空</div>`:
+                isEscort?`<div style="font-size:9px;background:#185fa5;color:#d0e6f7;border-radius:4px;padding:1px 5px;text-align:center;">🛡️ 護航</div>`:
+                `<div style="font-size:9px;color:#8B6F47;text-align:center;">—</div>`;
 
-// ════════════════════
-// OI 和多空比（前端直接打 Binance，不經後端）
-// ════════════════════
-const BINANCE_FAPI = 'https://fapi.binance.com';
+  const crossTxt = t.cross_state==='long_cross'?'⚡ 下軌交叉':t.cross_state==='short_cross'?'⚡ 上軌交叉':t.cross_state==='near_upper'?'↑ 高位':t.cross_state==='near_lower'?'↓ 低位':'';
+  const escortCol = ep ? (ep.at_lower?'#0c8e3c':ep.at_upper?'#C0392B':'#8B6F47') : '#8B6F47';
+  const escortTxt = ep ? (ep.at_lower?'🟢 護航低位':ep.at_upper?'🔴 護航高位':'護航中段') : '';
 
-async function fetchOI() {
+  return `<div style="background:${bg};border:${border};border-radius:6px;padding:6px 8px;display:flex;flex-direction:column;gap:3px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:11px;font-weight:600;color:#3D2B1F;">${g.label}</div>
+      ${badge}
+    </div>
+    <div style="display:flex;gap:4px;align-items:flex-end;justify-content:center;flex:1;">
+      ${makeLivePillar(tunnelData.pos, tunnelData.direction, tunnelData.cross_state, true, '貓咪')}
+      ${makeLivePillar(v1.pos??0.5, v1.direction||'up', null, false, 'V1')}
+      ${makeLivePillar(v2.pos??0.5, v2.direction||'up', null, false, 'V2')}
+      ${ep?`<div style="width:1px;background:#d4b896;height:60px;margin:0 2px;flex-shrink:0;"></div>${makeLivePillar(ep.pos??0.5, ep.direction||'up', null, false, ep.tf, true)}`:''}
+    </div>
+    ${crossTxt?`<div style="font-size:9px;color:${tunnelColor(t.cross_state)};text-align:center;">${crossTxt}</div>`:''}
+    ${escortTxt?`<div style="font-size:9px;color:${escortCol};text-align:center;">${escortTxt}</div>`:''}
+  </div>`;
+}
+
+async function fetchResonance() {
   try {
-    const r = await fetch(`${BINANCE_FAPI}/futures/data/openInterestHist?symbol=BTCUSDT&period=1h&limit=24`);
-    const data = await r.json();
-    if (!Array.isArray(data) || data.length < 2) return;
-    const vals = data.map(x => parseFloat(x.sumOpenInterestValue));
-    drawSparkline('oiSvg', vals, '#1a6fd4', 0.35);
-    const latest = vals[vals.length-1], prev = vals[0];
-    const chg = ((latest-prev)/prev)*100;
-    const ov = document.getElementById('oiVal'), oc = document.getElementById('oiChg');
-    if (ov) ov.textContent = fmtB(latest);
-    if (oc) { oc.textContent = (chg>=0?'▲ +':'▼ ')+Math.abs(chg).toFixed(2)+'%（24h）'; oc.className='val-sm '+(chg>=0?'up':'down'); }
+    const r = await fetch(`${BITUNIX_API}/analysis?symbol=${SYMBOL}`);
+    const d = await r.json();
+    if(d.code!==0||!d.groups) return;
+    const grid = document.getElementById('resonanceGrid');
+    if(grid) grid.innerHTML = d.groups.map(g=>renderResonanceGroup(g)).join('');
+    const rt = document.getElementById('resonanceTime');
+    if(rt) rt.textContent = '更新：'+new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
   } catch(e) {}
+  resonanceCountdownSec = 120;
 }
 
-async function fetchLongShort() {
-  try {
-    const r = await fetch(`${BINANCE_FAPI}/futures/data/globalLongShortAccountRatio?symbol=BTCUSDT&period=5m&limit=1`);
-    const data = await r.json();
-    const d = Array.isArray(data) ? data[0] : data;
-    if (!d) return;
-    const lp = parseFloat(d.longAccount||d.longRatio||0)*100;
-    const sp = parseFloat(d.shortAccount||d.shortRatio||0)*100;
-    if (lp<=0||sp<=0) return;
-    const lb=document.getElementById('longBar'), sb=document.getElementById('shortBar');
-    const lpt=document.getElementById('longPct'), spt=document.getElementById('shortPct'), rs=document.getElementById('ratioSub');
-    if(lb) lb.style.width=lp.toFixed(0)+'%';
-    if(sb) sb.style.width=sp.toFixed(0)+'%';
-    if(lpt) lpt.textContent=`多 ${lp.toFixed(0)}%`;
-    if(spt) spt.textContent=`空 ${sp.toFixed(0)}%`;
-    if(rs)  rs.textContent=`比例 ${(lp/sp).toFixed(2)} · ${lp>sp?'多方佔優':'空方佔優'}`;
-  } catch(e) {}
+function startResonanceCountdown() {
+  if(resonanceTimer) clearInterval(resonanceTimer);
+  resonanceTimer = setInterval(() => {
+    resonanceCountdownSec--;
+    const el = document.getElementById('resonanceCountdown');
+    const m = Math.floor(resonanceCountdownSec/60), s = resonanceCountdownSec%60;
+    if(el) el.textContent = `⟳ ${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    if(resonanceCountdownSec<=0) { fetchResonance(); }
+  }, 1000);
 }
 
-// ════════════════════
-// 貓咪隧道快訊
-// ════════════════════
-let lastTunnelId = null;
-async function fetchTunnelAlerts() {
-  try {
-    const r=await fetch(`${SUPABASE_URL}/rest/v1/bitocat_alerts?type=eq.tunnel&order=created_at.desc&limit=4`,{headers:SB_HEADERS});
-    const data=await r.json();
-    if (!Array.isArray(data)||data.length===0) return;
-    const container=document.getElementById('tunnelAlerts');
-    if (!container) return;
-    if(data[0].id!==lastTunnelId) lastTunnelId=data[0].id;
-    container.innerHTML=data.map(a => {
-      const isUpper=(a.signal||'').toLowerCase()==='upper';
-      const color=isUpper?'#C0392B':'#27AE60', icon=isUpper?'▲':'▼';
-      const bg=isUpper?'#fdf2f2':'#f2fbf5', border=isUpper?'#C0392B':'#27AE60';
-      const t=new Date(a.created_at), ts=t.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',hour12:false});
-      const price=a.price?` @ ${parseFloat(a.price).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})}` : '';
-      return `<div style="background:${bg};border-left:3px solid ${border};border-radius:6px;padding:8px 10px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:14px;font-weight:600;color:${color};">${icon} ${a.timeframe||''} ${isUpper?'上軌':'下軌'}觸及</span>
-          <span style="font-size:11px;color:#8B6F47;">${ts}</span>
-        </div>
-        <div style="font-size:11px;color:#8B6F47;margin-top:2px;">${a.ticker||'BTCUSDT'}${price}</div>
-      </div>`;
-    }).join('');
-  } catch(e) {}
-}
-
-// ════════════════════
 // 啟動
-// ════════════════════
-fetchLiveData();
-fetchOI();
-fetchLongShort();
-fetchTunnelAlerts();
-
-setInterval(fetchLiveData,      8000);
-setInterval(fetchOI,           60000);
-setInterval(fetchLongShort,    30000);
+fetchLiveData(); fetchOI(); fetchLongShort(); fetchTunnelAlerts(); fetchResonance();
+startResonanceCountdown();
+setInterval(fetchLiveData, 8000);
+setInterval(fetchOI, 60000);
+setInterval(fetchLongShort, 30000);
 setInterval(fetchTunnelAlerts, 15000);
 </script>
-<!-- 下方警語列 -->
-<div style="background:#3D2B1F;padding:6px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
-  <div style="font-size:12px;color:#C4A882;font-weight:500;">比特聯盟 BitoAlliance · bitocat.github.io/bitoalliance</div>
-  <div style="font-size:12px;color:#EDE0CE;">本內容不構成投資建議 · 加密貨幣交易具有高度風險 · 請量力而為</div>
-  <div style="font-size:12px;color:#C4A882;font-weight:500;">Telegram @Boss1688Bot · 加入直客享指標免費使用</div>
-</div>
-
 </body>
 </html>
