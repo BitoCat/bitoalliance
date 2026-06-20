@@ -376,12 +376,12 @@ function renderGroups(groups) {
       const w = thin ? '18px' : '26px';
       const h = '84px';
 
-      // 三色背景：上37.5%紅（超買）、中25%灰（中段）、下37.5%綠（超賣）
-      // 對應 SMI: +25以上=紅, -25~+25=灰, -25以下=綠
+      // 三色背景：上37.5%綠（超買）、中25%灰（中段）、下37.5%紫（超賣）
+      // 對應 PHL 顏色：超買=綠, 中段=灰, 超賣=紫
       const triBg = `linear-gradient(to bottom,
-        #c04828 0%, #c04828 37.5%,
+        #0c8e3c 0%, #0c8e3c 37.5%,
         #d8d5ce 37.5%, #d8d5ce 62.5%,
-        #1a5c2a 62.5%, #1a5c2a 100%)`;
+        #9b30d0 62.5%, #9b30d0 100%)`;
 
       if(!data) return `<div class="pillar-wrap">
         <div class="pillar" style="width:${w};height:${h};background:${triBg};border-radius:5px;position:relative;opacity:0.3"></div>
@@ -397,17 +397,17 @@ function renderGroups(groups) {
       if(isTunnel) {
         // 貓咪柱：用 cross_state
         const cmap = {
-          'long_cross':'#00ff88','near_lower':'#7dc48a',
-          'neutral':'#ffffff','near_upper':'#e8a090','short_cross':'#ff4444'
+          'long_cross':'#df68f4','near_lower':'#c080e0',
+          'neutral':'#ffffff','near_upper':'#80d080','short_cross':'#00ff88'
         };
         lc = cmap[data.cross_state] || '#ffffff';
       } else {
         // PHL 柱：pos>0.625=超買紅，pos<0.375=超賣綠，中段白
-        lc = pos > 0.625 ? '#ff6644' : pos < 0.375 ? '#44ff88' : '#ffffff';
+        lc = pos > 0.625 ? '#00ff88' : pos < 0.375 ? '#df68f4' : '#ffffff';
       }
 
       const arrow = data.direction === 'up' ? '▲' : '▼';
-      const arrowColor = data.direction === 'up' ? '#1a5c2a' : '#c04828';
+      const arrowColor = data.direction === 'up' ? '#0c8e3c' : '#c04828';
 
       return `<div class="pillar-wrap">
         <div class="pillar" style="width:${w};height:${h};background:${triBg};border-radius:5px;position:relative;">
@@ -469,9 +469,9 @@ function renderGroups(groups) {
     <div class="section-title">時框共振儀表板 <span>貓咪共振柱：位置=高低位・顏色=交叉狀態　PHL 柱：位置=指標值　細柱=護航小貓咪</span></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:10px;color:var(--text2);align-items:center">
       <span>柱子顏色：</span>
-      <span style="display:flex;align-items:center;gap:3px"><span style="display:inline-block;width:10px;height:10px;background:#c04828;border-radius:2px"></span>上段紅 = 高位/超買(SMI>+25)</span>
+      <span style="display:flex;align-items:center;gap:3px"><span style="display:inline-block;width:10px;height:10px;background:#0c8e3c;border-radius:2px"></span>上段綠 = 超買(SMI>+25)</span>
       <span style="display:flex;align-items:center;gap:3px"><span style="display:inline-block;width:10px;height:10px;background:#d8d5ce;border-radius:2px"></span>中段灰 = 中間(-25~+25)</span>
-      <span style="display:flex;align-items:center;gap:3px"><span style="display:inline-block;width:10px;height:10px;background:#1a5c2a;border-radius:2px"></span>下段綠 = 低位/超賣(SMI&lt;-25)</span>
+      <span style="display:flex;align-items:center;gap:3px"><span style="display:inline-block;width:10px;height:10px;background:#9b30d0;border-radius:2px"></span>下段紫 = 超賣(SMI&lt;-25)</span>
       <span style="margin-left:4px">白線=當前位置　▲▼=方向</span>
     </div>
     <div class="groups-grid">${cards}</div>
