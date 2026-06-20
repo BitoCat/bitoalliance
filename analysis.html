@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -381,7 +380,7 @@ function renderGroups(groups) {
         <div class="pillar-name">${name}</div>
       </div>`;
       const pos = data.pos ?? 0.5;
-      const top = Math.round(pos * 100);
+      const top = Math.round((1 - pos) * 100);
       const lc = isTunnel ? tunnelColor(data.cross_state) : posColor(pos);
       const arrow = data.direction === 'up' ? '▲' : '▼';
       return `<div class="pillar-wrap">
