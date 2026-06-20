@@ -437,7 +437,7 @@ let lastTunnelId=null;
 async function fetchTunnelAlerts(){try{const r=await fetch(`${SUPABASE_URL}/rest/v1/bitocat_alerts?type=eq.tunnel&order=created_at.desc&limit=4`,{headers:SB_HEADERS});const data=await r.json();if(!Array.isArray(data)||data.length===0)return;const container=document.getElementById('tunnelAlerts');if(!container)return;if(data[0].id!==lastTunnelId)lastTunnelId=data[0].id;container.innerHTML=data.map(a=>{const isUpper=(a.signal||'').toLowerCase()==='upper';const color=isUpper?'#C0392B':'#27AE60',icon=isUpper?'▲':'▼';const bg=isUpper?'#fdf2f2':'#f2fbf5',border=isUpper?'#C0392B':'#27AE60';const t=new Date(a.created_at),ts=t.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',hour12:false});const price=a.price?` @ ${parseFloat(a.price).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})}`:'';return `<div style="background:${bg};border-left:3px solid ${border};border-radius:6px;padding:6px 8px;"><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:13px;font-weight:600;color:${color};">${icon} ${a.timeframe||''} ${isUpper?'上軌':'下軌'}觸及</span><span style="font-size:10px;color:#8B6F47;">${ts}</span></div><div style="font-size:10px;color:#8B6F47;margin-top:1px;">${a.ticker||'BTCUSDT'}${price}</div></div>`;}).join('');}catch(e){}}
 
 // ══ 共振儀表板 ══
-let resonanceCountdownSec = 120;
+let resonanceCountdownSec = 60;
 let resonanceTimer = null;
 
 function posColor(pos) {
@@ -514,7 +514,7 @@ async function fetchResonance() {
     const rt = document.getElementById('resonanceTime');
     if(rt) rt.textContent = '更新：'+new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
   } catch(e) {}
-  resonanceCountdownSec = 120;
+  resonanceCountdownSec = 60;
 }
 
 function startResonanceCountdown() {
