@@ -374,21 +374,46 @@ function renderGroups(groups) {
 
     function makePillar(data, name, thin=false, isTunnel=false) {
       const w = thin ? '18px' : '26px';
+      const h = '84px';
+
+      // 三色背景：上1/3紅，中1/3灰，下1/3綠
+      const triBg = `linear-gradient(to bottom,
+        #c04828 0%, #c04828 33%,
+        #d8d5ce 33%, #d8d5ce 67%,
+        #1a5c2a 67%, #1a5c2a 100%)`;
+
       if(!data) return `<div class="pillar-wrap">
-        <div class="pillar" style="width:${w};background:linear-gradient(to bottom,#c04828,#d8d5ce 50%,#1a5c2a)"></div>
+        <div class="pillar" style="width:${w};height:${h};background:${triBg};border-radius:5px;position:relative;opacity:0.3"></div>
         <div style="font-size:16px;height:20px;text-align:center;color:var(--text2)">—</div>
         <div class="pillar-name">${name}</div>
       </div>`;
+
       const pos = data.pos ?? 0.5;
       const top = Math.round((1 - pos) * 100);
-      const lc = isTunnel ? tunnelColor(data.cross_state) : posColor(pos);
+
+      // 橫線顏色：根據位置決定
+      let lc;
+      if(isTunnel) {
+        // 貓咪柱：用 cross_state
+        const cmap = {
+          'long_cross':'#00ff88','near_lower':'#7dc48a',
+          'neutral':'#ffffff','near_upper':'#e8a090','short_cross':'#ff4444'
+        };
+        lc = cmap[data.cross_state] || '#ffffff';
+      } else {
+        // PHL 柱：根據位置
+        lc = pos > 0.67 ? '#ff6644' : pos < 0.33 ? '#44ff88' : '#ffffff';
+      }
+
       const arrow = data.direction === 'up' ? '▲' : '▼';
+      const arrowColor = data.direction === 'up' ? '#1a5c2a' : '#c04828';
+
       return `<div class="pillar-wrap">
-        <div class="pillar" style="width:${w};background:linear-gradient(to bottom,#c04828 0%,#e8a090 25%,#d8d5ce 50%,#7dc48a 75%,#1a5c2a 100%)">
-          <div class="pillar-line" style="top:${top}%;background:${lc};box-shadow:0 0 3px ${lc}88"></div>
+        <div class="pillar" style="width:${w};height:${h};background:${triBg};border-radius:5px;position:relative;">
+          <div class="pillar-line" style="top:${top}%;background:${lc};box-shadow:0 0 4px ${lc};left:-3px;right:-3px;height:3px;border-radius:2px;position:absolute"></div>
         </div>
-        <div style="font-size:16px;height:20px;line-height:20px;font-weight:900;text-align:center;color:${lc}">${arrow}</div>
-        <div class="pillar-name" style="color:${lc}">${name}</div>
+        <div style="font-size:18px;height:22px;line-height:22px;font-weight:900;text-align:center;color:${arrowColor}">${arrow}</div>
+        <div class="pillar-name" style="font-size:9px;color:var(--text2);text-align:center">${name}</div>
       </div>`;
     }
 
@@ -442,12 +467,12 @@ function renderGroups(groups) {
   return `<div class="resonance-card">
     <div class="section-title">時框共振儀表板 <span>貓咪共振柱：位置=高低位・顏色=交叉狀態　PHL 柱：位置=指標值　細柱=護航小貓咪</span></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:10px;color:var(--text2);align-items:center">
-      <span>貓咪共振顏色：</span>
-      <span style="color:#1a5c2a">■ 下軌交叉觸發</span>
-      <span style="color:#7dc48a">■ 接近下軌</span>
-      <span style="color:#888780">■ 中段</span>
-      <span style="color:#e8a090">■ 接近上軌</span>
-      <span style="color:#c04828">■ 上軌交叉觸發</span>
+      <span>柱子顏色區間：</span>
+      <span style="display:flex;align-items:center;gap:3px"><span style="display:inline-block;width:10px;height:10px;background:#c04828;border-radius:2px"></span>上段 = 高位/超買</span>
+      <span style="display:flex;align-items:center;gap:3px"><span style="display:inline-block;width:10px;height:10px;background:#d8d5ce;border-radius:2px"></span>中段 = 中間</span>
+      <span style="display:flex;align-items:center;gap:3px"><span style="display:inline-block;width:10px;height:10px;background:#1a5c2a;border-radius:2px"></span>下段 = 低位/超賣</span>
+      <span style="margin-left:6px">橫線 = 當前位置　▲▼ = 方向</span>
+      <span style="margin-left:6px">貓咪橫線：<span style="color:#00ff88">■</span>下軌交叉 <span style="color:#ff4444">■</span>上軌交叉 <span style="color:#fff;background:#888;padding:0 3px">■</span>中段</span>
     </div>
     <div class="groups-grid">${cards}</div>
   </div>`;
