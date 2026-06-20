@@ -432,12 +432,12 @@ function renderGroups(groups) {
       ${makePillar({pos:ep.pos,direction:ep.direction}, epName, true, false)}
     ` : '';
 
-    // 交叉狀態標示
+    // 交叉狀態文字：用 cross_state 而非 trigger_zone
     const crossLabel = g.tunnel ? (
-      g.tunnel.long_trigger_zone  ? '⚡ 下軌交叉' :
-      g.tunnel.short_trigger_zone ? '⚡ 上軌交叉' :
-      g.tunnel.price_at_small_lower ? '↓ 接近下軌' :
-      g.tunnel.price_at_small_upper ? '↑ 接近上軌' : ''
+      g.tunnel.cross_state === 'long_cross'  ? '⚡ 下軌交叉' :
+      g.tunnel.cross_state === 'short_cross' ? '⚡ 上軌交叉' :
+      g.tunnel.cross_state === 'near_upper'  ? '↑ 高位' :
+      g.tunnel.cross_state === 'near_lower'  ? '↓ 低位' : ''
     ) : '';
 
     const badge = g.long_trigger
