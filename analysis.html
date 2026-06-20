@@ -356,32 +356,58 @@ function renderAdvice(adv) {
 }
 
 /* ── 共振儀表板 ── */
+function tunnelColor(crossState) {
+  const map = {
+    'long_cross':  '#1a5c2a',  // 深綠：下軌交叉觸發
+    'near_lower':  '#7dc48a',  // 淺綠：接近下軌
+    'neutral':     '#888780',  // 灰：中段
+    'near_upper':  '#e8a090',  // 淺紅：接近上軌
+    'short_cross': '#c04828',  // 深紅：上軌交叉觸發
+  };
+  return map[crossState] || '#888780';
+}
+
 function renderGroups(groups) {
   const cards = groups.map(g => {
     if(g.error) return `<div class="group-card"><div class="group-label">${g.label}</div><div style="text-align:center;font-size:11px;color:var(--text2);padding:20px 0">錯誤<br><span style="font-size:9px">${g.error||''}</span></div></div>`;
     const cls = g.long_trigger?'long-res':g.short_trigger?'short-res':g.long_escort||g.short_escort?'escort-res':'';
 
-    function makePillar(data, name, thin=false) {
+    function makePillar(data, name, thin=false, isTunnel=false) {
       const w = thin ? '18px' : '26px';
       if(!data) return `<div class="pillar-wrap"><div class="pillar-dir" style="color:var(--neutral)">—</div><div class="pillar" style="width:${w};background:linear-gradient(to bottom,#c04828,#d8d5ce 50%,#1a5c2a)"></div><div class="pillar-name">${name}</div></div>`;
-      const pos=data.pos??0.5, lc=posColor(pos), top=Math.round(pos*100);
+      const pos = data.pos ?? 0.5;
+      const top = Math.round(pos * 100);
+      // 貓咪柱用 cross_state 決定顏色，其他用位置決定
+      const lc = isTunnel ? tunnelColor(data.cross_state) : posColor(pos);
       return `<div class="pillar-wrap">
         <div class="pillar-dir" style="color:${lc}">${dirChar(data.direction)}</div>
         <div class="pillar" style="width:${w};background:linear-gradient(to bottom,#c04828 0%,#e8a090 25%,#d8d5ce 50%,#7dc48a 75%,#1a5c2a 100%)">
-          <div class="pillar-line" style="top:${top}%;background:${lc}"></div>
+          <div class="pillar-line" style="top:${top}%;background:${lc};box-shadow:0 0 3px ${lc}88"></div>
         </div>
         <div class="pillar-name">${name}</div>
       </div>`;
     }
 
-    const tunnelData = g.tunnel?{pos:g.tunnel.pos,direction:g.tunnel.direction}:null;
+    const tunnelData = g.tunnel ? {
+      pos:         g.tunnel.pos,
+      direction:   g.tunnel.direction,
+      cross_state: g.tunnel.cross_state,
+    } : null;
 
     // 護航柱
     const ep = g.escort_pillar;
     const escortPillarHTML = ep ? `
       <div style="width:1px;background:var(--border);margin:0 2px;align-self:stretch;margin-top:16px;margin-bottom:20px"></div>
-      ${makePillar({pos:ep.pos,direction:ep.direction}, ep.tf, true)}
+      ${makePillar({pos:ep.pos,direction:ep.direction}, '小貓咪隧道', true, false)}
     ` : '';
+
+    // 交叉狀態標示
+    const crossLabel = g.tunnel ? (
+      g.tunnel.long_trigger_zone  ? '⚡ 下軌交叉' :
+      g.tunnel.short_trigger_zone ? '⚡ 上軌交叉' :
+      g.tunnel.price_at_small_lower ? '↓ 接近下軌' :
+      g.tunnel.price_at_small_upper ? '↑ 接近上軌' : ''
+    ) : '';
 
     const badge = g.long_trigger
       ?`<span class="res-badge rb-long">⚡ 觸發做多</span>`
@@ -399,17 +425,25 @@ function renderGroups(groups) {
     return `<div class="group-card ${cls}">
       <div class="group-label">${g.label}</div>
       <div class="pillars">
-        ${makePillar(tunnelData,'貓咪')}
-        ${makePillar(g.v1,'V1')}
-        ${makePillar(g.v2,'V2')}
+        ${makePillar(tunnelData,'貓咪共振', false, true)}
+        ${makePillar(g.v1,'PHL V1')}
+        ${makePillar(g.v2,'PHL V2')}
         ${escortPillarHTML}
       </div>
-      ${escortHint}
+      ${crossLabel ? `<div style="font-size:9px;text-align:center;color:${tunnelColor(g.tunnel?.cross_state)};margin-top:2px">${crossLabel}</div>` : ''}
       <div class="group-badge">${badge}</div>
     </div>`;
   }).join('');
   return `<div class="resonance-card">
-    <div class="section-title">時框共振儀表板 <span>貓咪/V1/V2 = 觸發指標　細柱 = 護航時框位置</span></div>
+    <div class="section-title">時框共振儀表板 <span>貓咪共振柱：位置=高低位・顏色=交叉狀態　PHL 柱：位置=指標值　細柱=護航小貓咪</span></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:10px;color:var(--text2);align-items:center">
+      <span>貓咪共振顏色：</span>
+      <span style="color:#1a5c2a">■ 下軌交叉觸發</span>
+      <span style="color:#7dc48a">■ 接近下軌</span>
+      <span style="color:#888780">■ 中段</span>
+      <span style="color:#e8a090">■ 接近上軌</span>
+      <span style="color:#c04828">■ 上軌交叉觸發</span>
+    </div>
     <div class="groups-grid">${cards}</div>
   </div>`;
 }
