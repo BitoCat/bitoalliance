@@ -7,114 +7,120 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
-  --bg: #edd4be; --card: #faf3ec; --border: #d4a882;
-  --text: #3a2a1a; --text2: #7a5a3a; --accent: #c07840; --dark: #2a1a0a;
-  --green-deep: #1a5c2a; --green-mid: #2e8c42; --green-light: #7dc48a;
-  --red-deep: #8a1a0a; --red-mid: #c04828; --red-light: #e8a090;
-  --neutral: #888780;
+  --bg:#edd4be;--card:#faf3ec;--border:#d4a882;
+  --text:#3a2a1a;--text2:#7a5a3a;--accent:#c07840;--dark:#2a1a0a;
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: var(--bg); color: var(--text); font-family: -apple-system,'Helvetica Neue',sans-serif; min-height: 100vh; }
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,'Helvetica Neue',sans-serif;min-height:100vh;}
 
-header { background: var(--dark); color: #edd4be; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; }
-header h1 { font-size: 17px; font-weight: 600; }
-.sub { font-size: 11px; color: #c8a87a; margin-bottom: 2px; }
+header{background:var(--dark);color:#edd4be;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
+header h1{font-size:17px;font-weight:600;}
+.sub{font-size:11px;color:#c8a87a;margin-bottom:2px;}
 
-.main { padding: 14px 16px; max-width: 960px; margin: 0 auto; }
+.main{padding:14px 16px;max-width:960px;margin:0 auto;}
 
-/* ── 幣種選擇器 ── */
-.sym-bar { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.sym-bar label { font-size: 12px; color: var(--text2); font-weight: 500; }
-.sym-input { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 7px 12px; font-size: 14px; font-weight: 600; color: var(--text); width: 150px; letter-spacing: 0.03em; }
-.sym-btn { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 7px 16px; font-size: 13px; font-weight: 500; cursor: pointer; }
-.sym-btn:hover { background: #a86030; }
-.sym-btn:disabled { opacity: 0.5; cursor: default; }
-.quick-syms { display: flex; gap: 6px; flex-wrap: wrap; }
-.qs { background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 12px; cursor: pointer; color: var(--text2); transition: all 0.15s; }
-.qs:hover, .qs.active { background: var(--dark); color: #edd4be; border-color: var(--dark); }
+/* 幣種選擇器 */
+.sym-bar{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.sym-bar label{font-size:12px;color:var(--text2);font-weight:500;}
+.sym-input{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:7px 12px;font-size:14px;font-weight:600;color:var(--text);width:150px;}
+.sym-btn{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:500;cursor:pointer;}
+.sym-btn:hover{background:#a86030;}
+.sym-btn:disabled{opacity:0.5;cursor:default;}
+.quick-syms{display:flex;gap:6px;flex-wrap:wrap;}
+.qs{background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;cursor:pointer;color:var(--text2);}
+.qs:hover,.qs.active{background:var(--dark);color:#edd4be;border-color:var(--dark);}
 
-/* ── TradingView K線 ── */
-.tv-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 12px; }
-.tv-header { background: var(--dark); color: #edd4be; padding: 8px 14px; font-size: 12px; font-weight: 500; display: flex; align-items: center; justify-content: space-between; }
-.tv-tfs { display: flex; gap: 6px; }
-.tv-tf { background: transparent; border: 1px solid #c8a87a44; color: #c8a87a; border-radius: 4px; padding: 3px 8px; font-size: 11px; cursor: pointer; }
-.tv-tf.active, .tv-tf:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
-#tvChart { height: 360px; }
+/* TradingView */
+.tv-wrap{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:12px;}
+.tv-header{background:var(--dark);color:#edd4be;padding:8px 14px;font-size:12px;font-weight:500;display:flex;align-items:center;justify-content:space-between;}
+.tv-tfs{display:flex;gap:6px;}
+.tv-tf{background:transparent;border:1px solid #c8a87a44;color:#c8a87a;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;}
+.tv-tf.active,.tv-tf:hover{background:var(--accent);border-color:var(--accent);color:#fff;}
+#tvChart{height:360px;}
 
-/* ── 핵심 판단 ── */
-.advice-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
-.advice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.advice-main { display: flex; flex-direction: column; gap: 8px; }
-.score-row { display: flex; align-items: center; gap: 12px; }
-.score-circle { width: 72px; height: 72px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; }
-.score-num { font-size: 24px; font-weight: 700; line-height: 1; }
-.score-lbl { font-size: 10px; opacity: 0.8; margin-top: 2px; }
-.direction-badge { font-size: 20px; font-weight: 700; padding: 6px 16px; border-radius: 8px; }
-.dir-long  { background: #d4f0dc; color: var(--green-deep); }
-.dir-short { background: #fce8e4; color: var(--red-mid); }
-.dir-wait  { background: #f1efe8; color: var(--neutral); }
-.advice-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.ad-item { background: var(--bg); border-radius: 6px; padding: 8px 10px; }
-.ad-label { font-size: 10px; color: var(--text2); margin-bottom: 3px; }
-.ad-value { font-size: 14px; font-weight: 600; color: var(--text); }
-.ad-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
-.warn-box { background: #fef8e8; border: 1px solid #f0d060; border-radius: 6px; padding: 8px 10px; font-size: 12px; color: #7a5a10; margin-top: 4px; }
+/* 警語 */
+.warning-box{background:#fffbe6;border:1.5px solid #f0c030;border-radius:10px;padding:14px 16px;margin-bottom:12px;display:flex;gap:10px;align-items:flex-start;}
+.warning-icon{font-size:22px;flex-shrink:0;margin-top:1px;}
+.warning-text{font-size:14px;color:#7a5a10;line-height:1.6;}
+.warning-text strong{font-size:15px;display:block;margin-bottom:4px;color:#5a3a00;}
 
-/* ── 市場快覽 ── */
-.market-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
-.mcard { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
-.mcard-label { font-size: 10px; color: var(--text2); margin-bottom: 4px; }
-.mcard-val { font-size: 16px; font-weight: 600; }
-.up { color: #1a5c2a; } .dn { color: #c04828; } .neu { color: var(--neutral); }
+/* 評分區 */
+.score-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;}
+.score-layout{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;}
+.score-circle{width:88px;height:88px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;}
+.score-num{font-size:30px;font-weight:700;line-height:1;}
+.score-dir{font-size:12px;margin-top:4px;font-weight:500;}
+.score-breakdown{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.sb-item{background:var(--bg);border-radius:6px;padding:8px 6px;text-align:center;}
+.sb-label{font-size:10px;color:var(--text2);margin-bottom:4px;}
+.sb-val{font-size:14px;font-weight:600;}
+.up{color:#1a5c2a;} .dn{color:#c04828;} .neu{color:#888780;}
 
-/* ── 共振儀表板 ── */
-.resonance-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
-.section-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-.section-title span { font-size: 10px; font-weight: 400; color: var(--text2); }
-.groups-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-.group-card { border: 0.5px solid var(--border); border-radius: 8px; padding: 10px 8px 8px; background: var(--bg); transition: border-color 0.2s; }
-.group-card.long-res  { border-color: var(--green-mid); border-width: 1.5px; background: #f0faf2; }
-.group-card.short-res { border-color: var(--red-mid);   border-width: 1.5px; background: #fdf2f0; }
-.group-label { font-size: 11px; font-weight: 600; color: var(--text2); text-align: center; margin-bottom: 8px; }
-.pillars { display: flex; gap: 5px; justify-content: center; align-items: flex-end; height: 100px; }
-.pillar-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.pillar-dir { font-size: 12px; height: 16px; line-height: 16px; font-weight: 700; }
-.pillar { width: 26px; height: 84px; border-radius: 5px; position: relative; }
-.pillar-line { position: absolute; left: -2px; right: -2px; height: 3px; border-radius: 2px; transition: top 0.4s; }
-.pillar-name { font-size: 9px; color: var(--text2); text-align: center; margin-top: 2px; }
-.group-badge { text-align: center; margin-top: 6px; height: 20px; display: flex; align-items: center; justify-content: center; }
-.res-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
-.rb-long  { background: var(--green-deep); color: #d4f0dc; }
-.rb-short { background: var(--red-mid);   color: #fce8e4; }
+/* 線別建議 */
+.advice-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;}
+.section-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.section-title span{font-size:10px;font-weight:400;color:var(--text2);}
+.no-signal{background:var(--bg);border-radius:8px;padding:16px;text-align:center;color:var(--text2);font-size:14px;}
+.signal-layout{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.signal-main{background:var(--bg);border-radius:8px;padding:14px;}
+.signal-dir{font-size:22px;font-weight:700;margin-bottom:6px;}
+.signal-type{font-size:16px;font-weight:600;margin-bottom:4px;}
+.signal-hold{font-size:13px;color:var(--text2);}
+.signal-warn{background:#fffbe6;border:1px solid #f0c030;border-radius:6px;padding:10px 12px;font-size:13px;color:#7a5a10;margin-top:10px;line-height:1.5;}
+.signal-detail{display:flex;flex-direction:column;gap:8px;}
+.res-active{background:#f0faf2;border:1px solid #2e8c42;border-radius:6px;padding:10px 12px;}
+.res-missing{background:#fdf2f0;border:1px solid #e8a090;border-radius:6px;padding:10px 12px;}
+.res-label{font-size:10px;font-weight:600;margin-bottom:6px;}
+.res-tags{display:flex;gap:6px;flex-wrap:wrap;}
+.res-tag{font-size:11px;padding:3px 8px;border-radius:10px;font-weight:500;}
+.tag-active{background:#1a5c2a;color:#d4f0dc;}
+.tag-miss{background:#e8a090;color:#7a1a0a;}
 
-/* ── 指標區 ── */
-.indicators-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
-.ind-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.ind-tf-card { border: 0.5px solid var(--border); border-radius: 8px; padding: 10px; background: var(--bg); }
-.ind-tf-label { font-size: 11px; font-weight: 600; color: var(--text2); margin-bottom: 8px; text-align: center; }
-.ind-row { margin-bottom: 8px; }
-.ind-name { font-size: 10px; color: var(--text2); margin-bottom: 3px; }
-.ind-bar-wrap { display: flex; align-items: center; gap: 6px; }
-.ind-bar { flex: 1; height: 14px; border-radius: 4px; position: relative; overflow: hidden; }
-.ind-fill { position: absolute; inset: 0; }
-.ind-marker { position: absolute; top: -1px; bottom: -1px; width: 3px; border-radius: 2px; background: var(--dark); }
-.ind-val { font-size: 11px; font-weight: 600; min-width: 32px; text-align: right; }
-.ind-tag { font-size: 9px; padding: 1px 5px; border-radius: 4px; margin-left: 4px; }
-.tag-os { background: #d4f0dc; color: var(--green-deep); }
-.tag-ob { background: #fce8e4; color: var(--red-mid); }
-.tag-bull { background: #d4f0dc; color: var(--green-deep); }
-.tag-bear { background: #fce8e4; color: var(--red-mid); }
+/* 共振儀表板 */
+.resonance-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:12px;}
+.groups-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.group-card{border:0.5px solid var(--border);border-radius:8px;padding:10px 8px 8px;background:var(--bg);}
+.group-card.long-res{border-color:#2e8c42;border-width:1.5px;background:#f0faf2;}
+.group-card.short-res{border-color:#c04828;border-width:1.5px;background:#fdf2f0;}
+.group-label{font-size:11px;font-weight:600;color:var(--text2);text-align:center;margin-bottom:8px;}
+.pillars{display:flex;gap:5px;justify-content:center;align-items:flex-end;height:100px;}
+.pillar-wrap{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.pillar-dir{font-size:12px;height:16px;line-height:16px;font-weight:700;}
+.pillar{width:26px;height:84px;border-radius:5px;position:relative;}
+.pillar-line{position:absolute;left:-2px;right:-2px;height:3px;border-radius:2px;}
+.pillar-name{font-size:9px;color:var(--text2);text-align:center;margin-top:2px;}
+.group-badge{text-align:center;margin-top:6px;height:20px;display:flex;align-items:center;justify-content:center;}
+.res-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;}
+.rb-long{background:#1a5c2a;color:#d4f0dc;}
+.rb-short{background:#c04828;color:#fce8e4;}
 
-/* ── 其他指標 ── */
-.other-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
-.other-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.ocard { border: 0.5px solid var(--border); border-radius: 8px; padding: 10px 12px; background: var(--bg); }
-.ocard-label { font-size: 10px; color: var(--text2); margin-bottom: 4px; }
-.ocard-val { font-size: 15px; font-weight: 600; }
-.ocard-sub { font-size: 11px; color: var(--text2); margin-top: 3px; }
+/* 指標 */
+.indicators-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:12px;}
+.ind-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.ind-tf-card{border:0.5px solid var(--border);border-radius:8px;padding:10px;background:var(--bg);}
+.ind-tf-label{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;text-align:center;}
+.ind-row{margin-bottom:8px;}
+.ind-name{font-size:10px;color:var(--text2);margin-bottom:3px;display:flex;align-items:center;gap:4px;}
+.ind-bar-wrap{display:flex;align-items:center;gap:6px;}
+.ind-bar{flex:1;height:14px;border-radius:4px;position:relative;}
+.ind-marker{position:absolute;top:-1px;bottom:-1px;width:3px;border-radius:2px;background:var(--dark);}
+.ind-val{font-size:11px;font-weight:600;min-width:36px;text-align:right;}
+.ind-tag{font-size:9px;padding:1px 5px;border-radius:4px;}
+.tag-os{background:#d4f0dc;color:#1a5c2a;}
+.tag-ob{background:#fce8e4;color:#c04828;}
+.tag-bull{background:#d4f0dc;color:#1a5c2a;}
+.tag-bear{background:#fce8e4;color:#c04828;}
 
-.loading-overlay { text-align: center; padding: 60px 20px; color: var(--text2); font-size: 14px; }
-.status-bar { font-size: 11px; color: var(--text2); margin-top: 8px; text-align: right; }
+/* 其他 */
+.other-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:12px;}
+.other-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.ocard{border:0.5px solid var(--border);border-radius:8px;padding:10px 12px;background:var(--bg);}
+.ocard-label{font-size:10px;color:var(--text2);margin-bottom:4px;}
+.ocard-val{font-size:15px;font-weight:600;}
+.ocard-sub{font-size:11px;color:var(--text2);margin-top:3px;}
+
+.loading-overlay{text-align:center;padding:60px 20px;color:var(--text2);font-size:14px;}
+.status-bar{font-size:11px;color:var(--text2);margin-top:8px;text-align:right;}
 </style>
 </head>
 <body>
@@ -123,7 +129,7 @@ header h1 { font-size: 17px; font-weight: 600; }
     <div class="sub">比特聯盟 BitoAlliance</div>
     <h1>幣種深度分析</h1>
   </div>
-  <div id="priceDisplay" style="text-align:right">
+  <div style="text-align:right">
     <div style="font-size:18px;font-weight:700" id="hdrPrice">—</div>
     <div style="font-size:12px" id="hdrChange">—</div>
   </div>
@@ -131,7 +137,7 @@ header h1 { font-size: 17px; font-weight: 600; }
 
 <div class="main">
 
-  <!-- ① 幣種選擇器 -->
+  <!-- 幣種選擇器 -->
   <div class="sym-bar">
     <label>幣種</label>
     <input type="text" class="sym-input" id="symInput" value="BTCUSDT" onkeydown="if(event.key==='Enter')load()">
@@ -146,7 +152,7 @@ header h1 { font-size: 17px; font-weight: 600; }
     </div>
   </div>
 
-  <!-- ② TradingView K線 -->
+  <!-- TradingView K線 -->
   <div class="tv-wrap">
     <div class="tv-header">
       <span id="tvSymLabel">BTCUSDT · K線</span>
@@ -161,6 +167,16 @@ header h1 { font-size: 17px; font-weight: 600; }
     <div id="tvChart"></div>
   </div>
 
+  <!-- 警語 -->
+  <div class="warning-box">
+    <div class="warning-icon">⚠️</div>
+    <div class="warning-text">
+      <strong>重要聲明：本頁所有分析內容僅供參考，不構成任何投資建議</strong>
+      數據模型基於技術指標運算，無法預測市場突發事件與黑天鵝風險。
+      加密貨幣市場波動劇烈，請尊重市場充滿變化的特性，務必自行評估風險，理性控制倉位。
+    </div>
+  </div>
+
   <div id="content">
     <div class="loading-overlay">輸入幣種後點「分析」開始載入</div>
   </div>
@@ -168,188 +184,170 @@ header h1 { font-size: 17px; font-weight: 600; }
   <div class="status-bar" id="statusBar"></div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const BITO_API  = 'https://web-production-f4735.up.railway.app';
 const SUPA_URL  = 'https://kldumnxdlgovaxtiszyn.supabase.co';
 const SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsZHVtbnhkbGdvdmF4dGlzenluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjIyNDgsImV4cCI6MjA5MzY5ODI0OH0.P_anfYpSV2tgCPIQ7uZDVBjUFY3UhfEXk9u3XjlzBHI';
 const sb = supabase.createClient(SUPA_URL, SUPA_ANON);
+let currentSym = 'BTCUSDT', tvTF = '60';
 
-let currentSym = 'BTCUSDT';
-let tvWidget   = null;
-let tvTF       = '60';
-
-/* ── TradingView ── */
 function loadTV(symbol, tf) {
   document.getElementById('tvChart').innerHTML = '';
-  const script = document.createElement('script');
-  script.src = 'https://s3.tradingview.com/tv.js';
-  script.onload = () => {
-    tvWidget = new TradingView.widget({
-      container_id: 'tvChart',
-      symbol: `BITUNIX:${symbol}`,
-      interval: tf,
-      theme: 'light',
-      style: '1',
-      locale: 'zh_TW',
-      toolbar_bg: '#faf3ec',
-      enable_publishing: false,
-      hide_top_toolbar: false,
-      hide_legend: false,
-      save_image: false,
-      height: 360,
-      width: '100%',
-    });
-  };
-  document.head.appendChild(script);
+  const s = document.createElement('script');
+  s.src = 'https://s3.tradingview.com/tv.js';
+  s.onload = () => new TradingView.widget({
+    container_id:'tvChart', symbol:`BITUNIX:${symbol}`,
+    interval:tf, theme:'light', style:'1', locale:'zh_TW',
+    toolbar_bg:'#faf3ec', enable_publishing:false,
+    hide_top_toolbar:false, save_image:false, height:360, width:'100%',
+  });
+  document.head.appendChild(s);
 }
-
 function setTVTF(tf, el) {
   tvTF = tf;
   document.querySelectorAll('.tv-tf').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
   loadTV(currentSym, tf);
 }
-
 function quickSym(sym, el) {
   document.querySelectorAll('.qs').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('symInput').value = sym;
-  currentSym = sym;
-  load();
+  currentSym = sym; load();
 }
 
-/* ── 顏色工具 ── */
 function posColor(pos) {
-  if (pos < 0.2) return '#1a5c2a';
-  if (pos < 0.35) return '#2e8c42';
-  if (pos < 0.45) return '#7dc48a';
-  if (pos < 0.55) return '#888780';
-  if (pos < 0.65) return '#e8a090';
-  if (pos < 0.8)  return '#c04828';
+  if(pos < 0.2)  return '#1a5c2a';
+  if(pos < 0.35) return '#2e8c42';
+  if(pos < 0.45) return '#7dc48a';
+  if(pos < 0.55) return '#888780';
+  if(pos < 0.65) return '#e8a090';
+  if(pos < 0.8)  return '#c04828';
   return '#8a1a0a';
 }
-function dirChar(d) {
-  return { crossup:'↑', crossdown:'↓', up:'↑', down:'↓' }[d] || '—';
-}
+function dirChar(d) { return {crossup:'↑',crossdown:'↓',up:'↑',down:'↓'}[d]||'—'; }
 
-/* ── 渲染評分區 ── */
-function renderAdvice(advice, ticker) {
-  const price  = parseFloat(ticker.lastPrice || 0);
-  const open   = parseFloat(ticker.open || price);
-  const chg    = open > 0 ? ((price - open) / open * 100) : 0;
-  const chgStr = (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%';
-  const chgCls = chg >= 0 ? 'up' : 'dn';
+/* ── 評分區 ── */
+function renderScore(score, ticker) {
+  const price = parseFloat(ticker.lastPrice||0);
+  const open  = parseFloat(ticker.open||price);
+  const chg   = open>0 ? (price-open)/open*100 : 0;
+  const chgStr= (chg>=0?'+':'')+chg.toFixed(2)+'%';
+  const chgCls= chg>=0?'up':'dn';
   document.getElementById('hdrPrice').textContent = price.toLocaleString();
   document.getElementById('hdrChange').innerHTML  = `<span class="${chgCls}">${chgStr}</span>`;
 
-  const sc = advice.score;
+  const sc = score.score;
   let scBg, scColor;
-  if (advice.direction === '做多')  { scBg = '#d4f0dc'; scColor = '#1a5c2a'; }
-  else if (advice.direction === '做空') { scBg = '#fce8e4'; scColor = '#c04828'; }
-  else { scBg = '#f1efe8'; scColor = '#888780'; }
+  if(sc>=66){scBg='#d4f0dc';scColor='#1a5c2a';}
+  else if(sc>=55){scBg='#eaf7ee';scColor='#2e8c42';}
+  else if(sc>=45){scBg='#f1efe8';scColor='#888780';}
+  else if(sc>=35){scBg='#fdf2f0';scColor='#c04828';}
+  else{scBg='#fce8e4';scColor='#8a1a0a';}
 
-  const dirCls = advice.direction === '做多' ? 'dir-long' : advice.direction === '做空' ? 'dir-short' : 'dir-wait';
-  const warnHTML = advice.timeframe_type === '短線'
-    ? `<div class="warn-box">⚠️ 短線機會，建議 ${advice.hold_hours} 小時內結束，請勿過夜持倉</div>` : '';
-  const resCount = Math.max(advice.long_resonance_count, advice.short_resonance_count);
+  const bd = score.breakdown;
+  function sbVal(v) {
+    const cls = v>0?'up':v<0?'dn':'neu';
+    return `<span class="${cls}">${v>0?'+':''}${v}</span>`;
+  }
 
-  return `<div class="advice-card">
-    <div class="advice-grid">
-      <div class="advice-main">
-        <div class="score-row">
-          <div class="score-circle" style="background:${scBg}">
-            <div class="score-num" style="color:${scColor}">${sc}</div>
-            <div class="score-lbl" style="color:${scColor}">評分</div>
-          </div>
-          <div>
-            <div class="direction-badge ${dirCls}">${advice.direction}</div>
-            <div style="font-size:13px;color:var(--text2);margin-top:6px">${advice.timeframe_type} 機會</div>
-          </div>
-        </div>
-        ${warnHTML}
+  return `<div class="score-card">
+    <div class="score-layout">
+      <div class="score-circle" style="background:${scBg}">
+        <div class="score-num" style="color:${scColor}">${sc}</div>
+        <div class="score-dir" style="color:${scColor}">${score.direction}</div>
       </div>
-      <div class="advice-detail">
-        <div class="ad-item">
-          <div class="ad-label">建議持倉</div>
-          <div class="ad-value">${advice.hold_hours}</div>
-          <div class="ad-sub">小時</div>
-        </div>
-        <div class="ad-item">
-          <div class="ad-label">共振組數</div>
-          <div class="ad-value">${resCount} / 4</div>
-          <div class="ad-sub">時框共振</div>
-        </div>
-        <div class="ad-item">
-          <div class="ad-label">24h 漲跌</div>
-          <div class="ad-value ${chgCls}">${chgStr}</div>
-        </div>
-        <div class="ad-item">
-          <div class="ad-label">24h 成交量</div>
-          <div class="ad-value">${(parseFloat(ticker.quoteVol||0)/1e6).toFixed(0)}M</div>
+      <div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:8px">綜合市場評分（四維度）</div>
+        <div class="score-breakdown">
+          <div class="sb-item"><div class="sb-label">趨勢強度</div><div class="sb-val">${sbVal(bd.trend)}</div></div>
+          <div class="sb-item"><div class="sb-label">動能位置</div><div class="sb-val">${sbVal(bd.momentum)}</div></div>
+          <div class="sb-item"><div class="sb-label">市場結構</div><div class="sb-val">${sbVal(bd.structure)}</div></div>
+          <div class="sb-item"><div class="sb-label">波動度</div><div class="sb-val">${sbVal(bd.volatility)}</div></div>
         </div>
       </div>
     </div>
   </div>`;
 }
 
-/* ── 渲染共振儀表板 ── */
+/* ── 線別建議 ── */
+function renderAdvice(adv) {
+  if(!adv.has_signal) {
+    return `<div class="advice-card">
+      <div class="section-title">線別建議 <span>依三貓咪 + PHL 共振結果</span></div>
+      <div class="no-signal">
+        ⏳ 目前四組時框均未出現共振訊號<br>
+        <span style="font-size:12px;margin-top:6px;display:block">建議觀望，等待三貓咪 + PHL 同步到位</span>
+      </div>
+    </div>`;
+  }
+  const dirColor = adv.direction==='做多'?'#1a5c2a':'#c04828';
+  const activeTags = adv.resonance_labels.map(l=>`<span class="res-tag tag-active">${l}</span>`).join('');
+  const missTags   = adv.missing_labels.map(l=>`<span class="res-tag tag-miss">${l}</span>`).join('');
+  return `<div class="advice-card">
+    <div class="section-title">線別建議 <span>依三貓咪 + PHL 共振結果</span></div>
+    <div class="signal-layout">
+      <div class="signal-main">
+        <div class="signal-dir" style="color:${dirColor}">${adv.direction}</div>
+        <div class="signal-type">${adv.timeframe_type}機會</div>
+        <div class="signal-hold">建議持倉：${adv.hold_hours} 小時</div>
+        ${adv.warning ? `<div class="signal-warn">⚠️ ${adv.warning}</div>` : ''}
+      </div>
+      <div class="signal-detail">
+        ${activeTags ? `<div class="res-active"><div class="res-label" style="color:#1a5c2a">✅ 已共振時框</div><div class="res-tags">${activeTags}</div></div>` : ''}
+        ${missTags   ? `<div class="res-missing"><div class="res-label" style="color:#c04828">⏳ 尚未共振</div><div class="res-tags">${missTags}</div></div>` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ── 共振儀表板 ── */
 function renderGroups(groups) {
   const cards = groups.map(g => {
-    if (g.error) return `<div class="group-card"><div class="group-label">${g.label}</div><div style="text-align:center;font-size:11px;color:var(--text2);padding:20px 0">錯誤</div></div>`;
-    const isLong  = g.long_resonance;
-    const isShort = g.short_resonance;
-    const cls = isLong ? 'long-res' : isShort ? 'short-res' : '';
-
+    if(g.error) return `<div class="group-card"><div class="group-label">${g.label}</div><div style="text-align:center;font-size:11px;color:var(--text2);padding:20px 0">錯誤</div></div>`;
+    const cls = g.long_resonance?'long-res':g.short_resonance?'short-res':'';
     function makePillar(data, name) {
-      if (!data) return `<div class="pillar-wrap"><div class="pillar-dir" style="color:var(--neutral)">—</div><div class="pillar" style="background:linear-gradient(to bottom,#c04828,#d8d5ce 50%,#1a5c2a)"></div><div class="pillar-name">${name}</div></div>`;
-      const pos = data.pos ?? 0.5;
-      const lc  = posColor(pos);
-      const dc  = posColor(pos);
-      const top = Math.round(pos * 100);
+      if(!data) return `<div class="pillar-wrap"><div class="pillar-dir" style="color:var(--neutral)">—</div><div class="pillar" style="background:linear-gradient(to bottom,#c04828,#d8d5ce 50%,#1a5c2a)"></div><div class="pillar-name">${name}</div></div>`;
+      const pos=data.pos??0.5, lc=posColor(pos), top=Math.round(pos*100);
       return `<div class="pillar-wrap">
-        <div class="pillar-dir" style="color:${dc}">${dirChar(data.direction)}</div>
+        <div class="pillar-dir" style="color:${lc}">${dirChar(data.direction)}</div>
         <div class="pillar" style="background:linear-gradient(to bottom,#c04828 0%,#e8a090 25%,#d8d5ce 50%,#7dc48a 75%,#1a5c2a 100%)">
           <div class="pillar-line" style="top:${top}%;background:${lc}"></div>
         </div>
         <div class="pillar-name">${name}</div>
       </div>`;
     }
-
-    // 貓咪柱的 pos：long_zone → pos 小（底部），short_zone → pos 大（頂部）
-    const tunnelData = g.tunnel ? { pos: g.tunnel.pos, direction: g.tunnel.direction } : null;
-
-    const badge = isLong
-      ? `<span class="res-badge rb-long">⚡ 做多共振</span>`
-      : isShort
-        ? `<span class="res-badge rb-short">⚡ 做空共振</span>`
-        : `<span style="font-size:10px;color:var(--text2)">—</span>`;
-
+    const tunnelData = g.tunnel?{pos:g.tunnel.pos,direction:g.tunnel.direction}:null;
+    const badge = g.long_resonance
+      ?`<span class="res-badge rb-long">⚡ 做多共振</span>`
+      :g.short_resonance
+        ?`<span class="res-badge rb-short">⚡ 做空共振</span>`
+        :`<span style="font-size:10px;color:var(--text2)">—</span>`;
     return `<div class="group-card ${cls}">
       <div class="group-label">${g.label}</div>
       <div class="pillars">
-        ${makePillar(tunnelData, '貓咪')}
-        ${makePillar(g.v1, 'V1')}
-        ${makePillar(g.v2, 'V2')}
+        ${makePillar(tunnelData,'貓咪')}
+        ${makePillar(g.v1,'V1')}
+        ${makePillar(g.v2,'V2')}
       </div>
       <div class="group-badge">${badge}</div>
     </div>`;
   }).join('');
-
   return `<div class="resonance-card">
-    <div class="section-title">時框共振儀表板 <span>垂直柱越低 = 越深入超賣區・箭頭 = 方向</span></div>
+    <div class="section-title">時框共振儀表板 <span>柱子越低 = 越深入超賣・箭頭 = 方向</span></div>
     <div class="groups-grid">${cards}</div>
   </div>`;
 }
 
-/* ── 渲染指標 ── */
+/* ── 指標 ── */
 function renderIndicators(indicators) {
-  function indBar(val, min, max, label, isOb, isOs) {
-    const pos = Math.min(Math.max((val - min) / (max - min), 0), 1);
+  function indBar(val, min, max, label, isOb, isOs, dir) {
+    const pos = Math.min(Math.max((val-min)/(max-min),0),1);
     const color = posColor(pos);
-    const tag = isOs ? `<span class="ind-tag tag-os">超賣</span>` : isOb ? `<span class="ind-tag tag-ob">超買</span>` : '';
+    const tag = isOs?`<span class="ind-tag tag-os">超賣</span>`:isOb?`<span class="ind-tag tag-ob">超買</span>`:'';
+    const darr = dir==='up'?'↑':'↓';
     return `<div class="ind-row">
-      <div class="ind-name">${label}${tag}</div>
+      <div class="ind-name">${label} ${tag} <span style="color:${color};font-size:11px">${darr}</span></div>
       <div class="ind-bar-wrap">
         <div class="ind-bar" style="background:linear-gradient(to right,#1a5c2a,#d8d5ce 50%,#c04828)">
           <div class="ind-marker" style="left:${Math.round(pos*100)}%"></div>
@@ -358,73 +356,57 @@ function renderIndicators(indicators) {
       </div>
     </div>`;
   }
-
   const cards = indicators.map(tf => {
-    if (tf.error) return `<div class="ind-tf-card"><div class="ind-tf-label">${tf.label}</div><div style="color:var(--text2);font-size:11px">錯誤</div></div>`;
-    const rsi  = tf.rsi;
-    const macd = tf.macd;
-    const kdj  = tf.kdj;
-    const macdTag = macd ? (macd.bullish ? `<span class="ind-tag tag-bull">多頭</span>` : `<span class="ind-tag tag-bear">空頭</span>`) : '';
-    const kdjTag  = kdj  ? (kdj.golden_cross ? `<span class="ind-tag tag-bull">金叉</span>` : kdj.dead_cross ? `<span class="ind-tag tag-bear">死叉</span>` : '') : '';
+    if(tf.error) return `<div class="ind-tf-card"><div class="ind-tf-label">${tf.label}</div><div style="color:var(--text2);font-size:11px">錯誤</div></div>`;
+    const rsi=tf.rsi, macd=tf.macd, kdj=tf.kdj;
+    const macdTag=macd?(macd.bullish?`<span class="ind-tag tag-bull">多頭</span>`:`<span class="ind-tag tag-bear">空頭</span>`):'';
+    const kdjTag=kdj?(kdj.golden_cross?`<span class="ind-tag tag-bull">金叉</span>`:kdj.dead_cross?`<span class="ind-tag tag-bear">死叉</span>`:''):'';
     return `<div class="ind-tf-card">
       <div class="ind-tf-label">${tf.label}</div>
-      ${rsi  ? indBar(rsi.value,  0, 100, 'RSI', rsi.overbought, rsi.oversold) : ''}
+      ${rsi?indBar(rsi.value,0,100,'RSI',rsi.overbought,rsi.oversold,rsi.direction):''}
       <div class="ind-row">
-        <div class="ind-name">MACD 柱狀${macdTag}</div>
+        <div class="ind-name">MACD ${macdTag}</div>
         <div class="ind-bar-wrap">
           <div class="ind-bar" style="background:linear-gradient(to right,#c04828,#d8d5ce 50%,#1a5c2a)">
-            <div class="ind-marker" style="left:${macd ? Math.round(macd.pos*100) : 50}%"></div>
+            <div class="ind-marker" style="left:${macd?Math.round(macd.pos*100):50}%"></div>
           </div>
-          <div class="ind-val" style="color:${macd&&macd.bullish?'#1a5c2a':'#c04828'}">${macd ? (macd.histogram>0?'+':'')+macd.histogram.toFixed(4) : '—'}</div>
+          <div class="ind-val" style="color:${macd&&macd.bullish?'#1a5c2a':'#c04828'}">${macd?(macd.histogram>0?'+':'')+macd.histogram.toFixed(4):'—'}</div>
         </div>
       </div>
-      ${kdj ? `<div class="ind-row">
-        <div class="ind-name">KDJ K值${kdjTag}</div>
+      ${kdj?`<div class="ind-row">
+        <div class="ind-name">KDJ K值 ${kdjTag}</div>
         <div class="ind-bar-wrap">
           <div class="ind-bar" style="background:linear-gradient(to right,#1a5c2a,#d8d5ce 50%,#c04828)">
             <div class="ind-marker" style="left:${Math.round(kdj.pos*100)}%"></div>
           </div>
           <div class="ind-val" style="color:${posColor(kdj.pos)}">${kdj.k}</div>
         </div>
-      </div>` : ''}
+      </div>`:''}
     </div>`;
   }).join('');
-
   return `<div class="indicators-card">
     <div class="section-title">RSI / MACD / KDJ</div>
     <div class="ind-grid">${cards}</div>
   </div>`;
 }
 
-/* ── 渲染其他指標 ── */
+/* ── 其他指標 ── */
 function renderOther(funding, oi, ls) {
-  const fr = parseFloat(funding.fundingRate || 0) * 100;
-  const frCls = fr < 0 ? 'up' : fr > 0.03 ? 'dn' : 'neu';
-  const frTip = fr < 0 ? '空方付費，有利做多' : fr > 0.03 ? '多方過熱，注意風險' : '費率正常';
-  const lsRatio = parseFloat(ls.longShortRatio || 0);
-  const lsCls = lsRatio > 1.2 ? 'up' : lsRatio < 0.8 ? 'dn' : 'neu';
-  const oiLast = oi.length > 0 ? parseFloat(oi[oi.length-1]?.sumOpenInterest || 0) : 0;
-  const oiFirst = oi.length > 0 ? parseFloat(oi[0]?.sumOpenInterest || 0) : 0;
-  const oiChg = oiFirst > 0 ? ((oiLast - oiFirst) / oiFirst * 100) : 0;
-  const oiCls = oiChg > 0 ? 'up' : 'dn';
+  const fr=parseFloat(funding.fundingRate||0)*100;
+  const frCls=fr<0?'up':fr>0.03?'dn':'neu';
+  const frTip=fr<0?'空方付費，有利做多':fr>0.03?'多方過熱，注意風險':'費率正常';
+  const lr=parseFloat(ls.longShortRatio||0);
+  const lsCls=lr>1.2?'up':lr<0.8?'dn':'neu';
+  const oiLast=oi.length>0?parseFloat(oi[oi.length-1]?.sumOpenInterest||0):0;
+  const oiFirst=oi.length>0?parseFloat(oi[0]?.sumOpenInterest||0):0;
+  const oiChg=oiFirst>0?(oiLast-oiFirst)/oiFirst*100:0;
+  const oiCls=oiChg>0?'up':'dn';
   return `<div class="other-card">
     <div class="section-title">資金費率 / OI / 多空比</div>
     <div class="other-grid">
-      <div class="ocard">
-        <div class="ocard-label">資金費率</div>
-        <div class="ocard-val ${frCls}">${fr.toFixed(4)}%</div>
-        <div class="ocard-sub">${frTip}</div>
-      </div>
-      <div class="ocard">
-        <div class="ocard-label">未平倉合約 24h</div>
-        <div class="ocard-val ${oiCls}">${oiChg >= 0 ? '+' : ''}${oiChg.toFixed(1)}%</div>
-        <div class="ocard-sub">${oiLast > 0 ? (oiLast/1e8).toFixed(2)+'億' : '—'}</div>
-      </div>
-      <div class="ocard">
-        <div class="ocard-label">多空比</div>
-        <div class="ocard-val ${lsCls}">${lsRatio.toFixed(2)}</div>
-        <div class="ocard-sub">${lsRatio > 1 ? '多方佔優' : lsRatio < 1 ? '空方佔優' : '均衡'}</div>
-      </div>
+      <div class="ocard"><div class="ocard-label">資金費率</div><div class="ocard-val ${frCls}">${fr.toFixed(4)}%</div><div class="ocard-sub">${frTip}</div></div>
+      <div class="ocard"><div class="ocard-label">未平倉合約 24h</div><div class="ocard-val ${oiCls}">${oiChg>=0?'+':''}${oiChg.toFixed(1)}%</div><div class="ocard-sub">${oiLast>0?(oiLast/1e8).toFixed(2)+'億':'—'}</div></div>
+      <div class="ocard"><div class="ocard-label">多空比</div><div class="ocard-val ${lsCls}">${lr.toFixed(2)}</div><div class="ocard-sub">${lr>1?'多方佔優':lr<1?'空方佔優':'均衡'}</div></div>
     </div>
   </div>`;
 }
@@ -432,49 +414,48 @@ function renderOther(funding, oi, ls) {
 /* ── 主載入 ── */
 async function load() {
   const sym = document.getElementById('symInput').value.trim().toUpperCase();
-  if (!sym) return;
-  if (!sym.endsWith('USDT')) { alert('請輸入 USDT 計價，如 BTCUSDT'); return; }
+  if(!sym) return;
+  if(!sym.endsWith('USDT')){alert('請輸入 USDT 計價，如 BTCUSDT');return;}
   currentSym = sym;
   document.getElementById('tvSymLabel').textContent = `${sym} · K線`;
   loadTV(sym, tvTF);
   const btn = document.getElementById('loadBtn');
-  btn.disabled = true; btn.textContent = '計算中...';
-  document.getElementById('content').innerHTML = `<div class="loading-overlay">計算中，請稍候（約 15 秒）...</div>`;
-
+  btn.disabled=true; btn.textContent='計算中...';
+  document.getElementById('content').innerHTML=`<div class="loading-overlay">計算中，請稍候（約 15 秒）...</div>`;
   try {
     const res  = await fetch(`${BITO_API}/analysis?symbol=${sym}`);
     const data = await res.json();
-    if (data.code !== 0) throw new Error(data.msg || '錯誤');
+    if(data.code!==0) throw new Error(data.msg||'錯誤');
     document.getElementById('content').innerHTML =
-      renderAdvice(data.advice, data.ticker) +
+      renderScore(data.score, data.ticker) +
+      renderAdvice(data.resonance_advice) +
       renderGroups(data.groups) +
       renderIndicators(data.indicators) +
       renderOther(data.funding, data.oi, data.ls);
     document.getElementById('statusBar').textContent = `最後更新：${new Date().toLocaleTimeString('zh-TW')}`;
   } catch(e) {
-    document.getElementById('content').innerHTML = `<div class="loading-overlay">載入失敗：${e.message}</div>`;
+    document.getElementById('content').innerHTML=`<div class="loading-overlay">載入失敗：${e.message}</div>`;
   }
-  btn.disabled = false; btn.textContent = '分析';
+  btn.disabled=false; btn.textContent='分析';
 }
 
 /* ── 權限 ── */
 async function checkAuth() {
-  const { data:{ session } } = await sb.auth.getSession();
-  if (!session) { location.href = 'login.html'; return false; }
-  const { data:p } = await sb.from('profiles').select('plan').eq('id', session.user.id).single();
-  if (!p || p.plan === 'free') {
-    document.body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:var(--bg);flex-direction:column;gap:14px">
-      <div style="font-size:42px">🔒</div>
-      <div style="font-size:16px">此功能需要遊俠以上身份</div>
+  const {data:{session}} = await sb.auth.getSession();
+  if(!session){location.href='login.html';return false;}
+  const {data:p} = await sb.from('profiles').select('plan').eq('id',session.user.id).single();
+  if(!p||p.plan==='free'){
+    document.body.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:var(--bg);flex-direction:column;gap:14px">
+      <div style="font-size:42px">🔒</div><div style="font-size:16px">此功能需要遊俠以上身份</div>
       <a href="index.html" style="color:var(--accent)">返回首頁</a></div>`;
     return false;
   }
   return true;
 }
 
-(async () => {
+(async()=>{
   const ok = await checkAuth();
-  if (!ok) return;
+  if(!ok) return;
   loadTV('BTCUSDT', tvTF);
 })();
 </script>
