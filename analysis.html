@@ -381,7 +381,7 @@ function renderGroups(groups) {
       const triBg = `linear-gradient(to bottom,
         #0c8e3c 0%, #0c8e3c 37.5%,
         #d8d5ce 37.5%, #d8d5ce 62.5%,
-        #9b30d0 62.5%, #9b30d0 100%)`;
+        #e8456a 62.5%, #e8456a 100%)`;
 
       if(!data) return `<div class="pillar-wrap">
         <div class="pillar" style="width:${w};height:${h};background:${triBg};border-radius:5px;position:relative;opacity:0.3"></div>
@@ -397,13 +397,13 @@ function renderGroups(groups) {
       if(isTunnel) {
         // 貓咪柱：用 cross_state
         const cmap = {
-          'long_cross':'#df68f4','near_lower':'#c080e0',
+          'long_cross':'#ff6b8a','near_lower':'#ffaab8',
           'neutral':'#ffffff','near_upper':'#80d080','short_cross':'#00ff88'
         };
         lc = cmap[data.cross_state] || '#ffffff';
       } else {
         // PHL 柱：pos>0.625=超買紅，pos<0.375=超賣綠，中段白
-        lc = pos > 0.625 ? '#00ff88' : pos < 0.375 ? '#df68f4' : '#ffffff';
+        lc = pos > 0.625 ? '#00ff88' : pos < 0.375 ? '#ff6b8a' : '#ffffff';
       }
 
       const arrow = data.direction === 'up' ? '▲' : '▼';
@@ -471,7 +471,7 @@ function renderGroups(groups) {
       <span>柱子顏色：</span>
       <span style="display:flex;align-items:center;gap:3px"><span style="display:inline-block;width:10px;height:10px;background:#0c8e3c;border-radius:2px"></span>上段綠 = 超買(SMI>+25)</span>
       <span style="display:flex;align-items:center;gap:3px"><span style="display:inline-block;width:10px;height:10px;background:#d8d5ce;border-radius:2px"></span>中段灰 = 中間(-25~+25)</span>
-      <span style="display:flex;align-items:center;gap:3px"><span style="display:inline-block;width:10px;height:10px;background:#9b30d0;border-radius:2px"></span>下段紫 = 超賣(SMI&lt;-25)</span>
+      <span style="display:flex;align-items:center;gap:3px"><span style="display:inline-block;width:10px;height:10px;background:#e8456a;border-radius:2px"></span>下段桃紅 = 超賣(SMI&lt;-25)</span>
       <span style="margin-left:4px">白線=當前位置　▲▼=方向</span>
     </div>
     <div class="groups-grid">${cards}</div>
