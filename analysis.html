@@ -82,6 +82,8 @@ header h1{font-size:17px;font-weight:600;}
 .group-card{border:0.5px solid var(--border);border-radius:8px;padding:10px 8px 8px;background:var(--bg);}
 .group-card.long-res{border-color:#2e8c42;border-width:1.5px;background:#f0faf2;}
 .group-card.short-res{border-color:#c04828;border-width:1.5px;background:#fdf2f0;}
+.group-card.escort-res{border-color:#185fa5;border-width:1.5px;background:#eef4fc;}
+.rb-escort{background:#e6f1fb;color:#185fa5;}
 .group-label{font-size:11px;font-weight:600;color:var(--text2);text-align:center;margin-bottom:8px;}
 .pillars{display:flex;gap:5px;justify-content:center;align-items:flex-end;height:100px;}
 .pillar-wrap{display:flex;flex-direction:column;align-items:center;gap:2px;}
@@ -110,6 +112,7 @@ header h1{font-size:17px;font-weight:600;}
 .tag-ob{background:#fce8e4;color:#c04828;}
 .tag-bull{background:#d4f0dc;color:#1a5c2a;}
 .tag-bear{background:#fce8e4;color:#c04828;}
+.tag-escort{background:#e6f1fb;color:#185fa5;}
 
 /* 其他 */
 .other-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:12px;}
@@ -272,30 +275,58 @@ function renderScore(score, ticker) {
 
 /* ── 線別建議 ── */
 function renderAdvice(adv) {
-  if(!adv.has_signal) {
+  // 無觸發也無護航
+  if(!adv.has_signal && !adv.has_escort) {
     return `<div class="advice-card">
       <div class="section-title">線別建議 <span>依三貓咪 + PHL 共振結果</span></div>
       <div class="no-signal">
-        ⏳ 目前四組時框均未出現共振訊號<br>
+        ⏳ 目前四組時框均無觸發或護航訊號<br>
         <span style="font-size:12px;margin-top:6px;display:block">建議觀望，等待三貓咪 + PHL 同步到位</span>
       </div>
     </div>`;
   }
+  // 只有護航，無觸發
+  if(!adv.has_signal && adv.has_escort) {
+    const escortTags = (adv.escort_labels||[]).map(l=>`<span class="res-tag tag-escort">${l} 🛡️</span>`).join('');
+    return `<div class="advice-card">
+      <div class="section-title">線別建議 <span>依三貓咪 + PHL 共振結果</span></div>
+      <div class="no-signal" style="text-align:left;padding:12px 14px;">
+        <div style="font-size:14px;font-weight:600;color:#7a5a10;margin-bottom:6px">⏳ 觀望中，大時框已護航</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:8px">等待小時框觸發訊號（小貓咪下軌穿越中貓咪下軌）</div>
+        <div class="res-tags">${escortTags}</div>
+      </div>
+    </div>`;
+  }
+
+  // 有觸發訊號
   const dirColor = adv.direction==='做多'?'#1a5c2a':'#c04828';
-  const activeTags = adv.resonance_labels.map(l=>`<span class="res-tag tag-active">${l}</span>`).join('');
-  const missTags   = adv.missing_labels.map(l=>`<span class="res-tag tag-miss">${l}</span>`).join('');
+  const triggerTags = (adv.trigger_labels||[]).map(l=>`<span class="res-tag tag-active">${l} ⚡</span>`).join('');
+  const escortTags  = (adv.escort_labels||[]).map(l=>`<span class="res-tag tag-escort">${l} 🛡️</span>`).join('');
+  const noSigTags   = (adv.no_signal_labels||[]).map(l=>`<span class="res-tag tag-miss">${l}</span>`).join('');
+
   return `<div class="advice-card">
     <div class="section-title">線別建議 <span>依三貓咪 + PHL 共振結果</span></div>
     <div class="signal-layout">
       <div class="signal-main">
         <div class="signal-dir" style="color:${dirColor}">${adv.direction}</div>
         <div class="signal-type">${adv.timeframe_type}機會</div>
-        <div class="signal-hold">建議持倉：${adv.hold_hours} 小時</div>
+        <div class="signal-hold">建議持倉：${adv.hold_hours}</div>
+        ${adv.escort_note ? `<div style="font-size:12px;color:var(--text2);margin-top:6px">📐 ${adv.escort_note}</div>` : ''}
         ${adv.warning ? `<div class="signal-warn">⚠️ ${adv.warning}</div>` : ''}
       </div>
       <div class="signal-detail">
-        ${activeTags ? `<div class="res-active"><div class="res-label" style="color:#1a5c2a">✅ 已共振時框</div><div class="res-tags">${activeTags}</div></div>` : ''}
-        ${missTags   ? `<div class="res-missing"><div class="res-label" style="color:#c04828">⏳ 尚未共振</div><div class="res-tags">${missTags}</div></div>` : ''}
+        ${triggerTags ? `<div class="res-active">
+          <div class="res-label" style="color:#1a5c2a">⚡ 觸發（小穿中 + 雙PHL）</div>
+          <div class="res-tags">${triggerTags}</div>
+        </div>` : ''}
+        ${escortTags ? `<div style="background:#f0f4ff;border:1px solid #8ab0e8;border-radius:6px;padding:10px 12px;">
+          <div class="res-label" style="color:#185fa5">🛡️ 護航（價格觸及小貓咪 + 雙PHL）</div>
+          <div class="res-tags">${escortTags}</div>
+        </div>` : ''}
+        ${noSigTags ? `<div class="res-missing">
+          <div class="res-label" style="color:#888">— 尚未到位</div>
+          <div class="res-tags">${noSigTags}</div>
+        </div>` : ''}
       </div>
     </div>
   </div>`;
@@ -305,7 +336,7 @@ function renderAdvice(adv) {
 function renderGroups(groups) {
   const cards = groups.map(g => {
     if(g.error) return `<div class="group-card"><div class="group-label">${g.label}</div><div style="text-align:center;font-size:11px;color:var(--text2);padding:20px 0">錯誤</div></div>`;
-    const cls = g.long_resonance?'long-res':g.short_resonance?'short-res':'';
+    const cls = g.long_trigger?'long-res':g.short_trigger?'short-res':g.long_escort||g.short_escort?'escort-res':'';
     function makePillar(data, name) {
       if(!data) return `<div class="pillar-wrap"><div class="pillar-dir" style="color:var(--neutral)">—</div><div class="pillar" style="background:linear-gradient(to bottom,#c04828,#d8d5ce 50%,#1a5c2a)"></div><div class="pillar-name">${name}</div></div>`;
       const pos=data.pos??0.5, lc=posColor(pos), top=Math.round(pos*100);
@@ -318,11 +349,15 @@ function renderGroups(groups) {
       </div>`;
     }
     const tunnelData = g.tunnel?{pos:g.tunnel.pos,direction:g.tunnel.direction}:null;
-    const badge = g.long_resonance
-      ?`<span class="res-badge rb-long">⚡ 做多共振</span>`
-      :g.short_resonance
-        ?`<span class="res-badge rb-short">⚡ 做空共振</span>`
-        :`<span style="font-size:10px;color:var(--text2)">—</span>`;
+    const badge = g.long_trigger
+      ?`<span class="res-badge rb-long">⚡ 觸發做多</span>`
+      :g.short_trigger
+        ?`<span class="res-badge rb-short">⚡ 觸發做空</span>`
+        :g.long_escort
+          ?`<span class="res-badge rb-escort">🛡️ 護航做多</span>`
+          :g.short_escort
+            ?`<span class="res-badge rb-escort" style="background:#e6f1fb;color:#c04828">🛡️ 護航做空</span>`
+            :`<span style="font-size:10px;color:var(--text2)">—</span>`;
     return `<div class="group-card ${cls}">
       <div class="group-label">${g.label}</div>
       <div class="pillars">
