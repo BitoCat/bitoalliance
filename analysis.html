@@ -376,11 +376,12 @@ function renderGroups(groups) {
       const w = thin ? '18px' : '26px';
       const h = '84px';
 
-      // 三色背景：上1/3紅，中1/3灰，下1/3綠
+      // 三色背景：上37.5%紅（超買）、中25%灰（中段）、下37.5%綠（超賣）
+      // 對應 SMI: +25以上=紅, -25~+25=灰, -25以下=綠
       const triBg = `linear-gradient(to bottom,
-        #c04828 0%, #c04828 33%,
-        #d8d5ce 33%, #d8d5ce 67%,
-        #1a5c2a 67%, #1a5c2a 100%)`;
+        #c04828 0%, #c04828 37.5%,
+        #d8d5ce 37.5%, #d8d5ce 62.5%,
+        #1a5c2a 62.5%, #1a5c2a 100%)`;
 
       if(!data) return `<div class="pillar-wrap">
         <div class="pillar" style="width:${w};height:${h};background:${triBg};border-radius:5px;position:relative;opacity:0.3"></div>
@@ -401,8 +402,8 @@ function renderGroups(groups) {
         };
         lc = cmap[data.cross_state] || '#ffffff';
       } else {
-        // PHL 柱：根據位置
-        lc = pos > 0.67 ? '#ff6644' : pos < 0.33 ? '#44ff88' : '#ffffff';
+        // PHL 柱：pos>0.625=超買紅，pos<0.375=超賣綠，中段白
+        lc = pos > 0.625 ? '#ff6644' : pos < 0.375 ? '#44ff88' : '#ffffff';
       }
 
       const arrow = data.direction === 'up' ? '▲' : '▼';
@@ -467,12 +468,11 @@ function renderGroups(groups) {
   return `<div class="resonance-card">
     <div class="section-title">時框共振儀表板 <span>貓咪共振柱：位置=高低位・顏色=交叉狀態　PHL 柱：位置=指標值　細柱=護航小貓咪</span></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:10px;color:var(--text2);align-items:center">
-      <span>柱子顏色區間：</span>
-      <span style="display:flex;align-items:center;gap:3px"><span style="display:inline-block;width:10px;height:10px;background:#c04828;border-radius:2px"></span>上段 = 高位/超買</span>
-      <span style="display:flex;align-items:center;gap:3px"><span style="display:inline-block;width:10px;height:10px;background:#d8d5ce;border-radius:2px"></span>中段 = 中間</span>
-      <span style="display:flex;align-items:center;gap:3px"><span style="display:inline-block;width:10px;height:10px;background:#1a5c2a;border-radius:2px"></span>下段 = 低位/超賣</span>
-      <span style="margin-left:6px">橫線 = 當前位置　▲▼ = 方向</span>
-      <span style="margin-left:6px">貓咪橫線：<span style="color:#00ff88">■</span>下軌交叉 <span style="color:#ff4444">■</span>上軌交叉 <span style="color:#fff;background:#888;padding:0 3px">■</span>中段</span>
+      <span>柱子顏色：</span>
+      <span style="display:flex;align-items:center;gap:3px"><span style="display:inline-block;width:10px;height:10px;background:#c04828;border-radius:2px"></span>上段紅 = 高位/超買(SMI>+25)</span>
+      <span style="display:flex;align-items:center;gap:3px"><span style="display:inline-block;width:10px;height:10px;background:#d8d5ce;border-radius:2px"></span>中段灰 = 中間(-25~+25)</span>
+      <span style="display:flex;align-items:center;gap:3px"><span style="display:inline-block;width:10px;height:10px;background:#1a5c2a;border-radius:2px"></span>下段綠 = 低位/超賣(SMI&lt;-25)</span>
+      <span style="margin-left:4px">白線=當前位置　▲▼=方向</span>
     </div>
     <div class="groups-grid">${cards}</div>
   </div>`;
