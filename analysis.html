@@ -78,7 +78,7 @@ header h1{font-size:17px;font-weight:600;}
 
 /* 共振儀表板 */
 .resonance-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:12px;}
-.groups-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.groups-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
 .group-card{border:0.5px solid var(--border);border-radius:8px;padding:10px 8px 8px;background:var(--bg);}
 .group-card.long-res{border-color:#2e8c42;border-width:1.5px;background:#f0faf2;}
 .group-card.short-res{border-color:#c04828;border-width:1.5px;background:#fdf2f0;}
@@ -358,20 +358,31 @@ function renderAdvice(adv) {
 /* ── 共振儀表板 ── */
 function renderGroups(groups) {
   const cards = groups.map(g => {
-    if(g.error) return `<div class="group-card"><div class="group-label">${g.label}</div><div style="text-align:center;font-size:11px;color:var(--text2);padding:20px 0">錯誤</div></div>`;
+    if(g.error) return `<div class="group-card"><div class="group-label">${g.label}</div><div style="text-align:center;font-size:11px;color:var(--text2);padding:20px 0">錯誤<br><span style="font-size:9px">${g.error||''}</span></div></div>`;
     const cls = g.long_trigger?'long-res':g.short_trigger?'short-res':g.long_escort||g.short_escort?'escort-res':'';
-    function makePillar(data, name) {
-      if(!data) return `<div class="pillar-wrap"><div class="pillar-dir" style="color:var(--neutral)">—</div><div class="pillar" style="background:linear-gradient(to bottom,#c04828,#d8d5ce 50%,#1a5c2a)"></div><div class="pillar-name">${name}</div></div>`;
+
+    function makePillar(data, name, thin=false) {
+      const w = thin ? '18px' : '26px';
+      if(!data) return `<div class="pillar-wrap"><div class="pillar-dir" style="color:var(--neutral)">—</div><div class="pillar" style="width:${w};background:linear-gradient(to bottom,#c04828,#d8d5ce 50%,#1a5c2a)"></div><div class="pillar-name">${name}</div></div>`;
       const pos=data.pos??0.5, lc=posColor(pos), top=Math.round(pos*100);
       return `<div class="pillar-wrap">
         <div class="pillar-dir" style="color:${lc}">${dirChar(data.direction)}</div>
-        <div class="pillar" style="background:linear-gradient(to bottom,#c04828 0%,#e8a090 25%,#d8d5ce 50%,#7dc48a 75%,#1a5c2a 100%)">
+        <div class="pillar" style="width:${w};background:linear-gradient(to bottom,#c04828 0%,#e8a090 25%,#d8d5ce 50%,#7dc48a 75%,#1a5c2a 100%)">
           <div class="pillar-line" style="top:${top}%;background:${lc}"></div>
         </div>
         <div class="pillar-name">${name}</div>
       </div>`;
     }
+
     const tunnelData = g.tunnel?{pos:g.tunnel.pos,direction:g.tunnel.direction}:null;
+
+    // 護航柱
+    const ep = g.escort_pillar;
+    const escortPillarHTML = ep ? `
+      <div style="width:1px;background:var(--border);margin:0 2px;align-self:stretch;margin-top:16px;margin-bottom:20px"></div>
+      ${makePillar({pos:ep.pos,direction:ep.direction}, ep.tf, true)}
+    ` : '';
+
     const badge = g.long_trigger
       ?`<span class="res-badge rb-long">⚡ 觸發做多</span>`
       :g.short_trigger
@@ -381,18 +392,24 @@ function renderGroups(groups) {
           :g.short_escort
             ?`<span class="res-badge rb-escort" style="background:#e6f1fb;color:#c04828">🛡️ 護航做空</span>`
             :`<span style="font-size:10px;color:var(--text2)">—</span>`;
+
+    // 護航柱提示
+    const escortHint = ep ? `<div style="font-size:9px;color:var(--text2);text-align:center;margin-top:2px">${ep.at_lower?'🟢 護航低點':ep.at_upper?'🔴 護航高點':'護航中段'}</div>` : '';
+
     return `<div class="group-card ${cls}">
       <div class="group-label">${g.label}</div>
       <div class="pillars">
         ${makePillar(tunnelData,'貓咪')}
         ${makePillar(g.v1,'V1')}
         ${makePillar(g.v2,'V2')}
+        ${escortPillarHTML}
       </div>
+      ${escortHint}
       <div class="group-badge">${badge}</div>
     </div>`;
   }).join('');
   return `<div class="resonance-card">
-    <div class="section-title">時框共振儀表板 <span>柱子越低 = 越深入超賣・箭頭 = 方向</span></div>
+    <div class="section-title">時框共振儀表板 <span>貓咪/V1/V2 = 觸發指標　細柱 = 護航時框位置</span></div>
     <div class="groups-grid">${cards}</div>
   </div>`;
 }
