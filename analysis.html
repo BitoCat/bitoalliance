@@ -1,1629 +1,602 @@
-from flask import Flask, jsonify, request
-from flask_cors import CORS
-import requests, time, os, concurrent.futures
-import hashlib, urllib.parse, uuid
-import numpy as np
-from datetime import datetime
-
-app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=False)
-
-BITUNIX      = 'https://fapi.bitunix.com/api/v1/futures/market'
-SUPABASE_URL = os.environ.get('SUPABASE_URL', '')
-SUPABASE_KEY = os.environ.get('SUPABASE_KEY', '')
-
-ECPAY_MERCHANT_ID = os.environ.get('ECPAY_MERCHANT_ID', '')
-ECPAY_HASH_KEY    = os.environ.get('ECPAY_HASH_KEY', '')
-ECPAY_HASH_IV     = os.environ.get('ECPAY_HASH_IV', '')
-ECPAY_ACTION_URL  = 'https://payment.ecpay.com.tw/Cashier/AioCheckOut/V5'
-
-INDICATOR_PRICE    = 3600
-INDICATOR_DISCOUNT = 1200
-FRONTEND_URL       = 'https://bitocat.github.io/bitoalliance'
-
-INTERVAL_MAP = {
-    '1':'1m','5':'5m','10':'10m','15':'15m','30':'30m',
-    '60':'1h','120':'2h','240':'4h','480':'8h','720':'12h',
-    '1440':'1d','D':'1d','1D':'1d','W':'1w','1W':'1w',
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>比特聯盟 · 幣種分析</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --bg:#edd4be;--card:#faf3ec;--border:#d4a882;
+  --text:#3a2a1a;--text2:#7a5a3a;--accent:#c07840;--dark:#2a1a0a;
 }
-INTERVAL_MS = {
-    '1m':60000,'5m':300000,'10m':600000,'15m':900000,'30m':1800000,
-    '1h':3600000,'2h':7200000,'4h':14400000,'8h':28800000,
-    '12h':43200000,'1d':86400000,'1w':604800000,
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,'Helvetica Neue',sans-serif;min-height:100vh;}
+
+header{background:var(--dark);color:#edd4be;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
+header h1{font-size:17px;font-weight:600;}
+.sub{font-size:11px;color:#c8a87a;margin-bottom:2px;}
+
+.main{padding:14px 16px;max-width:960px;margin:0 auto;}
+
+/* 幣種選擇器 */
+.sym-bar{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.sym-bar label{font-size:12px;color:var(--text2);font-weight:500;}
+.sym-input{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:7px 12px;font-size:14px;font-weight:600;color:var(--text);width:150px;}
+.sym-btn{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:500;cursor:pointer;}
+.sym-btn:hover{background:#a86030;}
+.sym-btn:disabled{opacity:0.5;cursor:default;}
+.quick-syms{display:flex;gap:6px;flex-wrap:wrap;}
+.qs{background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;cursor:pointer;color:var(--text2);}
+.qs:hover,.qs.active{background:var(--dark);color:#edd4be;border-color:var(--dark);}
+
+/* TradingView */
+.tv-wrap{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:12px;}
+.tv-header{background:var(--dark);color:#edd4be;padding:8px 14px;font-size:12px;font-weight:500;display:flex;align-items:center;justify-content:space-between;}
+.tv-tfs{display:flex;gap:6px;}
+.tv-tf{background:transparent;border:1px solid #c8a87a44;color:#c8a87a;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;}
+.tv-tf.active,.tv-tf:hover{background:var(--accent);border-color:var(--accent);color:#fff;}
+#tvChart{height:360px;}
+
+/* 警語 */
+.warning-box{background:#fffbe6;border:1.5px solid #f0c030;border-radius:10px;padding:14px 16px;margin-bottom:12px;display:flex;gap:10px;align-items:flex-start;}
+.warning-icon{font-size:22px;flex-shrink:0;margin-top:1px;}
+.warning-text{font-size:14px;color:#7a5a10;line-height:1.6;}
+.warning-text strong{font-size:15px;display:block;margin-bottom:4px;color:#5a3a00;}
+
+/* 評分區 */
+.score-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;}
+.score-layout{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;}
+.score-circle{width:88px;height:88px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;}
+.score-num{font-size:30px;font-weight:700;line-height:1;}
+.score-dir{font-size:12px;margin-top:4px;font-weight:500;}
+.score-breakdown{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.sb-item{background:var(--bg);border-radius:6px;padding:8px 6px;text-align:center;}
+.sb-label{font-size:10px;color:var(--text2);margin-bottom:4px;}
+.sb-val{font-size:14px;font-weight:600;}
+.up{color:#1a5c2a;} .dn{color:#c04828;} .neu{color:#888780;}
+
+/* 線別建議 */
+.advice-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;}
+.section-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.section-title span{font-size:10px;font-weight:400;color:var(--text2);}
+.no-signal{background:var(--bg);border-radius:8px;padding:16px;text-align:center;color:var(--text2);font-size:14px;}
+.signal-layout{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.signal-main{background:var(--bg);border-radius:8px;padding:14px;}
+.signal-dir{font-size:22px;font-weight:700;margin-bottom:6px;}
+.signal-type{font-size:16px;font-weight:600;margin-bottom:4px;}
+.signal-hold{font-size:13px;color:var(--text2);}
+.signal-warn{background:#fffbe6;border:1px solid #f0c030;border-radius:6px;padding:10px 12px;font-size:13px;color:#7a5a10;margin-top:10px;line-height:1.5;}
+.signal-detail{display:flex;flex-direction:column;gap:8px;}
+.res-active{background:#f0faf2;border:1px solid #2e8c42;border-radius:6px;padding:10px 12px;}
+.res-missing{background:#fdf2f0;border:1px solid #e8a090;border-radius:6px;padding:10px 12px;}
+.res-label{font-size:10px;font-weight:600;margin-bottom:6px;}
+.res-tags{display:flex;gap:6px;flex-wrap:wrap;}
+.res-tag{font-size:11px;padding:3px 8px;border-radius:10px;font-weight:500;}
+.tag-active{background:#1a5c2a;color:#d4f0dc;}
+.tag-miss{background:#e8a090;color:#7a1a0a;}
+
+/* 共振儀表板 */
+.resonance-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:12px;}
+.groups-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.group-card{border:0.5px solid var(--border);border-radius:8px;padding:10px 8px 8px;background:var(--bg);}
+.group-card.long-res{border-color:#2e8c42;border-width:1.5px;background:#f0faf2;}
+.group-card.short-res{border-color:#c04828;border-width:1.5px;background:#fdf2f0;}
+.group-card.escort-res{border-color:#185fa5;border-width:1.5px;background:#eef4fc;}
+.rb-escort{background:#e6f1fb;color:#185fa5;}
+.group-label{font-size:11px;font-weight:600;color:var(--text2);text-align:center;margin-bottom:6px;}
+.pillars{display:flex;gap:5px;justify-content:center;align-items:flex-start;height:130px;}
+.pillar-wrap{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.pillar-dir{font-size:16px;height:20px;line-height:20px;font-weight:900;margin-top:2px;}
+.pillar{width:26px;height:80px;border-radius:5px;position:relative;}
+.pillar-line{position:absolute;left:-2px;right:-2px;height:3px;border-radius:2px;}
+.pillar-name{font-size:9px;color:var(--text2);text-align:center;margin-top:1px;}
+.group-badge{text-align:center;margin-top:6px;height:20px;display:flex;align-items:center;justify-content:center;}
+.res-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;}
+.rb-long{background:#1a5c2a;color:#d4f0dc;}
+.rb-short{background:#c04828;color:#fce8e4;}
+
+/* 指標 */
+.indicators-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:12px;}
+.ind-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.ind-tf-card{border:0.5px solid var(--border);border-radius:8px;padding:10px;background:var(--bg);}
+.ind-tf-label{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;text-align:center;}
+.ind-row{margin-bottom:8px;}
+.ind-name{font-size:10px;color:var(--text2);margin-bottom:3px;display:flex;align-items:center;gap:4px;}
+.ind-bar-wrap{display:flex;align-items:center;gap:6px;}
+.ind-bar{flex:1;height:14px;border-radius:4px;position:relative;}
+.ind-marker{position:absolute;top:-1px;bottom:-1px;width:3px;border-radius:2px;background:var(--dark);}
+.ind-val{font-size:11px;font-weight:600;min-width:36px;text-align:right;}
+.ind-tag{font-size:9px;padding:1px 5px;border-radius:4px;}
+.tag-os{background:#d4f0dc;color:#1a5c2a;}
+.tag-ob{background:#fce8e4;color:#c04828;}
+.tag-bull{background:#d4f0dc;color:#1a5c2a;}
+.tag-bear{background:#fce8e4;color:#c04828;}
+.tag-escort{background:#e6f1fb;color:#185fa5;}
+
+/* 其他 */
+.other-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:12px;}
+.other-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.ocard{border:0.5px solid var(--border);border-radius:8px;padding:10px 12px;background:var(--bg);}
+.ocard-label{font-size:10px;color:var(--text2);margin-bottom:4px;}
+.ocard-val{font-size:15px;font-weight:600;}
+.ocard-sub{font-size:11px;color:var(--text2);margin-top:3px;}
+
+.loading-overlay{text-align:center;padding:60px 20px;color:var(--text2);font-size:14px;}
+.status-bar{font-size:11px;color:var(--text2);margin-top:8px;text-align:right;}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="sub">比特聯盟 BitoAlliance</div>
+    <h1>幣種深度分析</h1>
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:18px;font-weight:700" id="hdrPrice">—</div>
+    <div style="font-size:12px" id="hdrChange">—</div>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- 幣種選擇器 -->
+  <div class="sym-bar">
+    <label>幣種</label>
+    <input type="text" class="sym-input" id="symInput" value="BTCUSDT" onkeydown="if(event.key==='Enter')load()">
+    <button class="sym-btn" id="loadBtn" onclick="load()">分析</button>
+    <div class="quick-syms">
+      <span class="qs active" onclick="quickSym('BTCUSDT',this)">BTC</span>
+      <span class="qs" onclick="quickSym('ETHUSDT',this)">ETH</span>
+      <span class="qs" onclick="quickSym('SOLUSDT',this)">SOL</span>
+      <span class="qs" onclick="quickSym('BNBUSDT',this)">BNB</span>
+      <span class="qs" onclick="quickSym('XRPUSDT',this)">XRP</span>
+      <span class="qs" onclick="quickSym('DOGEUSDT',this)">DOGE</span>
+    </div>
+  </div>
+
+  <!-- TradingView K線 -->
+  <div class="tv-wrap">
+    <div class="tv-header">
+      <span id="tvSymLabel">BTCUSDT · K線</span>
+      <div class="tv-tfs">
+        <button class="tv-tf" onclick="setTVTF('5',this)">5m</button>
+        <button class="tv-tf" onclick="setTVTF('15',this)">15m</button>
+        <button class="tv-tf active" onclick="setTVTF('60',this)">1H</button>
+        <button class="tv-tf" onclick="setTVTF('240',this)">4H</button>
+        <button class="tv-tf" onclick="setTVTF('D',this)">日</button>
+      </div>
+    </div>
+    <div id="tvChart"></div>
+  </div>
+
+  <!-- 警語 -->
+  <div class="warning-box">
+    <div class="warning-icon">⚠️</div>
+    <div class="warning-text">
+      <strong>重要聲明：本頁所有分析內容僅供參考，不構成任何投資建議</strong>
+      數據模型基於技術指標運算，無法預測市場突發事件與黑天鵝風險。
+      加密貨幣市場波動劇烈，請尊重市場充滿變化的特性，務必自行評估風險，理性控制倉位。
+    </div>
+  </div>
+
+  <div id="content">
+    <div class="loading-overlay">輸入幣種後點「分析」開始載入</div>
+  </div>
+
+  <div class="status-bar" id="statusBar"></div>
+</div>
+
+<script>
+const BITO_API  = 'https://web-production-f4735.up.railway.app';
+const SUPA_URL  = 'https://kldumnxdlgovaxtiszyn.supabase.co';
+const SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsZHVtbnhkbGdvdmF4dGlzenluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjIyNDgsImV4cCI6MjA5MzY5ODI0OH0.P_anfYpSV2tgCPIQ7uZDVBjUFY3UhfEXk9u3XjlzBHI';
+const sb = supabase.createClient(SUPA_URL, SUPA_ANON);
+let currentSym = 'BTCUSDT', tvTF = '60';
+
+function loadTV(symbol, tf) {
+  document.getElementById('tvChart').innerHTML = '';
+  const s = document.createElement('script');
+  s.src = 'https://s3.tradingview.com/tv.js';
+  s.onload = () => new TradingView.widget({
+    container_id:'tvChart', symbol:`BITUNIX:${symbol}`,
+    interval:tf, theme:'light', style:'1', locale:'zh_TW',
+    toolbar_bg:'#faf3ec', enable_publishing:false,
+    hide_top_toolbar:false, save_image:false, height:360, width:'100%',
+  });
+  document.head.appendChild(s);
+}
+function setTVTF(tf, el) {
+  tvTF = tf;
+  document.querySelectorAll('.tv-tf').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  loadTV(currentSym, tf);
+}
+function quickSym(sym, el) {
+  document.querySelectorAll('.qs').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('symInput').value = sym;
+  currentSym = sym; load();
 }
 
-def norm(iv):
-    return INTERVAL_MAP.get(str(iv), str(iv))
+function posColor(pos) {
+  if(pos < 0.2)  return '#1a5c2a';
+  if(pos < 0.35) return '#2e8c42';
+  if(pos < 0.45) return '#7dc48a';
+  if(pos < 0.55) return '#888780';
+  if(pos < 0.65) return '#e8a090';
+  if(pos < 0.8)  return '#c04828';
+  return '#8a1a0a';
+}
+function dirChar(d) { return {crossup:'↑',crossdown:'↓',up:'↑',down:'↓'}[d]||'—'; }
 
-def bx_get(path, params, timeout=6):
-    try:
-        r = requests.get(f'{BITUNIX}/{path}', params=params, timeout=timeout)
-        return r.json()
-    except:
-        return {}
+/* ── 評分區 ── */
+function renderScore(score, ticker) {
+  const price = parseFloat(ticker.lastPrice||0);
+  const open  = parseFloat(ticker.open||price);
+  const chg   = open>0 ? (price-open)/open*100 : 0;
+  const chgStr= (chg>=0?'+':'')+chg.toFixed(2)+'%';
+  const chgCls= chg>=0?'up':'dn';
+  document.getElementById('hdrPrice').textContent = price.toLocaleString();
+  document.getElementById('hdrChange').innerHTML  = `<span class="${chgCls}">${chgStr}</span>`;
 
-def sb_get(table, params=None, headers_extra=None):
-    headers = {
-        'apikey': SUPABASE_KEY,
-        'Authorization': f'Bearer {SUPABASE_KEY}',
-    }
-    if headers_extra:
-        headers.update(headers_extra)
-    r = requests.get(f'{SUPABASE_URL}/rest/v1/{table}', params=params, headers=headers, timeout=5)
-    return r.json()
+  const sc = score.score;
+  let scBg, scColor;
+  if(sc>=66){scBg='#d4f0dc';scColor='#1a5c2a';}
+  else if(sc>=55){scBg='#eaf7ee';scColor='#2e8c42';}
+  else if(sc>=45){scBg='#f1efe8';scColor='#888780';}
+  else if(sc>=35){scBg='#fdf2f0';scColor='#c04828';}
+  else{scBg='#fce8e4';scColor='#8a1a0a';}
 
-def sb_post(table, data, headers_extra=None):
-    headers = {
-        'apikey': SUPABASE_KEY,
-        'Authorization': f'Bearer {SUPABASE_KEY}',
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation',
-    }
-    if headers_extra:
-        headers.update(headers_extra)
-    r = requests.post(f'{SUPABASE_URL}/rest/v1/{table}', json=data, headers=headers, timeout=5)
-    return r
+  const bd = score.breakdown;
+  function sbVal(v) {
+    const cls = v>0?'up':v<0?'dn':'neu';
+    return `<span class="${cls}">${v>0?'+':''}${v}</span>`;
+  }
 
-def sb_patch(table, match_params, data):
-    headers = {
-        'apikey': SUPABASE_KEY,
-        'Authorization': f'Bearer {SUPABASE_KEY}',
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal',
-    }
-    r = requests.patch(
-        f'{SUPABASE_URL}/rest/v1/{table}',
-        params=match_params, json=data, headers=headers, timeout=5
-    )
-    return r
+  return `<div class="score-card">
+    <div class="score-layout">
+      <div class="score-circle" style="background:${scBg}">
+        <div class="score-num" style="color:${scColor}">${sc}</div>
+        <div class="score-dir" style="color:${scColor}">${score.direction}</div>
+      </div>
+      <div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:8px">綜合市場評分（四維度）</div>
+        <div class="score-breakdown">
+          <div class="sb-item"><div class="sb-label">趨勢強度</div><div class="sb-val">${sbVal(bd.trend)}</div></div>
+          <div class="sb-item"><div class="sb-label">動能位置</div><div class="sb-val">${sbVal(bd.momentum)}</div></div>
+          <div class="sb-item"><div class="sb-label">市場結構</div><div class="sb-val">${sbVal(bd.structure)}</div></div>
+          <div class="sb-item"><div class="sb-label">波動度</div><div class="sb-val">${sbVal(bd.volatility)}</div></div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
 
-def ecpay_check_mac(params):
-    check_mac = params.pop('CheckMacValue', '')
-    sorted_params = sorted(params.items())
-    raw = '&'.join([f'{k}={v}' for k, v in sorted_params])
-    raw = f'HashKey={ECPAY_HASH_KEY}&{raw}&HashIV={ECPAY_HASH_IV}'
-    raw = urllib.parse.quote_plus(raw).lower()
-    for old, new in [('%2d','-'),('%5f','_'),('%2e','.'),('%21','!'),('%2a','*'),('%28','('),('%29',')')]:
-        raw = raw.replace(old, new)
-    mac = hashlib.sha256(raw.encode()).hexdigest().upper()
-    return mac == check_mac.upper()
+/* ── 線別建議 ── */
+function renderAdvice(adv) {
+  const LEVEL_ICON = { short:'🛡️', wave:'🛡️🛡️', big:'🛡️🛡️🛡️' };
+  const LEVEL_COLOR = { short:'#185fa5', wave:'#0f4e8a', big:'#08305a' };
+  const LEVEL_BG    = { short:'#e6f1fb', wave:'#d0e6f7', big:'#b8d6f2' };
 
-def ecpay_gen_mac(params):
-    sorted_params = sorted(params.items())
-    raw = '&'.join([f'{k}={v}' for k, v in sorted_params])
-    raw = f'HashKey={ECPAY_HASH_KEY}&{raw}&HashIV={ECPAY_HASH_IV}'
-    raw = urllib.parse.quote_plus(raw).lower()
-    for old, new in [('%2d','-'),('%5f','_'),('%2e','.'),('%21','!'),('%2a','*'),('%28','('),('%29',')')]:
-        raw = raw.replace(old, new)
-    return hashlib.sha256(raw.encode()).hexdigest().upper()
+  function escortDetailTags(detail) {
+    return (detail||[]).map(e => {
+      const icon  = LEVEL_ICON[e.level]  || '🛡️';
+      const color = LEVEL_COLOR[e.level] || '#185fa5';
+      const bg    = LEVEL_BG[e.level]    || '#e6f1fb';
+      return `<span class="res-tag" style="background:${bg};color:${color}">${e.label} ${icon} ${e.level_label}</span>`;
+    }).join('');
+  }
 
-def ecpay_gen_mac_v2(params):
-    sorted_params = sorted(params.items())
-    raw = '&'.join([f'{k}={v}' for k, v in sorted_params])
-    raw = f'HashKey={ECPAY_HASH_KEY}&{raw}&HashIV={ECPAY_HASH_IV}'
-    raw = urllib.parse.quote_plus(raw).lower()
-    raw = raw.replace('%2d','-').replace('%5f','_').replace('%2e','.').replace('%21','!').replace('%2a','*').replace('%28','(').replace('%29',')')
-    return hashlib.sha256(raw.encode()).hexdigest().upper()
+  // 無觸發也無護航
+  if(!adv.has_signal && !adv.has_escort) {
+    return `<div class="advice-card">
+      <div class="section-title">線別建議 <span>依三貓咪 + PHL 共振結果</span></div>
+      <div class="no-signal">
+        ⏳ 各時框尚未到位，建議觀望<br>
+        <span style="font-size:12px;margin-top:6px;display:block">等待三貓咪 + PHL 低位同步出現</span>
+      </div>
+    </div>`;
+  }
 
-# ════════════════════════════════════════
-# ── 時框共振計算函數 ──
-# ════════════════════════════════════════
+  // 只有護航，無觸發
+  if(!adv.has_signal && adv.has_escort) {
+    const escortTags = escortDetailTags(adv.escort_detail);
+    return `<div class="advice-card">
+      <div class="section-title">線別建議 <span>依三貓咪 + PHL 共振結果</span></div>
+      <div class="no-signal" style="text-align:left;padding:14px 16px;">
+        <div style="font-size:15px;font-weight:600;color:#7a5a10;margin-bottom:6px">⏳ 觀望中，等待進場時機</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:10px">大時框已在低位，等待小時框出現進場訊號</div>
+        <div style="font-size:11px;color:#185fa5;font-weight:500;margin-bottom:6px">目前低位護航：</div>
+        <div class="res-tags">${escortTags}</div>
+      </div>
+    </div>`;
+  }
 
-def gaussian(x, bw):
-    return np.exp(-0.5 * (x / bw) ** 2) / np.sqrt(2 * np.pi)
+  // 有觸發訊號
+  const dirColor = adv.direction==='做多'?'#1a5c2a':'#c04828';
+  const dirBg    = adv.direction==='做多'?'#d4f0dc':'#fce8e4';
+  const triggerTags = (adv.trigger_labels||[]).map(l=>
+    `<span class="res-tag tag-active">${l} ⚡ 進場訊號</span>`
+  ).join('');
+  const escortTags  = escortDetailTags(adv.escort_detail);
+  const noSigTags   = (adv.no_signal_labels||[]).map(l=>
+    `<span class="res-tag" style="background:#f1efe8;color:#888">${l} —</span>`
+  ).join('');
 
-def calc_tunnel_lower(closes, bandwidth=14, deviations=1.5):
-    """高斯核回歸 → 三貓咪下軌"""
-    n = len(closes)
-    if n < 80:
-        return None
-    src = np.array(closes, dtype=float)
-    weights = np.array([gaussian(i, bandwidth) for i in range(min(500, n))])
-    idx = n - 1
-    w = weights[:min(500, idx + 1)]
-    vals = src[max(0, idx - len(w) + 1): idx + 1][::-1]
-    w = w[:len(vals)]
-    sumw = w.sum()
-    if sumw == 0:
-        return None
-    cp = np.dot(vals, w) / sumw
-    sqr = np.dot(vals ** 2, w) / sumw
-    std = np.sqrt(max(sqr - cp ** 2, 0))
-    lower = cp - deviations * std
-    last_close = src[-1]
-    diff_pct = (last_close - lower) / lower * 100
-    at_lower = diff_pct <= 0.3
-    return {
-        'lower': round(float(lower), 4),
-        'close': round(float(last_close), 4),
-        'diff_pct': round(float(diff_pct), 2),
-        'at_lower': bool(at_lower),
-    }
+  return `<div class="advice-card">
+    <div class="section-title">線別建議 <span>依三貓咪 + PHL 共振結果</span></div>
+    <div class="signal-layout">
+      <div class="signal-main">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <div class="signal-dir" style="color:${dirColor}">${adv.direction}</div>
+          <div style="background:${dirBg};color:${dirColor};font-size:14px;font-weight:600;padding:4px 12px;border-radius:6px">${adv.timeframe_type}</div>
+        </div>
+        <div class="signal-hold" style="font-size:14px">持倉建議：${adv.hold_hours}</div>
+        ${adv.escort_note ? `<div style="font-size:12px;color:#185fa5;margin-top:8px;line-height:1.5">📐 ${adv.escort_note}</div>` : ''}
+        ${adv.warning ? `<div class="signal-warn">⚠️ ${adv.warning}</div>` : ''}
+        ${adv.conflict_warning ? `<div class="signal-warn" style="background:#fff0e0;border-color:#e08000;color:#7a4000;margin-top:6px">🔶 ${adv.conflict_warning}</div>` : ''}
+      </div>
+      <div class="signal-detail">
+        ${triggerTags ? `<div class="res-active">
+          <div class="res-label" style="color:#1a5c2a;margin-bottom:5px">進場依據</div>
+          <div class="res-tags">${triggerTags}</div>
+        </div>` : ''}
+        ${escortTags ? `<div style="background:#eef4fc;border:1px solid #b8d0ec;border-radius:6px;padding:10px 12px;">
+          <div class="res-label" style="color:#185fa5;margin-bottom:5px">護航確認</div>
+          <div class="res-tags">${escortTags}</div>
+        </div>` : ''}
+        ${noSigTags ? `<div class="res-missing">
+          <div class="res-label" style="color:#888;margin-bottom:5px">尚未到位</div>
+          <div class="res-tags">${noSigTags}</div>
+        </div>` : ''}
+      </div>
+    </div>
+  </div>`;
+}
 
-def ema_1d(arr, period):
-    k = 2.0 / (period + 1)
-    result = np.zeros(len(arr))
-    result[0] = arr[0]
-    for i in range(1, len(arr)):
-        result[i] = arr[i] * k + result[i-1] * (1 - k)
-    return result
+/* ── 共振儀表板 ── */
+function tunnelColor(crossState) {
+  const map = {
+    'long_cross':  '#1a5c2a',  // 深綠：下軌交叉觸發
+    'near_lower':  '#7dc48a',  // 淺綠：接近下軌
+    'neutral':     '#888780',  // 灰：中段
+    'near_upper':  '#e8a090',  // 淺紅：接近上軌
+    'short_cross': '#c04828',  // 深紅：上軌交叉觸發
+  };
+  return map[crossState] || '#888780';
+}
 
-def ema_ema_1d(arr, period):
-    return ema_1d(ema_1d(arr, period), period)
+function renderGroups(groups) {
+  const cards = groups.map(g => {
+    if(g.error) return `<div class="group-card"><div class="group-label">${g.label}</div><div style="text-align:center;font-size:11px;color:var(--text2);padding:20px 0">錯誤<br><span style="font-size:9px">${g.error||''}</span></div></div>`;
+    const cls = g.long_trigger?'long-res':g.short_trigger?'short-res':g.long_escort||g.short_escort?'escort-res':'';
 
-def calc_smi_core(highs, lows, closes, lk, ld, lema):
-    """SMI 核心計算，回傳最新值"""
-    n = len(closes)
-    if n < lk + ld * 4 + lema * 2 + 2:
-        return None
-    h = np.array(highs, dtype=float)
-    l = np.array(lows,  dtype=float)
-    c = np.array(closes, dtype=float)
-    rel_arr   = np.zeros(n)
-    range_arr = np.full(n, 0.0001)
-    for i in range(lk - 1, n):
-        hh = h[i - lk + 1: i + 1].max()
-        ll = l[i - lk + 1: i + 1].min()
-        rel_arr[i]   = c[i] - (hh + ll) / 2
-        range_arr[i] = max(hh - ll, 0.0001)
-    smooth_rel   = ema_ema_1d(rel_arr,   ld)
-    smooth_range = ema_ema_1d(range_arr, ld)
-    smi_arr  = 200 * smooth_rel / smooth_range
-    slow_arr = ema_1d(smi_arr, lema)
-    smi       = float(smi_arr[-1])
-    slow      = float(slow_arr[-1])
-    prev_smi  = float(smi_arr[-2])
-    prev_slow = float(slow_arr[-2])
-    rising     = smi > slow
-    was_rising = prev_smi > prev_slow
-    if rising and not was_rising:
-        direction = 'crossup'
-    elif not rising and was_rising:
-        direction = 'crossdown'
-    else:
-        direction = 'up' if rising else 'down'
-    return {
-        'smi':        round(smi, 2),
-        'direction':  direction,
-        'oversold':   smi < -40,
-        'overbought': smi > 40,
-    }
+    function makePillar(data, name, thin=false, isTunnel=false) {
+      const w = thin ? '18px' : '26px';
+      const h = '84px';
 
-def fetch_kline_raw(symbol, interval, limit=500):
-    r = requests.get(
-        f'{BITUNIX}/kline',
-        params={'symbol': symbol, 'interval': interval, 'limit': limit},
-        timeout=12
-    )
-    data = r.json().get('data', [])
-    highs  = [float(c['high'])  for c in data]
-    lows   = [float(c['low'])   for c in data]
-    closes = [float(c['close']) for c in data]
-    return highs, lows, closes
+      // 三色背景：上37.5%綠（超買）、中25%灰（中段）、下37.5%紫（超賣）
+      // 對應 PHL 顏色：超買=綠, 中段=灰, 超賣=紫
+      const triBg = `linear-gradient(to bottom,
+        #0c8e3c 0%, #0c8e3c 37.5%,
+        #d8d5ce 37.5%, #d8d5ce 62.5%,
+        #e8456a 62.5%, #e8456a 100%)`;
 
-def calc_one_tf(symbol, interval):
-    """單幣種單時框：計算三貓咪 + PHL V1 + PHL V2"""
-    try:
-        highs, lows, closes = fetch_kline_raw(symbol, interval, limit=500)
-        tunnel = calc_tunnel_lower(closes)
-        phl_v1 = calc_smi_core(highs, lows, closes, lk=10, ld=3,  lema=3)
-        phl_v2 = calc_smi_core(highs, lows, closes, lk=20, ld=6,  lema=6)
-        dual_support  = bool(phl_v1 and phl_v1['oversold'] and phl_v2 and phl_v2['oversold'])
-        full_resonance = bool(dual_support and tunnel and tunnel['at_lower'])
-        return {
-            'tunnel':        tunnel,
-            'phl_v1':        phl_v1,
-            'phl_v2':        phl_v2,
-            'dual_support':  dual_support,
-            'full_resonance': full_resonance,
-        }
-    except Exception as e:
-        return {'error': str(e)}
+      if(!data) return `<div class="pillar-wrap">
+        <div class="pillar" style="width:${w};height:${h};background:${triBg};border-radius:5px;position:relative;opacity:0.3"></div>
+        <div style="font-size:16px;height:20px;text-align:center;color:var(--text2)">—</div>
+        <div class="pillar-name">${name}</div>
+      </div>`;
 
-# ════════════════════════════════════════
-# ── 健康檢查 ──
-# ════════════════════════════════════════
+      const pos = data.pos ?? 0.5;
+      const top = Math.round((1 - pos) * 100);
 
-@app.route('/health')
-def health():
-    return jsonify({'status':'ok','service':'bito-api','ts':int(time.time())})
+      // 橫線顏色：根據位置決定
+      let lc;
+      if(isTunnel) {
+        // 貓咪柱：用 cross_state
+        const cmap = {
+          'long_cross':'#ff6b8a','near_lower':'#ffaab8',
+          'neutral':'#ffffff','near_upper':'#80d080','short_cross':'#00ff88'
+        };
+        lc = cmap[data.cross_state] || '#ffffff';
+      } else {
+        // PHL 柱：pos>0.625=超買紅，pos<0.375=超賣綠，中段白
+        lc = pos > 0.625 ? '#00ff88' : pos < 0.375 ? '#ff6b8a' : '#ffffff';
+      }
 
-# ── 單一路由：一次回傳所有 live 需要的數據 ──
-@app.route('/live-data')
-def live_data():
-    symbol = request.args.get('symbol', 'BTCUSDT')
-    now_ms = int(time.time() * 1000)
+      const arrow = data.direction === 'up' ? '▲' : '▼';
+      const arrowColor = data.direction === 'up' ? '#0c8e3c' : '#c04828';
 
-    def fetch_ticker():
-        j = bx_get('tickers', {'symbols': symbol})
-        raw = j.get('data', [])
-        return (raw[0] if isinstance(raw, list) else raw) or {}
-
-    def fetch_kline():
-        iv = '1h'
-        start = now_ms - 3600000 * 48
-        j = bx_get('kline', {'symbol':symbol,'interval':iv,'startTime':start,'endTime':now_ms})
-        raw = j.get('data', [])
-        if not raw: return []
-        return list(reversed(raw))
-
-    def fetch_funding():
-        j = bx_get('funding_rate', {'symbol': symbol})
-        raw = j.get('data', {})
-        return (raw[0] if isinstance(raw, list) else raw) or {}
-
-    def fetch_depth():
-        j = bx_get('depth', {'symbol':symbol,'limit':'5'})
-        raw = j.get('data', {})
-        return (raw[0] if isinstance(raw, list) else raw) or {}
-
-    def fetch_alts():
-        syms = 'ETHUSDT,SOLUSDT,BNBUSDT,XRPUSDT,DOGEUSDT,ADAUSDT'
-        j = bx_get('tickers', {'symbols': syms})
-        raw = j.get('data', [])
-        return raw if isinstance(raw, list) else []
-
-    def fetch_hot():
-        syms = 'BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,XRPUSDT,DOGEUSDT,ADAUSDT,LINKUSDT,AVAXUSDT,DOTUSDT'
-        j = bx_get('tickers', {'symbols': syms})
-        raw = j.get('data', [])
-        lst = raw if isinstance(raw, list) else []
-        lst.sort(key=lambda x: float(x.get('quoteVol',0)), reverse=True)
-        return lst[:5]
-
-    def fetch_fg():
-        try:
-            r = requests.get('https://api.alternative.me/fng/?limit=1', timeout=5)
-            data = r.json().get('data', [{}])
-            return data[0] if data else {}
-        except:
-            return {}
-
-    def fetch_oi():
-        try:
-            r = requests.get(
-                'https://fapi.binance.com/futures/data/openInterestHist',
-                params={'symbol':symbol,'period':'1h','limit':24}, timeout=6)
-            return r.json() if isinstance(r.json(), list) else []
-        except:
-            return []
-
-    def fetch_ls():
-        try:
-            r = requests.get(
-                'https://fapi.binance.com/futures/data/globalLongShortAccountRatio',
-                params={'symbol':symbol,'period':'5m','limit':1}, timeout=6)
-            data = r.json()
-            return data[0] if isinstance(data, list) and data else {}
-        except:
-            return {}
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
-        f_ticker  = ex.submit(fetch_ticker)
-        f_kline   = ex.submit(fetch_kline)
-        f_funding = ex.submit(fetch_funding)
-        f_depth   = ex.submit(fetch_depth)
-        f_alts    = ex.submit(fetch_alts)
-        f_hot     = ex.submit(fetch_hot)
-        f_fg      = ex.submit(fetch_fg)
-        f_oi      = ex.submit(fetch_oi)
-        f_ls      = ex.submit(fetch_ls)
-
-    return jsonify({
-        'code': 0,
-        'ticker':  f_ticker.result(),
-        'kline':   f_kline.result(),
-        'funding': f_funding.result(),
-        'depth':   f_depth.result(),
-        'alts':    f_alts.result(),
-        'hot':     f_hot.result(),
-        'fg':      f_fg.result(),
-        'oi':      f_oi.result(),
-        'ls':      f_ls.result(),
-        'ts':      int(time.time()),
-    })
-
-@app.route('/kline')
-def kline():
-    symbol   = request.args.get('symbol', 'BTCUSDT')
-    interval = norm(request.args.get('interval', '1h'))
-    limit    = int(request.args.get('limit', '80'))
-    now_ms   = int(time.time() * 1000)
-    iv_ms    = INTERVAL_MS.get(interval, 3600000)
-    start    = request.args.get('startTime')
-    end      = request.args.get('endTime')
-
-    def to_ms(v):
-        v = int(v)
-        return v if v > 9999999999 else v * 1000
-
-    end_ms   = to_ms(end)   if end   else now_ms
-    start_ms = to_ms(start) if start else end_ms - iv_ms * limit
-    try:
-        r = requests.get(f'{BITUNIX}/kline', params={
-            'symbol':symbol,'interval':interval,
-            'startTime':start_ms,'endTime':end_ms
-        }, timeout=10)
-        return jsonify(r.json())
-    except Exception as e:
-        return jsonify({'code':-1,'msg':str(e)}), 500
-
-@app.route('/webhook', methods=['POST'])
-def webhook():
-    try:
-        data = request.get_json(force=True) or {}
-        payload = {
-            'type':      data.get('type', 'tunnel'),
-            'ticker':    data.get('ticker', 'BTCUSDT'),
-            'timeframe': data.get('timeframe', ''),
-            'signal':    data.get('signal', ''),
-            'price':     str(data.get('price', '')),
-            'message':   data.get('message', ''),
-        }
-        r = requests.post(
-            f'{SUPABASE_URL}/rest/v1/bitocat_alerts',
-            headers={
-                'apikey': SUPABASE_KEY,
-                'Authorization': f'Bearer {SUPABASE_KEY}',
-                'Content-Type': 'application/json',
-                'Prefer': 'return=minimal',
-            },
-            json=payload, timeout=5,
-        )
-        return jsonify({'ok': r.status_code in (200,201)})
-    except Exception as e:
-        return jsonify({'ok':False,'msg':str(e)}), 500
-
-# ════════════════════════════════════════
-# ── 時框共振 API ──
-# ════════════════════════════════════════
-
-
-# ════════════════════════════════════════
-# ── 幣種深度分析計算函數 ──
-# ════════════════════════════════════════
-
-def gaussian_analysis(x, bw):
-    return np.exp(-0.5 * (x / bw) ** 2) / np.sqrt(2 * np.pi)
-
-def calc_gaussian_bands(closes, bandwidth=14, deviations=1.5):
-    n = len(closes)
-    if n < 100:
-        return None
-    src = np.array(closes, dtype=float)
-    weights = np.array([gaussian_analysis(i, bandwidth) for i in range(min(500, n))])
-    results = []
-    for bar in range(2):
-        idx = n - 1 - bar
-        w = weights[:min(500, idx + 1)]
-        vals = src[max(0, idx - len(w) + 1): idx + 1][::-1]
-        w = w[:len(vals)]
-        sumw = w.sum()
-        if sumw == 0:
-            results.append(None)
-            continue
-        cp = np.dot(vals, w) / sumw
-        sqr = np.dot(vals ** 2, w) / sumw
-        std = np.sqrt(max(sqr - cp ** 2, 0))
-        results.append({
-            'upper': float(cp + deviations * std),
-            'lower': float(cp - deviations * std),
-            'mid':   float(cp),
-        })
-    return results
-
-def calc_smi_analysis(highs, lows, closes, lk, ld, lema):
-    n = len(closes)
-    if n < lk + ld * 4 + lema * 2 + 2:
-        return None
-    h = np.array(highs, dtype=float)
-    l = np.array(lows,  dtype=float)
-    c = np.array(closes, dtype=float)
-    rel_arr   = np.zeros(n)
-    range_arr = np.full(n, 0.0001)
-    for i in range(lk - 1, n):
-        hh = h[i - lk + 1: i + 1].max()
-        ll = l[i - lk + 1: i + 1].min()
-        rel_arr[i]   = c[i] - (hh + ll) / 2
-        range_arr[i] = max(hh - ll, 0.0001)
-    smi_arr  = 200 * ema_ema_1d(rel_arr, ld) / ema_ema_1d(range_arr, ld)
-    slow_arr = ema_1d(smi_arr, lema)
-    smi, slow = float(smi_arr[-1]), float(slow_arr[-1])
-    prev_smi, prev_slow = float(smi_arr[-2]), float(slow_arr[-2])
-    rising = smi > slow
-    was_rising = prev_smi > prev_slow
-    if rising and not was_rising:   direction = 'crossup'
-    elif not rising and was_rising: direction = 'crossdown'
-    else: direction = 'up' if rising else 'down'
-    return {
-        'smi': round(smi, 2), 'direction': direction,
-        'oversold': smi < -40, 'overbought': smi > 40,
-        'pos': round((smi + 100) / 200, 4),
+      return `<div class="pillar-wrap">
+        <div class="pillar" style="width:${w};height:${h};background:${triBg};border-radius:5px;position:relative;">
+          <div class="pillar-line" style="top:${top}%;background:${lc};box-shadow:0 0 4px ${lc};left:-3px;right:-3px;height:3px;border-radius:2px;position:absolute"></div>
+        </div>
+        <div style="font-size:18px;height:22px;line-height:22px;font-weight:900;text-align:center;color:${arrowColor}">${arrow}</div>
+        <div class="pillar-name" style="font-size:9px;color:var(--text2);text-align:center">${name}</div>
+      </div>`;
     }
 
-def calc_rsi_analysis(closes, period=14):
-    n = len(closes)
-    if n < period + 2:
-        return None
-    c = np.array(closes, dtype=float)
-    deltas = np.diff(c)
-    gains  = np.where(deltas > 0, deltas, 0)
-    losses = np.where(deltas < 0, -deltas, 0)
-    avg_gain = gains[-period:].mean()
-    avg_loss = losses[-period:].mean()
-    if avg_loss == 0:
-        return {'value': 100.0, 'direction': 'up', 'oversold': False, 'overbought': True, 'pos': 1.0}
-    rsi = float(100 - 100 / (1 + avg_gain / avg_loss))
-    prev_gain = gains[-period-1:-1].mean()
-    prev_loss = losses[-period-1:-1].mean()
-    prev_rsi = 100 - 100 / (1 + prev_gain / max(prev_loss, 0.0001))
-    return {
-        'value': round(rsi, 2), 'direction': 'up' if rsi > prev_rsi else 'down',
-        'oversold': rsi < 30, 'overbought': rsi > 70,
-        'pos': round(rsi / 100, 4),
-    }
-
-def calc_macd_analysis(closes, fast=12, slow=26, signal=9):
-    n = len(closes)
-    if n < slow + signal + 2:
-        return None
-    c = np.array(closes, dtype=float)
-    macd_line   = ema_1d(c, fast) - ema_1d(c, slow)
-    signal_line = ema_1d(macd_line, signal)
-    hist = macd_line - signal_line
-    val, prev = float(hist[-1]), float(hist[-2])
-    pos = min(max((val - hist.min()) / (hist.max() - hist.min() + 0.0001), 0), 1)
-    return {
-        'histogram': round(val, 6), 'macd': round(float(macd_line[-1]), 6),
-        'signal': round(float(signal_line[-1]), 6),
-        'direction': 'up' if val > prev else 'down',
-        'bullish': val > 0, 'pos': round(float(pos), 4),
-    }
-
-def calc_kdj_analysis(highs, lows, closes, period=9):
-    n = len(closes)
-    if n < period + 3:
-        return None
-    h = np.array(highs, dtype=float)
-    l = np.array(lows,  dtype=float)
-    c = np.array(closes, dtype=float)
-    rsv = np.zeros(n)
-    for i in range(period - 1, n):
-        hh = h[i-period+1:i+1].max()
-        ll = l[i-period+1:i+1].min()
-        rsv[i] = (c[i] - ll) / max(hh - ll, 0.0001) * 100
-    k_arr, d_arr = np.zeros(n), np.zeros(n)
-    k_arr[period-1] = d_arr[period-1] = 50
-    for i in range(period, n):
-        k_arr[i] = k_arr[i-1] * 2/3 + rsv[i] / 3
-        d_arr[i] = d_arr[i-1] * 2/3 + k_arr[i] / 3
-    k, d = float(k_arr[-1]), float(d_arr[-1])
-    pk, pd = float(k_arr[-2]), float(d_arr[-2])
-    return {
-        'k': round(k, 2), 'd': round(d, 2), 'j': round(3*k-2*d, 2),
-        'direction': 'up' if k > pk else 'down',
-        'golden_cross': k > d and pk <= pd, 'dead_cross': k < d and pk >= pd,
-        'oversold': k < 20, 'overbought': k > 80, 'pos': round(k/100, 4),
-    }
-
-ANALYSIS_GROUPS = [
-    {'label': '15m/30m', 'small': '15m', 'large': '30m', 'big': '1h',  'escort_tf': '1h',  'tf_type': '短線',   'hold': '2 ~ 8小時'},
-    {'label': 'H1/H2',   'small': '1h',  'large': '2h',  'big': '4h',  'escort_tf': '4h',  'tf_type': '中線',   'hold': '8 ~ 24小時'},
-    {'label': 'H4/H8',   'small': '4h',  'large': '8h',  'big': '12h', 'escort_tf': '12h', 'tf_type': '中長線', 'hold': '1 ~ 3天'},
-]
-ANALYSIS_IND_TFS = [
-    {'label': '15m', 'interval': '15m'},
-    {'label': 'H1',  'interval': '1h'},
-    {'label': 'H4',  'interval': '4h'},
-]
-
-import threading
-_kline_local = threading.local()
-
-def get_kline_cache():
-    if not hasattr(_kline_local, 'cache'):
-        _kline_local.cache = {}
-    return _kline_local.cache
-
-BITUNIX_MAX_CANDLES = 100  # Bitunix 單次最多回傳根數
-
-def fetch_kline_segment(symbol, interval, end_ms):
-    """抓單段 K 線（最多 100 根），回傳原始 data list"""
-    interval_ms = {
-        '1m':60000,'3m':180000,'5m':300000,'10m':600000,'15m':900000,
-        '30m':1800000,'1h':3600000,'2h':7200000,'4h':14400000,
-        '6h':21600000,'8h':28800000,'12h':43200000,'1d':86400000,
-    }
-    iv_ms    = interval_ms.get(interval, 3600000)
-    start_ms = end_ms - iv_ms * BITUNIX_MAX_CANDLES
-
-    for attempt in range(3):
-        try:
-            r = requests.get(
-                f'{BITUNIX}/kline',
-                params={'symbol': symbol, 'interval': interval,
-                        'startTime': start_ms, 'endTime': end_ms},
-                timeout=12
-            )
-            raw  = r.json()
-            data = raw.get('data', [])
-            msg  = raw.get('msg', '')
-            if not data:
-                if 'too frequently' in str(msg).lower() and attempt < 2:
-                    time.sleep(0.8 + attempt * 0.5)
-                    continue
-                return []
-            return data
-        except Exception:
-            if attempt < 2:
-                time.sleep(0.5)
-                continue
-            return []
-    return []
-
-def fetch_kline_analysis(symbol, interval, limit=300):
-    """分段抓取 Bitunix K 線，突破單次 100 根限制（thread-local cache）"""
-    cache = get_kline_cache()
-    cache_key = f'{symbol}_{interval}_{limit}'
-    if cache_key in cache:
-        return cache[cache_key]
-
-    interval_ms = {
-        '1m':60000,'3m':180000,'5m':300000,'10m':600000,'15m':900000,
-        '30m':1800000,'1h':3600000,'2h':7200000,'4h':14400000,
-        '6h':21600000,'8h':28800000,'12h':43200000,'1d':86400000,
-    }
-    iv_ms = interval_ms.get(interval, 3600000)
-
-    # 計算需要幾段
-    segments_needed = max(1, -(-limit // BITUNIX_MAX_CANDLES))  # 無條件進位
-
-    now_ms   = int(time.time() * 1000)
-    all_data = []
-    end_ms   = now_ms
-
-    for seg in range(segments_needed):
-        segment = fetch_kline_segment(symbol, interval, end_ms)
-        if not segment:
-            break
-        # Bitunix 由新到舊：segment[0]=最新，segment[-1]=最舊
-        # 第一段直接放，後續段接在後面（時間更舊）
-        if seg == 0:
-            all_data = segment
-        else:
-            # 去掉第一段的最後一根（避免與下一段的第一根重複）
-            all_data = all_data + segment[1:]
-        # 下一段的 end_ms = 這段最舊一根的 time
-        oldest_time = int(segment[-1].get('time', 0))
-        if oldest_time <= 0:
-            break
-        end_ms = oldest_time
-        # 加小延遲避免限流
-        if seg < segments_needed - 1:
-            time.sleep(0.3)
-
-    if not all_data:
-        raise ValueError(f'Bitunix kline 分段抓取失敗 interval={interval}')
-
-    # 只保留最近 limit 根（由新到舊的前 limit 根 = 最新的數據）
-    all_data = all_data[:limit]
-
-    # 反轉為由舊到新（舊=index 0，新=index -1），符合高斯核計算方向
-    all_data = list(reversed(all_data))
-
-    result = (
-        [float(c['high'])  for c in all_data],
-        [float(c['low'])   for c in all_data],
-        [float(c['close']) for c in all_data],
-    )
-    cache[cache_key] = result
-    return result
-
-def calc_analysis_group(symbol, grp, last_price=None):
-    try:
-        # 抓三組 K 線：小貓咪、中貓咪、大貓咪
-        # 各時框需要的根數：確保最新數據夠新（高斯核前50根佔100%權重）
-        # Bitunix 單次最多100根，超過會分段抓取
-        tf_limits = {
-            '15m': 200,  # 200根×15m = 50小時，足夠
-            '30m': 200,  # 200根×30m = 100小時，足夠
-            '1h':  200,  # 200根×1h = 200小時 ≈ 8天，足夠
-            '2h':  200,  # 200根×2h = 400小時 ≈ 17天，足夠
-            '4h':  150,  # 150根×4h = 600小時 ≈ 25天，足夠
-            '8h':  150,  # 150根×8h = 1200小時 ≈ 50天，足夠
-            '12h': 120,  # 120根×12h = 1440小時 ≈ 60天，足夠
-            '1d':  100,  # 100根×1d = 100天，足夠
-        }
-        small_limit = tf_limits.get(grp['small'], 200)
-        large_limit = tf_limits.get(grp['large'], 200)
-        big_limit   = tf_limits.get(grp['big'],   150)
-
-        hs,  ls,  cs  = fetch_kline_analysis(symbol, grp['small'], limit=small_limit)
-        hl,  ll,  cl  = fetch_kline_analysis(symbol, grp['large'], limit=large_limit)
-        hb,  lb,  cb  = fetch_kline_analysis(symbol, grp['big'],   limit=big_limit)
-
-        # 把 ticker 即時價格更新到最後一根 K 線，讓高斯核反映最新價格
-        if last_price and last_price > 0:
-            cs = list(cs); cs[-1] = last_price
-            hs = list(hs); hs[-1] = max(hs[-1], last_price)
-            ls = list(ls); ls[-1] = min(ls[-1], last_price)
-
-        small_bands = calc_gaussian_bands(cs)
-        large_bands = calc_gaussian_bands(cl)
-        big_bands   = calc_gaussian_bands(cb)
-
-        tunnel = None
-        if small_bands and large_bands and small_bands[0] and large_bands[0]:
-            s_dn, b_dn = small_bands[0]['lower'], large_bands[0]['lower']
-            s_up, b_up = small_bands[0]['upper'], large_bands[0]['upper']
-            s_dn_prev  = small_bands[1]['lower'] if small_bands[1] else s_dn
-            b_dn_prev  = large_bands[1]['lower'] if large_bands[1] else b_dn
-            diff_now   = s_dn - b_dn
-            diff_prev  = s_dn_prev - b_dn_prev
-
-            # 大貓咪下軌（波段低點用）
-            big_dn = big_bands[0]['lower'] if big_bands and big_bands[0] else None
-            big_up = big_bands[0]['upper'] if big_bands and big_bands[0] else None
-
-            # 統一用外部傳入的 last_price（來自 ticker），避免各組時間不一致
-            if last_price is None:
-                last_price = cs[-1]
-
-            # ── 觸發：小貓咪下軌穿越中貓咪下軌 ──
-            long_trigger_zone  = s_dn < b_dn
-            short_trigger_zone = s_up > b_up
-
-            # ── 短期低點護航：價格觸及小貓咪下軌 ──
-            price_at_small_lower = last_price <= s_dn * 1.003
-            price_at_small_upper = last_price >= s_up * 0.997
-
-            # ── 波段低點護航：價格觸及中貓咪下軌 ──
-            price_at_large_lower = last_price <= b_dn * 1.003
-            price_at_large_upper = last_price >= b_up * 0.997
-
-            # ── 大波段低點護航：價格觸及大貓咪下軌 ──
-            price_at_big_lower = bool(big_dn and last_price <= big_dn * 1.003)
-            price_at_big_upper = bool(big_up and last_price >= big_up * 0.997)
-
-            # ── 貓咪共振柱 pos：價格相對小貓咪上下軌的位置 ──
-            # pos=0 價格在下軌（底部綠色），pos=1 價格在上軌（頂部紅色）
-            price_range = s_up - s_dn
-            if price_range > 0 and last_price:
-                price_pos = round(min(max((last_price - s_dn) / price_range, 0), 1), 4)
-            else:
-                price_pos = 0.5
-
-            # 交叉狀態：訊號只在價格仍在對應區段時有效
-            # 下軌交叉：價格走超過下1/3（pos>0.33）→ 訊號消失
-            # 上軌交叉：價格走低過上1/3（pos<0.67）→ 訊號消失
-            if long_trigger_zone and price_pos <= 0.33:
-                cross_state = 'long_cross'    # 下軌交叉有效
-            elif short_trigger_zone and price_pos >= 0.67:
-                cross_state = 'short_cross'   # 上軌交叉有效
-            elif price_pos > 0.65:
-                cross_state = 'near_upper'    # 高位
-            elif price_pos < 0.35:
-                cross_state = 'near_lower'    # 低位
-            else:
-                cross_state = 'neutral'       # 中段
-
-            # 方向：用小貓咪中線（mid）的移動方向
-            s_mid_now  = (s_dn + s_up) / 2
-            s_mid_prev = (small_bands[1]['lower'] + small_bands[1]['upper']) / 2 if small_bands[1] else s_mid_now
-            tunnel_direction = 'up' if s_mid_now > s_mid_prev else 'down'
-
-            tunnel = {
-                's_dn': round(s_dn, 4), 'b_dn': round(b_dn, 4),
-                's_up': round(s_up, 4), 'b_up': round(b_up, 4),
-                'big_dn': round(big_dn, 4) if big_dn else None,
-                'big_up': round(big_up, 4) if big_up else None,
-                'last_price': round(last_price, 4),
-                'long_trigger_zone':    bool(long_trigger_zone),
-                'short_trigger_zone':   bool(short_trigger_zone),
-                'price_at_small_lower': bool(price_at_small_lower),
-                'price_at_small_upper': bool(price_at_small_upper),
-                'price_at_large_lower': bool(price_at_large_lower),
-                'price_at_large_upper': bool(price_at_large_upper),
-                'price_at_big_lower':   bool(price_at_big_lower),
-                'price_at_big_upper':   bool(price_at_big_upper),
-                'direction':   tunnel_direction,
-                'cross_state': cross_state,
-                'pos':         price_pos,  # 價格相對小貓咪上下軌位置
-            }
-
-        v1 = calc_smi_analysis(hs, ls, cs, lk=10, ld=3, lema=3)
-        v2 = calc_smi_analysis(hs, ls, cs, lk=20, ld=6, lema=6)
-        dual_phl_oversold   = bool(v1 and v1['oversold']   and v2 and v2['oversold'])
-        dual_phl_overbought = bool(v1 and v1['overbought'] and v2 and v2['overbought'])
-
-        # ── 觸發：小穿中 + 雙PHL ──
-        long_trigger  = bool(tunnel and tunnel['long_trigger_zone']  and dual_phl_oversold)
-        short_trigger = bool(tunnel and tunnel['short_trigger_zone'] and dual_phl_overbought)
-
-        # ── 短期低點護航：觸及小貓咪下軌 + 雙PHL ──
-        long_escort_short  = bool(tunnel and tunnel['price_at_small_lower'] and dual_phl_oversold)
-        short_escort_short = bool(tunnel and tunnel['price_at_small_upper'] and dual_phl_overbought)
-
-        # ── 波段低點護航：觸及中貓咪下軌 + 雙PHL ──
-        long_escort_wave  = bool(tunnel and tunnel['price_at_large_lower'] and dual_phl_oversold)
-        short_escort_wave = bool(tunnel and tunnel['price_at_large_upper'] and dual_phl_overbought)
-
-        # ── 大波段低點護航：觸及大貓咪下軌 + 雙PHL ──
-        long_escort_big  = bool(tunnel and tunnel['price_at_big_lower'] and dual_phl_oversold)
-        short_escort_big = bool(tunnel and tunnel['price_at_big_upper'] and dual_phl_overbought)
-
-        # 護航等級
-        long_escort_level  = 'big' if long_escort_big else 'wave' if long_escort_wave else 'short' if long_escort_short else None
-        short_escort_level = 'big' if short_escort_big else 'wave' if short_escort_wave else 'short' if short_escort_short else None
-
-        # ── 護航柱：大貓咪的小貓咪帶（escort_tf 的高斯帶）──
-        escort_pillar = None
-        try:
-            escort_tf = grp.get('escort_tf', grp['big'])
-            escort_limit = tf_limits.get(escort_tf, 150)
-            he, le, ce = fetch_kline_analysis(symbol, escort_tf, limit=escort_limit)
-            escort_bands = calc_gaussian_bands(ce)
-            if escort_bands and escort_bands[0]:
-                eb = escort_bands[0]
-                ep = escort_bands[1]
-                e_dn, e_up = eb['lower'], eb['upper']
-                e_dn_prev = ep['lower'] if ep else e_dn
-                # 價格在護航柱的相對位置（0=下軌，1=上軌）
-                price_range = e_up - e_dn
-                if price_range > 0 and last_price:
-                    e_pos = round(min(max((last_price - e_dn) / price_range, 0), 1), 4)
-                else:
-                    e_pos = 0.5
-                escort_pillar = {
-                    'tf':        escort_tf,
-                    'lower':     round(e_dn, 4),
-                    'upper':     round(e_up, 4),
-                    'pos':       e_pos,
-                    'direction': 'down' if e_dn < e_dn_prev else 'up',
-                    'at_lower':  bool(last_price and last_price <= e_dn * 1.003),
-                    'at_upper':  bool(last_price and last_price >= e_up * 0.997),
-                }
-        except Exception:
-            escort_pillar = None
-
-        return {
-            'label':  grp['label'],
-            'tunnel': tunnel,
-            'v1': v1, 'v2': v2,
-            'dual_phl_oversold':   dual_phl_oversold,
-            'dual_phl_overbought': dual_phl_overbought,
-            # 觸發
-            'long_trigger':  long_trigger,
-            'short_trigger': short_trigger,
-            # 護航
-            'long_escort':        long_escort_short or long_escort_wave or long_escort_big,
-            'short_escort':       short_escort_short or short_escort_wave or short_escort_big,
-            'long_escort_level':  long_escort_level,
-            'short_escort_level': short_escort_level,
-            # 護航柱
-            'escort_pillar': escort_pillar,
-            # 相容舊版
-            'long_resonance':  long_trigger,
-            'short_resonance': short_trigger,
-        }
-    except Exception as e:
-        import traceback
-        return {'label': grp['label'], 'error': str(e), 'detail': traceback.format_exc()[-300:]}
-
-def calc_analysis_indicators(symbol, tf):
-    try:
-        h, l, c = fetch_kline_analysis(symbol, tf['interval'], limit=200)
-        return {
-            'label': tf['label'],
-            'rsi':  calc_rsi_analysis(c),
-            'macd': calc_macd_analysis(c),
-            'kdj':  calc_kdj_analysis(h, l, c),
-        }
-    except Exception as e:
-        return {'label': tf['label'], 'error': str(e)}
-
-# ── 新版綜合評分（取代舊的 calc_advice）──
-
-def calc_score_v2(groups, indicators, ticker, funding, oi, ls):
-    """
-    四維度評分：
-    趨勢強度 30分 - RSI + MACD + KDJ
-    動能位置 30分 - 指標在超賣/超買位置
-    市場結構 20分 - 資金費率 + OI + 多空比
-    波動度   20分 - 24h 振幅 + 成交量
-    """
-    score = 50  # 基準分
-
-    # ── 趨勢強度（-15 ~ +15）──
-    trend_score = 0
-    tf_weights = {'15m': 1, 'H1': 2, 'H4': 3}
-    for ind in indicators:
-        if ind.get('error'): continue
-        w = tf_weights.get(ind['label'], 1)
-        rsi  = ind.get('rsi')
-        macd = ind.get('macd')
-        kdj  = ind.get('kdj')
-        if rsi:
-            if rsi['value'] > 55:   trend_score += w * 0.8
-            elif rsi['value'] < 45: trend_score -= w * 0.8
-        if macd:
-            if macd['bullish']:   trend_score += w * 0.6
-            else:                 trend_score -= w * 0.6
-        if kdj:
-            if kdj['direction'] == 'up':   trend_score += w * 0.4
-            else:                          trend_score -= w * 0.4
-    trend_score = max(-15, min(15, trend_score / 2))
-
-    # ── 動能位置（-15 ~ +15）──
-    momentum_score = 0
-    for ind in indicators:
-        if ind.get('error'): continue
-        w = tf_weights.get(ind['label'], 1)
-        rsi = ind.get('rsi')
-        kdj = ind.get('kdj')
-        if rsi:
-            if rsi['oversold']:    momentum_score += w * 1.5
-            elif rsi['overbought']: momentum_score -= w * 1.5
-        if kdj:
-            if kdj['oversold']:    momentum_score += w * 1.0
-            elif kdj['overbought']: momentum_score -= w * 1.0
-    momentum_score = max(-15, min(15, momentum_score / 2))
-
-    # ── 市場結構（-10 ~ +10）──
-    structure_score = 0
-    try:
-        fr = float(funding.get('fundingRate', 0))
-        if fr < -0.0001:   structure_score += 4   # 負費率利多
-        elif fr < 0:       structure_score += 2
-        elif fr > 0.0005:  structure_score -= 4   # 高費率利空
-        elif fr > 0.0002:  structure_score -= 2
-    except: pass
-    try:
-        lr = float(ls.get('longShortRatio', 1))
-        if lr < 0.8:   structure_score += 3   # 空方多，反向做多
-        elif lr > 1.5: structure_score -= 3   # 多方擠，小心反轉
-    except: pass
-    try:
-        if len(oi) >= 2:
-            oi_last  = float(oi[-1].get('sumOpenInterest', 0))
-            oi_first = float(oi[0].get('sumOpenInterest', 0))
-            oi_chg = (oi_last - oi_first) / max(oi_first, 0.0001)
-            if oi_chg > 0.05:   structure_score += 3
-            elif oi_chg < -0.05: structure_score -= 3
-    except: pass
-    structure_score = max(-10, min(10, structure_score))
-
-    # ── 波動度（0 ~ +10，波動大加分）──
-    vol_score = 0
-    try:
-        price = float(ticker.get('lastPrice', 0))
-        high  = float(ticker.get('high', price))
-        low   = float(ticker.get('low', price))
-        amp   = (high - low) / max(low, 0.0001) * 100
-        if amp > 10:   vol_score = 10
-        elif amp > 6:  vol_score = 7
-        elif amp > 3:  vol_score = 4
-        else:          vol_score = 1
-    except: pass
-
-    total = round(50 + trend_score + momentum_score + structure_score + vol_score / 2)
-    total = max(0, min(100, total))
-
-    # ── 方向判斷 ──
-    if total >= 66:   direction = '偏多'
-    elif total >= 55: direction = '略偏多'
-    elif total >= 45: direction = '中性'
-    elif total >= 35: direction = '略偏空'
-    else:             direction = '偏空'
-
-    return {
-        'score': total,
-        'direction': direction,
-        'breakdown': {
-            'trend':     round(trend_score, 1),
-            'momentum':  round(momentum_score, 1),
-            'structure': round(structure_score, 1),
-            'volatility': round(vol_score, 1),
-        }
-    }
-
-def calc_resonance_advice(groups):
-    """
-    觸發/護航邏輯：
-    觸發：小貓咪下軌穿越中貓咪下軌 + 雙PHL超賣 → 進場依據
-    短期低點護航：價格觸及小貓咪下軌 + 雙PHL超賣
-    波段低點護航：價格觸及中貓咪下軌 + 雙PHL超賣
-    大波段低點護航：價格觸及大貓咪下軌 + 雙PHL超賣
-    """
-    TF_LABEL = {
-        '15m/30m': '短線',
-        'H1/H2':   '中線',
-        'H4/H8':   '中長線',
-    }
-    HOLD = {
-        '短線':   '2 ~ 8小時',
-        '中線':   '8 ~ 24小時',
-        '中長線': '1 ~ 3天',
-    }
-    WARN = {
-        '短線':   '短線機會，建議當日結束，勿跨夜持倉',
-        '中線':   '中線波段，可持有過夜，務必設好止損',
-        '中長線': '中長線波段，耐心等待目標，控制倉位',
-    }
-    ESCORT_LEVEL_LABEL = {
-        'short': '短期低點',
-        'wave':  '波段低點',
-        'big':   '大波段低點',
-    }
-
-    # 觸發組
-    long_trigger_groups  = [g for g in groups if g.get('long_trigger')]
-    short_trigger_groups = [g for g in groups if g.get('short_trigger')]
-
-    # 護航組（含等級）
-    long_escort_groups  = [g for g in groups if g.get('long_escort')  and not g.get('long_trigger')]
-    short_escort_groups = [g for g in groups if g.get('short_escort') and not g.get('short_trigger')]
-
-    is_long  = len(long_trigger_groups)  > 0
-    is_short = len(short_trigger_groups) > 0
-
-    # ── 多空衝突偵測 ──
-    conflict_warning = None
-    if is_long and is_short:
-        # 多空同時觸發，直接說明分歧
-        long_labels  = '、'.join(g['label'] for g in long_trigger_groups)
-        short_labels = '、'.join(g['label'] for g in short_trigger_groups)
-        conflict_warning = f'市場多空分歧：{long_labels} 偏多 vs {short_labels} 偏空，建議觀望或極輕倉位'
-    elif is_long:
-        counter_short = [g for g in groups
-                         if (g.get('short_trigger') or g.get('short_escort'))
-                         and not g.get('long_trigger')]
-        if counter_short:
-            conflict_labels = '、'.join(g['label'] for g in counter_short)
-            conflict_warning = f'{conflict_labels} 偏空，本次做多為逆勢反彈，嚴控倉位與停損'
-    elif is_short:
-        counter_long = [g for g in groups
-                        if (g.get('long_trigger') or g.get('long_escort'))
-                        and not g.get('short_trigger')]
-        if counter_long:
-            conflict_labels = '、'.join(g['label'] for g in counter_long)
-            conflict_warning = f'{conflict_labels} 偏多，本次做空為逆勢，嚴控倉位與停損'
-
-    if not is_long and not is_short:
-        escort_only_long  = [g for g in groups if g.get('long_escort')]
-        escort_only_short = [g for g in groups if g.get('short_escort')]
-        has_escort = len(escort_only_long) > 0 or len(escort_only_short) > 0
-        escort_groups = escort_only_long or escort_only_short
-        escort_detail = [
-            {
-                'label': g['label'],
-                'level': g.get('long_escort_level') or g.get('short_escort_level'),
-                'level_label': ESCORT_LEVEL_LABEL.get(
-                    g.get('long_escort_level') or g.get('short_escort_level','short'), '短期低點'
-                )
-            }
-            for g in escort_groups
-        ]
-        no_signal = [g['label'] for g in groups
-                     if not g.get('long_escort') and not g.get('short_escort')]
-        return {
-            'has_signal':   False,
-            'has_escort':   has_escort,
-            'direction':    '觀望',
-            'timeframe_type': '—',
-            'hold_hours':   '—',
-            'trigger_labels':   [],
-            'escort_detail':    escort_detail,
-            'no_signal_labels': no_signal,
-            'warning': '',
-        }
-
-    # 主方向：以觸發數量多的為主，相同則以小時框（先出現的）為主
-    if is_long and is_short:
-        # 多空都有觸發，以觸發數多的為主；相同則以做多優先（小時框先觸發）
-        direction = '做多' if len(long_trigger_groups) >= len(short_trigger_groups) else '做空'
-    else:
-        direction = '做多' if is_long else '做空'
-
-    trigger_groups = long_trigger_groups if direction == '做多' else short_trigger_groups
-    escort_groups  = long_escort_groups  if direction == '做多' else short_escort_groups
-
-    largest = trigger_groups[-1]['label']
-    tt = TF_LABEL.get(largest, '中線')
-
-    escort_detail = [
-        {
-            'label': g['label'],
-            'level': g.get('long_escort_level') or g.get('short_escort_level'),
-            'level_label': ESCORT_LEVEL_LABEL.get(
-                g.get('long_escort_level') or g.get('short_escort_level','short'), '短期低點'
-            )
-        }
-        for g in escort_groups
-    ]
-
-    # 護航強度說明
-    escort_count = len(escort_groups)
-    if escort_count > 0:
-        escort_note = '、'.join(f'{e["label"]} {e["level_label"]}護航' for e in escort_detail)
-    else:
-        escort_note = '目前無護航，注意趨勢風險'
-
-    # 尚未到位的時框（排除觸發、護航、反向訊號）
-    no_signal = [g['label'] for g in groups
-                 if not g.get('long_trigger') and not g.get('short_trigger')
-                 and not g.get('long_escort') and not g.get('short_escort')]
-
-    return {
-        'has_signal':     True,
-        'has_escort':     escort_count > 0,
-        'direction':      direction,
-        'timeframe_type': tt,
-        'hold_hours':     HOLD.get(tt, '—'),
-        'trigger_labels': [g['label'] for g in trigger_groups],
-        'escort_detail':  escort_detail,
-        'no_signal_labels': no_signal,
-        'escort_note':    escort_note,
-        'warning':        WARN.get(tt, ''),
-        'conflict_warning': conflict_warning,
-        'trigger_count':  len(trigger_groups),
-        'escort_count':   escort_count,
-    }
-
-@app.route('/analysis')
-def analysis():
-    symbol = request.args.get('symbol', 'BTCUSDT').strip().upper()
-
-    # 先抓 ticker，取得統一的 last_price
-    try:
-        td = requests.get(f'{BITUNIX}/tickers', params={'symbols': symbol}, timeout=6).json().get('data', [])
-        ticker = (td[0] if isinstance(td, list) and td else {})
-        last_price = float(ticker.get('lastPrice', 0)) or None
-    except:
-        ticker = {}
-        last_price = None
-
-    # 清除本次 K 線快取（確保每次都抓最新數據）
-    get_kline_cache().clear()
-
-    # 平行計算各組（傳入統一 last_price，限制並行數避免 Bitunix 限流）
-    groups_result, ind_result = [], []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as ex:
-        gfuts = [ex.submit(calc_analysis_group, symbol, g, last_price) for g in ANALYSIS_GROUPS]
-        ifuts = [ex.submit(calc_analysis_indicators, symbol, tf) for tf in ANALYSIS_IND_TFS]
-        for f in gfuts:
-            try: groups_result.append(f.result())
-            except Exception as e: groups_result.append({'error': str(e)})
-        for f in ifuts:
-            try: ind_result.append(f.result())
-            except Exception as e: ind_result.append({'error': str(e)})
-
-    try:
-        fd = requests.get(f'{BITUNIX}/funding_rate', params={'symbol': symbol}, timeout=6).json().get('data', {})
-        funding = (fd[0] if isinstance(fd, list) and fd else fd) or {}
-    except: funding = {}
-    try:
-        oi = requests.get('https://fapi.binance.com/futures/data/openInterestHist',
-            params={'symbol': symbol, 'period': '1h', 'limit': 24}, timeout=6).json()
-        oi = oi if isinstance(oi, list) else []
-    except: oi = []
-    try:
-        ls_data = requests.get('https://fapi.binance.com/futures/data/globalLongShortAccountRatio',
-            params={'symbol': symbol, 'period': '5m', 'limit': 1}, timeout=6).json()
-        ls = (ls_data[0] if isinstance(ls_data, list) and ls_data else {})
-    except: ls = {}
-
-    score_data    = calc_score_v2(groups_result, ind_result, ticker, funding, oi, ls)
-    resonance_adv = calc_resonance_advice(groups_result)
-
-    return jsonify({
-        'code': 0, 'symbol': symbol,
-        'ticker': ticker, 'funding': funding, 'oi': oi, 'ls': ls,
-        'score':     score_data,
-        'resonance_advice': resonance_adv,
-        'groups':     groups_result,
-        'indicators': ind_result,
-        'ts': int(time.time()),
-    })
-
-@app.route('/resonance')
-def resonance():
-    """多幣種多時框共振計算：三貓咪下軌 + PHL V1 + PHL V2"""
-    symbols_raw = request.args.get('symbols', 'BTCUSDT')
-    symbols = [s.strip().upper() for s in symbols_raw.split(',') if s.strip()]
-
-    TFS = [
-        {'label': '15m', 'interval': '15m'},
-        {'label': 'H1',  'interval': '1h'},
-        {'label': 'H4',  'interval': '4h'},
-        {'label': 'H8',  'interval': '8h'},
-    ]
-
-    def calc_symbol(sym):
-        result = {}
-        for tf in TFS:
-            result[tf['label']] = calc_one_tf(sym, tf['interval'])
-        return sym, result
-
-    final = {}
-    with concurrent.futures.ThreadPoolExecutor(max_workers=6) as ex:
-        futs = {ex.submit(calc_symbol, s): s for s in symbols}
-        for fut in concurrent.futures.as_completed(futs):
-            try:
-                sym, data = fut.result()
-                final[sym] = data
-            except Exception as e:
-                sym = futs[fut]
-                final[sym] = {'error': str(e)}
-
-    return jsonify({'code': 0, 'data': final, 'ts': int(time.time())})
-
-# ════════════════════════════════════════
-# ── 指標申請 ECPay ──
-# ════════════════════════════════════════
-
-@app.route('/indicator/verify-code', methods=['POST'])
-def verify_code():
-    data = request.get_json(force=True) or {}
-    code = data.get('referral_code', '').strip().upper()
-    if not code:
-        return jsonify({'valid': False, 'amount': INDICATOR_PRICE})
-    rows = sb_get('profiles', params={
-        'referral_code': f'eq.{code}',
-        'plan': 'eq.master',
-        'select': 'id,display_name,team_name',
-    })
-    if not rows or not isinstance(rows, list) or len(rows) == 0:
-        return jsonify({'valid': False, 'message': '優惠碼無效', 'amount': INDICATOR_PRICE})
-    master = rows[0]
-    amount = INDICATOR_PRICE - INDICATOR_DISCOUNT
-    return jsonify({
-        'valid': True,
-        'amount': amount,
-        'master_id': master['id'],
-        'master_name': master.get('display_name') or master.get('team_name') or '比特聯盟盟主',
-        'message': f'優惠碼有效！折抵 ${INDICATOR_DISCOUNT}',
-    })
-
-@app.route('/indicator/debug-checkout', methods=['POST'])
-def indicator_debug_checkout():
-    data = request.get_json(force=True) or {}
-    payment_type = data.get('payment_type', 'Credit')
-    amount = 3600
-    trade_no = 'BITO' + datetime.now().strftime('%m%d%H%M%S') + 'TEST'
-    trade_date = datetime.now().strftime('%Y/%m/%d %H:%M:%S')
-    ecpay_params = {
-        'MerchantID':        ECPAY_MERCHANT_ID,
-        'MerchantTradeNo':   trade_no,
-        'MerchantTradeDate': trade_date,
-        'PaymentType':       'aio',
-        'TotalAmount':       str(amount),
-        'TradeDesc':         'BitoAlliance BitoCat Indicator',
-        'ItemName':          'BitoCat Indicator 1 Year x1',
-        'ReturnURL':         'https://web-production-9ba5b.up.railway.app/indicator/notify',
-        'ClientBackURL':     f'{FRONTEND_URL}/indicator.html?result=success&no={trade_no}',
-        'ChoosePayment':     payment_type,
-        'EncryptType':       '1',
-    }
-    if payment_type == 'ATM':
-        ecpay_params['ExpireDate'] = '3'
-    elif payment_type == 'CVS':
-        ecpay_params['StoreExpireDate'] = '10080'
-        ecpay_params['Desc_1'] = 'BitoCat指標年費'
-    elif payment_type == 'BARCODE':
-        ecpay_params['StoreExpireDate'] = '10080'
-    mac = ecpay_gen_mac(ecpay_params)
-    ecpay_params['CheckMacValue'] = mac
-    return jsonify({'params': ecpay_params, 'payment_type_received': payment_type})
-
-@app.route('/indicator/checkout', methods=['POST'])
-def indicator_checkout():
-    data = request.get_json(force=True) or {}
-    referral_code = data.get('referral_code', '').strip().upper()
-    payment_type  = data.get('payment_type', 'Credit')
-    amount = INDICATOR_PRICE
-    referred_by = None
-    if referral_code:
-        rows = sb_get('profiles', params={
-            'referral_code': f'eq.{referral_code}',
-            'plan': 'eq.master',
-            'select': 'id',
-        })
-        if rows and isinstance(rows, list) and len(rows) > 0:
-            referred_by = rows[0]['id']
-            amount = INDICATOR_PRICE - INDICATOR_DISCOUNT
-    trade_no = 'BITO' + datetime.now().strftime('%m%d%H%M%S') + uuid.uuid4().hex[:6].upper()
-    order_data = {
-        'merchant_trade_no': trade_no,
-        'amount': amount,
-        'referral_code': referral_code or None,
-        'referred_by': referred_by,
-        'payment_status': 'pending',
-        'indicator_status': 'pending',
-    }
-    sb_post('indicator_orders', order_data)
-    trade_date = datetime.now().strftime('%Y/%m/%d %H:%M:%S')
-    ecpay_params = {
-        'MerchantID':        ECPAY_MERCHANT_ID,
-        'MerchantTradeNo':   trade_no,
-        'MerchantTradeDate': trade_date,
-        'PaymentType':       'aio',
-        'TotalAmount':       str(amount),
-        'TradeDesc':         'BitoCat Indicator',
-        'ItemName':          'BitoCat Indicator 1 Year',
-        'ReturnURL':         'https://web-production-9ba5b.up.railway.app/indicator/notify',
-        'ClientBackURL':     f'{FRONTEND_URL}/indicator.html?result=success&no={trade_no}',
-        'ChoosePayment':     payment_type,
-        'EncryptType':       '1',
-    }
-    if payment_type == 'ATM':
-        ecpay_params['ExpireDate'] = '3'
-    if payment_type == 'CVS':
-        ecpay_params['StoreExpireDate'] = '10080'
-        ecpay_params['Desc_1'] = 'BitoCat Indicator'
-    if payment_type == 'BARCODE':
-        ecpay_params['StoreExpireDate'] = '10080'
-    sorted_params = sorted(ecpay_params.items())
-    raw = '&'.join([f'{k}={v}' for k, v in sorted_params])
-    raw = f'HashKey={ECPAY_HASH_KEY}&{raw}&HashIV={ECPAY_HASH_IV}'
-    raw = urllib.parse.quote_plus(raw).lower()
-    raw = raw.replace('%2d','-').replace('%5f','_').replace('%2e','.').replace('%21','!').replace('%2a','*').replace('%28','(').replace('%29',')')
-    ecpay_params['CheckMacValue'] = hashlib.sha256(raw.encode()).hexdigest().upper()
-    form_inputs = '\n'.join([f'<input type="hidden" name="{k}" value="{v}">' for k, v in ecpay_params.items()])
-    html = f'<form id="ecpay-form" action="https://payment.ecpay.com.tw/Cashier/AioCheckOut/V5" method="POST">\n{form_inputs}\n</form>'
-    from flask import jsonify as _jsonify
-    resp = _jsonify({'html': html, 'trade_no': trade_no})
-    resp.headers['Access-Control-Allow-Origin'] = '*'
-    return resp
-
-@app.route('/indicator/notify', methods=['POST'])
-def indicator_notify():
-    params = request.form.to_dict()
-    if not ecpay_check_mac(params):
-        return '0|ErrorMessage', 200
-    rtn_code = params.get('RtnCode', '0')
-    trade_no = params.get('MerchantTradeNo', '')
-    if rtn_code == '1' and trade_no:
-        sb_patch(
-            'indicator_orders',
-            {'merchant_trade_no': f'eq.{trade_no}'},
-            {
-                'payment_status': 'paid',
-                'paid_at': datetime.utcnow().isoformat(),
-                'updated_at': datetime.utcnow().isoformat(),
-            }
-        )
-    return '1|OK', 200
-
-@app.route('/indicator/submit', methods=['POST'])
-def indicator_submit():
-    data = request.get_json(force=True) or {}
-    trade_no    = data.get('merchant_trade_no', '').strip()
-    tv_username = data.get('tv_username', '').strip()
-    user_id     = data.get('user_id', '').strip()
-    if not trade_no or not tv_username:
-        return jsonify({'ok': False, 'message': '請填寫訂單編號和 TradingView 帳號'}), 400
-    rows = sb_get('indicator_orders', params={
-        'merchant_trade_no': f'eq.{trade_no}',
-        'select': 'id,payment_status,indicator_status,tv_username',
-    })
-    if not rows or not isinstance(rows, list) or len(rows) == 0:
-        return jsonify({'ok': False, 'message': '找不到此訂單編號'}), 404
-    order = rows[0]
-    if order.get('payment_status') != 'paid':
-        return jsonify({'ok': False, 'message': '此訂單尚未付款成功'}), 400
-    if order.get('tv_username'):
-        return jsonify({'ok': False, 'message': '此訂單已填寫過 TradingView 帳號'}), 400
-    update_data = {'tv_username': tv_username, 'updated_at': datetime.utcnow().isoformat()}
-    if user_id:
-        update_data['user_id'] = user_id
-    sb_patch('indicator_orders', {'merchant_trade_no': f'eq.{trade_no}'}, update_data)
-    return jsonify({'ok': True, 'message': '申請已送出！毛哥審核後將為你授權 TradingView 指標。'})
-
-@app.route('/indicator/check', methods=['GET'])
-def indicator_check():
-    trade_no = request.args.get('no', '').strip()
-    if not trade_no:
-        return jsonify({'ok': False}), 400
-    rows = sb_get('indicator_orders', params={
-        'merchant_trade_no': f'eq.{trade_no}',
-        'select': 'merchant_trade_no,amount,payment_status,indicator_status,tv_username,paid_at,granted_at',
-    })
-    if not rows or not isinstance(rows, list) or len(rows) == 0:
-        return jsonify({'ok': False, 'message': '找不到訂單'}), 404
-    return jsonify({'ok': True, 'order': rows[0]})
-
-# ════════════════════════════════════════
-# ── 比特聯盟 Telegram 會員管理（中繼）──
-# ════════════════════════════════════════
-
-TG_BOT_URL    = os.environ.get('TG_BOT_URL', '')
-TG_BOT_SECRET = os.environ.get('TG_BOT_SECRET', '')
-
-@app.route('/bito/edit-member', methods=['POST'])
-def bito_edit_member():
-    data = request.get_json(force=True) or {}
-    try:
-        r = requests.post(
-            f'{TG_BOT_URL}/bito/edit-member',
-            json=data,
-            headers={'X-Secret': TG_BOT_SECRET, 'Content-Type': 'application/json'},
-            timeout=10,
-        )
-        return jsonify(r.json()), r.status_code
-    except Exception as e:
-        return jsonify({'ok': False, 'message': str(e)}), 500
-
-@app.route('/bito/add-member', methods=['POST'])
-def bito_add_member():
-    data = request.get_json(force=True) or {}
-    try:
-        r = requests.post(
-            f'{TG_BOT_URL}/bito/add-member',
-            json=data,
-            headers={'X-Secret': TG_BOT_SECRET, 'Content-Type': 'application/json'},
-            timeout=10,
-        )
-        return jsonify(r.json()), r.status_code
-    except Exception as e:
-        return jsonify({'ok': False, 'message': str(e)}), 500
-
-@app.route('/bito/members', methods=['GET'])
-def bito_members():
-    try:
-        r = requests.get(
-            f'{TG_BOT_URL}/bito/members',
-            headers={'X-Secret': TG_BOT_SECRET},
-            timeout=10,
-        )
-        return jsonify(r.json()), r.status_code
-    except Exception as e:
-        return jsonify({'ok': False, 'message': str(e)}), 500
-
-@app.route('/market/tickers')
-def market_tickers():
-    try:
-        r = requests.get(f'{BITUNIX}/tickers', timeout=8)
-        return jsonify(r.json())
-    except Exception as e:
-        return jsonify({'code': -1, 'msg': str(e)}), 500
-
-@app.route('/debug/kline')
-def debug_kline():
-    try:
-        now_ms = int(time.time() * 1000)
-        start_ms = now_ms - 4 * 3600 * 1000 * 5
-        r = requests.get(f'{BITUNIX}/kline', params={
-            'symbol': 'BTCUSDT', 'interval': '4h',
-            'startTime': start_ms, 'endTime': now_ms
-        }, timeout=6)
-        return jsonify(r.json())
-    except Exception as e:
-        return jsonify({'error': str(e)})
-
-@app.route('/debug/bands')
-def debug_bands():
-    """除錯：分段抓取 K 線並計算高斯帶，對照 TradingView"""
-    try:
-        symbol   = request.args.get('symbol', 'BTCUSDT')
-        interval = request.args.get('interval', '1h')
-        limit    = int(request.args.get('limit', '200'))
-        get_kline_cache().clear()
-
-        # 用分段抓取
-        h, l, c = fetch_kline_analysis(symbol, interval, limit=limit)
-        bands = calc_gaussian_bands(c)
-
-        now_ms = int(time.time() * 1000)
-        return jsonify({
-            'symbol': symbol, 'interval': interval,
-            'limit': limit, 'candles': len(c),
-            'server_time_utc8': datetime.utcfromtimestamp(now_ms/1000 + 8*3600).strftime('%Y-%m-%d %H:%M'),
-            'latest_close': c[-1] if c else None,
-            'oldest_close': c[0] if c else None,
-            'bands': bands,
-            'tv_h1_upper': 63874.8,
-            'tv_h1_lower': 62903.2,
-            'diff_upper': round((bands[0]['upper'] - 63874.8) if bands and bands[0] else 0, 2),
-            'diff_lower': round((bands[0]['lower'] - 62903.2) if bands and bands[0] else 0, 2),
-        })
-    except Exception as e:
-        import traceback
-        return jsonify({'error': str(e), 'detail': traceback.format_exc()[-500:]})
-
-        return jsonify({
-            'symbol': symbol, 'interval': interval,
-            'limit': limit, 'candles': len(c),
-            'latest_close': c[-1] if c else None,
-            'now_price_check': '對照現在 BTC 價格是否一致',
-            'last3_candles': last3,
-            'bands': bands,
-            'tv_h1_upper': 63874.8,
-            'tv_h1_lower': 62903.2,
-            'diff_upper': round((bands[0]['upper'] - 63874.8) if bands and bands[0] else 0, 2),
-            'diff_lower': round((bands[0]['lower'] - 62903.2) if bands and bands[0] else 0, 2),
-        })
-    except Exception as e:
-        import traceback
-        return jsonify({'error': str(e), 'detail': traceback.format_exc()[-500:]})
-        return jsonify({
-            'symbol': symbol, 'interval': interval, 'limit': limit,
-            'kline_count': len(cs),
-            'latest_close': cs[-1],
-            'oldest_close': cs[0],
-            'bands_latest': bands[0] if bands else None,
-            'bands_prev':   bands[1] if bands and len(bands) > 1 else None,
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)})
-
-@app.route('/scanner/crypto', methods=['GET'])
-def scanner_crypto():
-    import math
-    try:
-        r = requests.get(f'{BITUNIX}/tickers', timeout=10)
-        all_tickers = r.json().get('data', [])
-    except:
-        return jsonify({'ok': False, 'message': '無法取得市場數據'}), 500
-
-    tickers = [
-        t for t in all_tickers
-        if str(t.get('symbol', '')).endswith('USDT')
-        and float(t.get('quoteVol', 0)) > 1_000_000
-    ]
-    tickers.sort(key=lambda x: float(x.get('quoteVol', 0)), reverse=True)
-    tickers = tickers[:30]
-
-    def analyze(t):
-        sym = t.get('symbol', '')
-        try:
-            price     = float(t.get('lastPrice', 0))
-            open24    = float(t.get('open', 0))
-            high24    = float(t.get('high', 0))
-            low24     = float(t.get('low', 0))
-            quote_vol = float(t.get('quoteVol', 0))
-            chg24     = ((price - open24) / open24 * 100) if open24 > 0 else 0
-            amplitude = ((high24 - low24) / low24 * 100) if low24 > 0 else 0
-        except:
-            return None
-
-        signals = []
-        score   = 0
-
-        try:
-            now_ms   = int(time.time() * 1000)
-            start_ms = now_ms - 4 * 3600 * 1000 * 60
-            kr = requests.get(f'{BITUNIX}/kline', params={
-                'symbol': sym, 'interval': '4h',
-                'startTime': start_ms, 'endTime': now_ms
-            }, timeout=8)
-            klines = list(reversed(kr.json().get('data', [])))
-        except:
-            klines = []
-
-        if len(klines) >= 20:
-            try:
-                closes  = [float(k['close'])  for k in klines]
-                volumes = [float(k['baseVol']) for k in klines]
-                highs   = [float(k['high'])    for k in klines]
-                lows    = [float(k['low'])     for k in klines]
-                opens_k = [float(k['open'])    for k in klines]
-                n = len(closes)
-                c = closes[-1]
-                c_prev = closes[-2] if n >= 2 else c
-                ma5  = sum(closes[-5:]) / 5   if n >= 5  else c
-                ma20 = sum(closes[-20:]) / 20 if n >= 20 else c
-                ma5_prev  = sum(closes[-6:-1]) / 5   if n >= 6  else ma5
-                ma20_prev = sum(closes[-21:-1]) / 20 if n >= 21 else ma20
-                vol_ma7  = sum(volumes[-7:]) / 7   if n >= 7  else volumes[-1]
-                vol_ma20 = sum(volumes[-20:]) / 20 if n >= 20 else volumes[-1]
-                vol_now  = volumes[-1]
-
-                def calc_rsi(cl, period=14):
-                    if len(cl) < period + 1: return 50
-                    gains, losses = [], []
-                    for i in range(1, period + 1):
-                        diff = cl[-period + i] - cl[-period + i - 1]
-                        (gains if diff > 0 else losses).append(abs(diff))
-                    ag = sum(gains) / period if gains else 0
-                    al = sum(losses) / period if losses else 0.0001
-                    return 100 - (100 / (1 + ag / al))
-
-                rsi    = calc_rsi(closes)
-                high30 = max(highs[-30:]) if n >= 30 else max(highs)
-                recent_high = max(closes[-20:])
-                recent_low  = min(closes[-20:])
-                price_range = (recent_high - recent_low) / recent_low * 100 if recent_low > 0 else 999
-                chg4h = (c - c_prev) / c_prev * 100 if c_prev > 0 else 0
-
-                if price_range < 10 and vol_now < vol_ma20 * 0.7:
-                    signals.append({'type':'bottom','name':'縮量橫盤','detail':f'近20根波動 {price_range:.1f}%'})
-                    score += 2
-                if c > recent_high * 0.995 and vol_now > vol_ma20 * 1.5:
-                    signals.append({'type':'bottom','name':'初升段突破','detail':f'量能放大 {vol_now/vol_ma20:.1f}x'})
-                    score += 3
-                if n >= 3 and all(closes[-i] > opens_k[-i] for i in range(1,4)) and closes[-1] > closes[-2] > closes[-3] and volumes[-1] > volumes[-2] > volumes[-3]:
-                    signals.append({'type':'strong','name':'多方炮','detail':'連續3根陽線量增'})
-                    score += 4
-                prev_high = max(closes[-10:-3]) if n >= 10 else c
-                if c > prev_high * 0.97 and vol_now < vol_ma7 * 0.6 and rsi > 50:
-                    signals.append({'type':'strong','name':'縮量回踩','detail':f'RSI={rsi:.0f}'})
-                    score += 3
-                if ma5 > ma20 and ma5_prev <= ma20_prev:
-                    signals.append({'type':'strong','name':'黃金交叉','detail':'MA5 上穿 MA20'})
-                    score += 3
-                if ma5 < ma20 and ma5_prev >= ma20_prev:
-                    signals.append({'type':'warning','name':'死亡交叉','detail':'MA5 下穿 MA20'})
-                    score -= 2
-                if vol_now > vol_ma7 * 3:
-                    signals.append({'type':'volume','name':'成交量暴增','detail':f'{vol_now/vol_ma7:.1f}x 均值'})
-                    score += 3
-                if chg4h < -8 and rsi < 30:
-                    signals.append({'type':'volume','name':'急跌超賣','detail':f'4h 跌 {abs(chg4h):.1f}%，RSI={rsi:.0f}'})
-                    score += 2
-                if chg4h > 8 and vol_now > vol_ma7 * 2:
-                    signals.append({'type':'volume','name':'急漲放量','detail':f'4h 漲 {chg4h:.1f}%'})
-                    score += 2
-                if c >= high30 * 0.998:
-                    signals.append({'type':'strong','name':'突破新高','detail':'突破近30根最高點'})
-                    score += 3
-                if amplitude > 15:
-                    signals.append({'type':'volume','name':'大幅震盪','detail':f'振幅 {amplitude:.1f}%'})
-                    score += 1
-            except Exception as e:
-                print(f'K線計算錯誤 {sym}: {e}')
-
-        funding = 0
-        try:
-            fr = bx_get('funding_rate', {'symbol': sym})
-            fr_data = fr.get('data', {})
-            if isinstance(fr_data, list): fr_data = fr_data[0] if fr_data else {}
-            funding = float(fr_data.get('fundingRate', 0))
-            if 0 > funding > -0.001:
-                signals.append({'type':'funding','name':'費率低窪做多','detail':f'費率 {funding*100:.4f}%'})
-                score += 2
-            elif funding > 0.0005:
-                signals.append({'type':'funding','name':'費率過熱警示','detail':f'費率 {funding*100:.4f}%'})
-                score -= 1
-            elif funding < -0.0001:
-                signals.append({'type':'funding','name':'費率由負轉正','detail':f'費率 {funding*100:.4f}%'})
-                score += 2
-        except:
-            pass
-
-        if not signals:
-            return None
-
-        return {
-            'symbol':    sym,
-            'price':     price,
-            'chg24':     round(chg24, 2),
-            'amplitude': round(amplitude, 2),
-            'quote_vol': round(quote_vol / 1_000_000, 2),
-            'funding':   round(funding * 100, 4),
-            'signals':   signals,
-            'score':     score,
-        }
-
-    results = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as ex:
-        futs = [ex.submit(analyze, t) for t in tickers]
-        for fut in concurrent.futures.as_completed(futs):
-            try:
-                r = fut.result()
-                if r: results.append(r)
-            except Exception as e:
-                print(f'掃描錯誤: {e}')
-
-    results.sort(key=lambda x: x['score'], reverse=True)
-    return jsonify({
-        'ok':      True,
-        'count':   len(results),
-        'scanned': len(tickers),
-        'ts':      int(time.time()),
-        'data':    results[:50],
-    })
-
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    const tunnelData = g.tunnel ? {
+      pos:         g.tunnel.pos,
+      direction:   g.tunnel.direction,
+      cross_state: g.tunnel.cross_state,
+    } : null;
+
+    // 護航柱
+    const ep = g.escort_pillar;
+    const epName = ep ? `小貓咪\n${ep.tf}` : '';
+    const escortPillarHTML = ep ? `
+      <div style="width:1px;background:var(--border);margin:0 3px;align-self:stretch;margin-bottom:36px"></div>
+      ${makePillar({pos:ep.pos,direction:ep.direction}, epName, true, false)}
+    ` : '';
+
+    // 交叉狀態標示
+    const crossLabel = g.tunnel ? (
+      g.tunnel.long_trigger_zone  ? '⚡ 下軌交叉' :
+      g.tunnel.short_trigger_zone ? '⚡ 上軌交叉' :
+      g.tunnel.price_at_small_lower ? '↓ 接近下軌' :
+      g.tunnel.price_at_small_upper ? '↑ 接近上軌' : ''
+    ) : '';
+
+    const badge = g.long_trigger
+      ?`<span class="res-badge rb-long">⚡ 觸發做多</span>`
+      :g.short_trigger
+        ?`<span class="res-badge rb-short">⚡ 觸發做空</span>`
+        :g.long_escort
+          ?`<span class="res-badge rb-escort">🛡️ 護航做多</span>`
+          :g.short_escort
+            ?`<span class="res-badge rb-escort" style="background:#e6f1fb;color:#c04828">🛡️ 護航做空</span>`
+            :`<span style="font-size:10px;color:var(--text2)">—</span>`;
+
+    // 護航柱提示
+    const escortHint = ep ? `<div style="font-size:9px;color:var(--text2);text-align:center;margin-top:2px">${ep.at_lower?'🟢 護航低點':ep.at_upper?'🔴 護航高點':'護航中段'}</div>` : '';
+
+    return `<div class="group-card ${cls}">
+      <div class="group-label">${g.label}</div>
+      <div class="pillars">
+        ${makePillar(tunnelData,'貓咪共振', false, true)}
+        ${makePillar(g.v1,'PHL V1')}
+        ${makePillar(g.v2,'PHL V2')}
+        ${escortPillarHTML}
+      </div>
+      ${crossLabel ? `<div style="font-size:9px;text-align:center;color:${tunnelColor(g.tunnel?.cross_state)};margin-top:2px">${crossLabel}</div>` : ''}
+      <div class="group-badge">${badge}</div>
+    </div>`;
+  }).join('');
+  return `<div class="resonance-card">
+    <div class="section-title">時框共振儀表板 <span>貓咪共振柱：位置=高低位・顏色=交叉狀態　PHL 柱：位置=指標值　細柱=護航小貓咪</span></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:10px;color:var(--text2);align-items:center">
+      <span>柱子顏色：</span>
+      <span style="display:flex;align-items:center;gap:3px"><span style="display:inline-block;width:10px;height:10px;background:#0c8e3c;border-radius:2px"></span>上段綠 = 超買(SMI>+25)</span>
+      <span style="display:flex;align-items:center;gap:3px"><span style="display:inline-block;width:10px;height:10px;background:#d8d5ce;border-radius:2px"></span>中段灰 = 中間(-25~+25)</span>
+      <span style="display:flex;align-items:center;gap:3px"><span style="display:inline-block;width:10px;height:10px;background:#e8456a;border-radius:2px"></span>下段桃紅 = 超賣(SMI&lt;-25)</span>
+      <span style="margin-left:4px">白線=當前位置　▲▼=方向</span>
+    </div>
+    <div class="groups-grid">${cards}</div>
+  </div>`;
+}
+
+/* ── 指標 ── */
+function renderIndicators(indicators) {
+  function indBar(val, min, max, label, isOb, isOs, dir) {
+    const pos = Math.min(Math.max((val-min)/(max-min),0),1);
+    const color = posColor(pos);
+    const tag = isOs?`<span class="ind-tag tag-os">超賣</span>`:isOb?`<span class="ind-tag tag-ob">超買</span>`:'';
+    const darr = dir==='up'?'↑':'↓';
+    return `<div class="ind-row">
+      <div class="ind-name">${label} ${tag} <span style="color:${color};font-size:11px">${darr}</span></div>
+      <div class="ind-bar-wrap">
+        <div class="ind-bar" style="background:linear-gradient(to right,#1a5c2a,#d8d5ce 50%,#c04828)">
+          <div class="ind-marker" style="left:${Math.round(pos*100)}%"></div>
+        </div>
+        <div class="ind-val" style="color:${color}">${val}</div>
+      </div>
+    </div>`;
+  }
+  const cards = indicators.map(tf => {
+    if(tf.error) return `<div class="ind-tf-card"><div class="ind-tf-label">${tf.label}</div><div style="color:var(--text2);font-size:11px">錯誤</div></div>`;
+    const rsi=tf.rsi, macd=tf.macd, kdj=tf.kdj;
+    const macdTag=macd?(macd.bullish?`<span class="ind-tag tag-bull">多頭</span>`:`<span class="ind-tag tag-bear">空頭</span>`):'';
+    const kdjTag=kdj?(kdj.golden_cross?`<span class="ind-tag tag-bull">金叉</span>`:kdj.dead_cross?`<span class="ind-tag tag-bear">死叉</span>`:''):'';
+    return `<div class="ind-tf-card">
+      <div class="ind-tf-label">${tf.label}</div>
+      ${rsi?indBar(rsi.value,0,100,'RSI',rsi.overbought,rsi.oversold,rsi.direction):''}
+      <div class="ind-row">
+        <div class="ind-name">MACD ${macdTag}</div>
+        <div class="ind-bar-wrap">
+          <div class="ind-bar" style="background:linear-gradient(to right,#c04828,#d8d5ce 50%,#1a5c2a)">
+            <div class="ind-marker" style="left:${macd?Math.round(macd.pos*100):50}%"></div>
+          </div>
+          <div class="ind-val" style="color:${macd&&macd.bullish?'#1a5c2a':'#c04828'}">${macd?(macd.histogram>0?'+':'')+macd.histogram.toFixed(4):'—'}</div>
+        </div>
+      </div>
+      ${kdj?`<div class="ind-row">
+        <div class="ind-name">KDJ K值 ${kdjTag}</div>
+        <div class="ind-bar-wrap">
+          <div class="ind-bar" style="background:linear-gradient(to right,#1a5c2a,#d8d5ce 50%,#c04828)">
+            <div class="ind-marker" style="left:${Math.round(kdj.pos*100)}%"></div>
+          </div>
+          <div class="ind-val" style="color:${posColor(kdj.pos)}">${kdj.k}</div>
+        </div>
+      </div>`:''}
+    </div>`;
+  }).join('');
+  return `<div class="indicators-card">
+    <div class="section-title">RSI / MACD / KDJ</div>
+    <div class="ind-grid">${cards}</div>
+  </div>`;
+}
+
+/* ── 其他指標 ── */
+function renderOther(funding, oi, ls) {
+  const fr=parseFloat(funding.fundingRate||0)*100;
+  const frCls=fr<0?'up':fr>0.03?'dn':'neu';
+  const frTip=fr<0?'空方付費，有利做多':fr>0.03?'多方過熱，注意風險':'費率正常';
+  const lr=parseFloat(ls.longShortRatio||0);
+  const lsCls=lr>1.2?'up':lr<0.8?'dn':'neu';
+  const oiLast=oi.length>0?parseFloat(oi[oi.length-1]?.sumOpenInterest||0):0;
+  const oiFirst=oi.length>0?parseFloat(oi[0]?.sumOpenInterest||0):0;
+  const oiChg=oiFirst>0?(oiLast-oiFirst)/oiFirst*100:0;
+  const oiCls=oiChg>0?'up':'dn';
+  return `<div class="other-card">
+    <div class="section-title">資金費率 / OI / 多空比</div>
+    <div class="other-grid">
+      <div class="ocard"><div class="ocard-label">資金費率</div><div class="ocard-val ${frCls}">${fr.toFixed(4)}%</div><div class="ocard-sub">${frTip}</div></div>
+      <div class="ocard"><div class="ocard-label">未平倉合約 24h</div><div class="ocard-val ${oiCls}">${oiChg>=0?'+':''}${oiChg.toFixed(1)}%</div><div class="ocard-sub">${oiLast>0?(oiLast/1e8).toFixed(2)+'億':'—'}</div></div>
+      <div class="ocard"><div class="ocard-label">多空比</div><div class="ocard-val ${lsCls}">${lr.toFixed(2)}</div><div class="ocard-sub">${lr>1?'多方佔優':lr<1?'空方佔優':'均衡'}</div></div>
+    </div>
+  </div>`;
+}
+
+/* ── 主載入 ── */
+async function load() {
+  const sym = document.getElementById('symInput').value.trim().toUpperCase();
+  if(!sym) return;
+  if(!sym.endsWith('USDT')){alert('請輸入 USDT 計價，如 BTCUSDT');return;}
+  currentSym = sym;
+  document.getElementById('tvSymLabel').textContent = `${sym} · K線`;
+  loadTV(sym, tvTF);
+  const btn = document.getElementById('loadBtn');
+  btn.disabled=true; btn.textContent='計算中...';
+  document.getElementById('content').innerHTML=`<div class="loading-overlay">計算中，請稍候（約 15 秒）...</div>`;
+  try {
+    const res  = await fetch(`${BITO_API}/analysis?symbol=${sym}`);
+    const data = await res.json();
+    if(data.code!==0) throw new Error(data.msg||'錯誤');
+    document.getElementById('content').innerHTML =
+      renderScore(data.score, data.ticker) +
+      renderAdvice(data.resonance_advice) +
+      renderGroups(data.groups) +
+      renderIndicators(data.indicators) +
+      renderOther(data.funding, data.oi, data.ls);
+    document.getElementById('statusBar').textContent = `最後更新：${new Date().toLocaleTimeString('zh-TW')}`;
+  } catch(e) {
+    document.getElementById('content').innerHTML=`<div class="loading-overlay">載入失敗：${e.message}</div>`;
+  }
+  btn.disabled=false; btn.textContent='分析';
+}
+
+/* ── 權限 ── */
+async function checkAuth() {
+  const {data:{session}} = await sb.auth.getSession();
+  if(!session){location.href='login.html';return false;}
+  const {data:p} = await sb.from('profiles').select('plan').eq('id',session.user.id).single();
+  if(!p||p.plan==='free'){
+    document.body.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:var(--bg);flex-direction:column;gap:14px">
+      <div style="font-size:42px">🔒</div><div style="font-size:16px">此功能需要遊俠以上身份</div>
+      <a href="index.html" style="color:var(--accent)">返回首頁</a></div>`;
+    return false;
+  }
+  return true;
+}
+
+(async()=>{
+  const ok = await checkAuth();
+  if(!ok) return;
+  loadTV('BTCUSDT', tvTF);
+})();
+</script>
+</body>
+</html>
