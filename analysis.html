@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -84,13 +85,13 @@ header h1{font-size:17px;font-weight:600;}
 .group-card.short-res{border-color:#c04828;border-width:1.5px;background:#fdf2f0;}
 .group-card.escort-res{border-color:#185fa5;border-width:1.5px;background:#eef4fc;}
 .rb-escort{background:#e6f1fb;color:#185fa5;}
-.group-label{font-size:11px;font-weight:600;color:var(--text2);text-align:center;margin-bottom:8px;}
-.pillars{display:flex;gap:5px;justify-content:center;align-items:flex-end;height:100px;}
+.group-label{font-size:11px;font-weight:600;color:var(--text2);text-align:center;margin-bottom:6px;}
+.pillars{display:flex;gap:5px;justify-content:center;align-items:flex-start;height:130px;}
 .pillar-wrap{display:flex;flex-direction:column;align-items:center;gap:2px;}
-.pillar-dir{font-size:12px;height:16px;line-height:16px;font-weight:700;}
-.pillar{width:26px;height:84px;border-radius:5px;position:relative;}
+.pillar-dir{font-size:16px;height:20px;line-height:20px;font-weight:900;margin-top:2px;}
+.pillar{width:26px;height:80px;border-radius:5px;position:relative;}
 .pillar-line{position:absolute;left:-2px;right:-2px;height:3px;border-radius:2px;}
-.pillar-name{font-size:9px;color:var(--text2);text-align:center;margin-top:2px;}
+.pillar-name{font-size:9px;color:var(--text2);text-align:center;margin-top:1px;}
 .group-badge{text-align:center;margin-top:6px;height:20px;display:flex;align-items:center;justify-content:center;}
 .res-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;}
 .rb-long{background:#1a5c2a;color:#d4f0dc;}
@@ -374,17 +375,21 @@ function renderGroups(groups) {
 
     function makePillar(data, name, thin=false, isTunnel=false) {
       const w = thin ? '18px' : '26px';
-      if(!data) return `<div class="pillar-wrap"><div class="pillar-dir" style="color:var(--neutral)">—</div><div class="pillar" style="width:${w};background:linear-gradient(to bottom,#c04828,#d8d5ce 50%,#1a5c2a)"></div><div class="pillar-name">${name}</div></div>`;
+      if(!data) return `<div class="pillar-wrap">
+        <div class="pillar" style="width:${w};background:linear-gradient(to bottom,#c04828,#d8d5ce 50%,#1a5c2a)"></div>
+        <div style="font-size:16px;height:20px;text-align:center;color:var(--text2)">—</div>
+        <div class="pillar-name">${name}</div>
+      </div>`;
       const pos = data.pos ?? 0.5;
       const top = Math.round(pos * 100);
-      // 貓咪柱用 cross_state 決定顏色，其他用位置決定
       const lc = isTunnel ? tunnelColor(data.cross_state) : posColor(pos);
+      const arrow = data.direction === 'up' ? '▲' : '▼';
       return `<div class="pillar-wrap">
-        <div class="pillar-dir" style="color:${lc}">${dirChar(data.direction)}</div>
         <div class="pillar" style="width:${w};background:linear-gradient(to bottom,#c04828 0%,#e8a090 25%,#d8d5ce 50%,#7dc48a 75%,#1a5c2a 100%)">
           <div class="pillar-line" style="top:${top}%;background:${lc};box-shadow:0 0 3px ${lc}88"></div>
         </div>
-        <div class="pillar-name">${name}</div>
+        <div style="font-size:16px;height:20px;line-height:20px;font-weight:900;text-align:center;color:${lc}">${arrow}</div>
+        <div class="pillar-name" style="color:${lc}">${name}</div>
       </div>`;
     }
 
@@ -396,9 +401,10 @@ function renderGroups(groups) {
 
     // 護航柱
     const ep = g.escort_pillar;
+    const epName = ep ? `小貓咪\n${ep.tf}` : '';
     const escortPillarHTML = ep ? `
-      <div style="width:1px;background:var(--border);margin:0 2px;align-self:stretch;margin-top:16px;margin-bottom:20px"></div>
-      ${makePillar({pos:ep.pos,direction:ep.direction}, '小貓咪隧道', true, false)}
+      <div style="width:1px;background:var(--border);margin:0 3px;align-self:stretch;margin-bottom:36px"></div>
+      ${makePillar({pos:ep.pos,direction:ep.direction}, epName, true, false)}
     ` : '';
 
     // 交叉狀態標示
