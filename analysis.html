@@ -275,24 +275,39 @@ function renderScore(score, ticker) {
 
 /* ── 線別建議 ── */
 function renderAdvice(adv) {
+  const LEVEL_ICON = { short:'🛡️', wave:'🛡️🛡️', big:'🛡️🛡️🛡️' };
+  const LEVEL_COLOR = { short:'#185fa5', wave:'#0f4e8a', big:'#08305a' };
+  const LEVEL_BG    = { short:'#e6f1fb', wave:'#d0e6f7', big:'#b8d6f2' };
+
+  function escortDetailTags(detail) {
+    return (detail||[]).map(e => {
+      const icon  = LEVEL_ICON[e.level]  || '🛡️';
+      const color = LEVEL_COLOR[e.level] || '#185fa5';
+      const bg    = LEVEL_BG[e.level]    || '#e6f1fb';
+      return `<span class="res-tag" style="background:${bg};color:${color}">${e.label} ${icon} ${e.level_label}</span>`;
+    }).join('');
+  }
+
   // 無觸發也無護航
   if(!adv.has_signal && !adv.has_escort) {
     return `<div class="advice-card">
       <div class="section-title">線別建議 <span>依三貓咪 + PHL 共振結果</span></div>
       <div class="no-signal">
-        ⏳ 目前四組時框均無觸發或護航訊號<br>
-        <span style="font-size:12px;margin-top:6px;display:block">建議觀望，等待三貓咪 + PHL 同步到位</span>
+        ⏳ 各時框尚未到位，建議觀望<br>
+        <span style="font-size:12px;margin-top:6px;display:block">等待三貓咪 + PHL 低位同步出現</span>
       </div>
     </div>`;
   }
+
   // 只有護航，無觸發
   if(!adv.has_signal && adv.has_escort) {
-    const escortTags = (adv.escort_labels||[]).map(l=>`<span class="res-tag tag-escort">${l} 🛡️</span>`).join('');
+    const escortTags = escortDetailTags(adv.escort_detail);
     return `<div class="advice-card">
       <div class="section-title">線別建議 <span>依三貓咪 + PHL 共振結果</span></div>
-      <div class="no-signal" style="text-align:left;padding:12px 14px;">
-        <div style="font-size:14px;font-weight:600;color:#7a5a10;margin-bottom:6px">⏳ 觀望中，大時框已護航</div>
-        <div style="font-size:13px;color:var(--text2);margin-bottom:8px">等待小時框觸發訊號（小貓咪下軌穿越中貓咪下軌）</div>
+      <div class="no-signal" style="text-align:left;padding:14px 16px;">
+        <div style="font-size:15px;font-weight:600;color:#7a5a10;margin-bottom:6px">⏳ 觀望中，等待進場時機</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:10px">大時框已在低位，等待小時框出現進場訊號</div>
+        <div style="font-size:11px;color:#185fa5;font-weight:500;margin-bottom:6px">目前低位護航：</div>
         <div class="res-tags">${escortTags}</div>
       </div>
     </div>`;
@@ -300,31 +315,38 @@ function renderAdvice(adv) {
 
   // 有觸發訊號
   const dirColor = adv.direction==='做多'?'#1a5c2a':'#c04828';
-  const triggerTags = (adv.trigger_labels||[]).map(l=>`<span class="res-tag tag-active">${l} ⚡</span>`).join('');
-  const escortTags  = (adv.escort_labels||[]).map(l=>`<span class="res-tag tag-escort">${l} 🛡️</span>`).join('');
-  const noSigTags   = (adv.no_signal_labels||[]).map(l=>`<span class="res-tag tag-miss">${l}</span>`).join('');
+  const dirBg    = adv.direction==='做多'?'#d4f0dc':'#fce8e4';
+  const triggerTags = (adv.trigger_labels||[]).map(l=>
+    `<span class="res-tag tag-active">${l} ⚡ 進場訊號</span>`
+  ).join('');
+  const escortTags  = escortDetailTags(adv.escort_detail);
+  const noSigTags   = (adv.no_signal_labels||[]).map(l=>
+    `<span class="res-tag" style="background:#f1efe8;color:#888">${l} —</span>`
+  ).join('');
 
   return `<div class="advice-card">
     <div class="section-title">線別建議 <span>依三貓咪 + PHL 共振結果</span></div>
     <div class="signal-layout">
       <div class="signal-main">
-        <div class="signal-dir" style="color:${dirColor}">${adv.direction}</div>
-        <div class="signal-type">${adv.timeframe_type}機會</div>
-        <div class="signal-hold">建議持倉：${adv.hold_hours}</div>
-        ${adv.escort_note ? `<div style="font-size:12px;color:var(--text2);margin-top:6px">📐 ${adv.escort_note}</div>` : ''}
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <div class="signal-dir" style="color:${dirColor}">${adv.direction}</div>
+          <div style="background:${dirBg};color:${dirColor};font-size:14px;font-weight:600;padding:4px 12px;border-radius:6px">${adv.timeframe_type}</div>
+        </div>
+        <div class="signal-hold" style="font-size:14px">持倉建議：${adv.hold_hours}</div>
+        ${adv.escort_note ? `<div style="font-size:12px;color:#185fa5;margin-top:8px;line-height:1.5">📐 ${adv.escort_note}</div>` : ''}
         ${adv.warning ? `<div class="signal-warn">⚠️ ${adv.warning}</div>` : ''}
       </div>
       <div class="signal-detail">
         ${triggerTags ? `<div class="res-active">
-          <div class="res-label" style="color:#1a5c2a">⚡ 觸發（小穿中 + 雙PHL）</div>
+          <div class="res-label" style="color:#1a5c2a;margin-bottom:5px">進場依據</div>
           <div class="res-tags">${triggerTags}</div>
         </div>` : ''}
-        ${escortTags ? `<div style="background:#f0f4ff;border:1px solid #8ab0e8;border-radius:6px;padding:10px 12px;">
-          <div class="res-label" style="color:#185fa5">🛡️ 護航（價格觸及小貓咪 + 雙PHL）</div>
+        ${escortTags ? `<div style="background:#eef4fc;border:1px solid #b8d0ec;border-radius:6px;padding:10px 12px;">
+          <div class="res-label" style="color:#185fa5;margin-bottom:5px">護航確認</div>
           <div class="res-tags">${escortTags}</div>
         </div>` : ''}
         ${noSigTags ? `<div class="res-missing">
-          <div class="res-label" style="color:#888">— 尚未到位</div>
+          <div class="res-label" style="color:#888;margin-bottom:5px">尚未到位</div>
           <div class="res-tags">${noSigTags}</div>
         </div>` : ''}
       </div>
