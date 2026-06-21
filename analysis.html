@@ -439,6 +439,14 @@ function renderGroups(groups) {
     const isShort = g.short_trigger || g.short_partial
     const cond    = g.long_trigger || g.long_partial ? g.cond_long : g.cond_short
 
+    // 交叉狀態文字
+    const crossLabel = g.tunnel ? (
+      g.tunnel.cross_state === 'long_cross'  ? '⚡ 下軌交叉' :
+      g.tunnel.cross_state === 'short_cross' ? '⚡ 上軌交叉' :
+      g.tunnel.cross_state === 'near_upper'  ? '↑ 高位' :
+      g.tunnel.cross_state === 'near_lower'  ? '↓ 低位' : ''
+    ) : '';
+
     // Badge
     const badge = g.long_trigger
       ? `<span class="res-badge rb-long">⚡ 做多共振</span>`
