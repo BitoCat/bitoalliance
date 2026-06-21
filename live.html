@@ -497,6 +497,7 @@ function renderResonanceGroup(g) {
       ${makeLivePillar(tunnelData.pos, tunnelData.direction, tunnelData.cross_state, true, '貓咪')}
       ${makeLivePillar(v1.pos??0.5, v1.direction||'up', null, false, 'V1')}
       ${makeLivePillar(v2.pos??0.5, v2.direction||'up', null, false, 'V2')}
+      ${makeLivePillar((g.v3?.pos)??0.5, (g.v3?.direction)||'up', null, false, 'V3')}
       ${ep?`<div style="width:1px;background:#d4b896;height:60px;margin:0 2px;flex-shrink:0;"></div>${makeLivePillar(ep.pos??0.5, ep.direction||'up', null, false, ep.tf, true)}`:''}
     </div>
     ${crossTxt?`<div style="font-size:9px;color:${tunnelColor(t.cross_state)};text-align:center;">${crossTxt}</div>`:''}
