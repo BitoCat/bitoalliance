@@ -196,8 +196,6 @@ let currentSym = 'BTCUSDT', tvTF = '60';
 
 window.addEventListener('DOMContentLoaded', () => {
   try { sb = supabase.createClient(SUPA_URL, SUPA_ANON); } catch(e) {}
-  loadTV(currentSym, tvTF);
-  checkAuth();
 });
 
 function loadTV(symbol, tf) {
