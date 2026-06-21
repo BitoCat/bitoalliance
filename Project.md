@@ -1,5 +1,5 @@
 # BitoAlliance 專案規格文件
-> 最後更新：2026年6月17日（v7）
+> 最後更新：2026年6月21日（v8）
 > 貼給 Claude 使用，作為每次對話的起點
 
 ---
@@ -51,7 +51,10 @@
 | `/indicator/verify-code` | POST | 驗證優惠碼 |
 | `/bito/add-member` | POST | 新增 Telegram 會員（中繼） |
 | `/bito/members` | GET | 查詢 Telegram 會員（中繼） |
+| `/analysis` | GET | 幣種深度分析（三貓咪+PHL共振） |
+| `/resonance` | GET | 多幣種共振快速掃描 |
 | `/debug/kline` | GET | 除錯用 K線格式查看 |
+| `/debug/bands` | GET | 除錯用高斯帶計算查看 |
 
 ---
 
@@ -199,7 +202,7 @@ URL：`https://web-production-f4735.up.railway.app/webhook`
 | 檔案 | 狀態 | 說明 |
 |------|------|------|
 | `login.html` | ✅ 完成 | Email+Google登入、忘記密碼 |
-| `index.html` | ✅ 完成 | 用戶儀表板，布衣看到升級 CTA |
+| `index.html` | ✅ 完成 | 用戶儀表板，布衣看到升級 CTA，含幣種深度分析入口 |
 | `profile.html` | ✅ 完成 | 帳號設定、UID綁定、VIP截圖、Groq Key |
 | `indicator.html` | ✅ 完成 | 遊俠指標申請、付款流程 |
 | `signals.html` | ✅ 完成 | 市場儀表板（TradingView + 多空比 + OI）|
@@ -208,6 +211,8 @@ URL：`https://web-production-f4735.up.railway.app/webhook`
 | `concepts.html` | ✅ 完成 | 概念板塊排行（8板塊/熱力圖/輪動）|
 | `diagnosis.html` | ✅ 完成 | 幣種技術診斷（多時框+AI解讀）|
 | `chat.html` | ✅ 完成 | 即時聊天室（Supabase Realtime、頭銜顯示、圖片上傳）|
+| `analysis.html` | ✅ 完成 | 幣種深度分析（三貓咪+PHL共振儀表板）|
+| `live.html` | ✅ 完成 | 直播儀表板（含共振面板、自動刷新）|
 | `groq-guide.html` | ✅ 完成 | Groq Key 申請教學 |
 | `admin.html` | ✅ 完成 | 盟主後台 |
 | `superadmin.html` | ✅ 完成 | 系統管理員後台 |
@@ -215,27 +220,88 @@ URL：`https://web-production-f4735.up.railway.app/webhook`
 ## Navbar 導覽（所有功能頁共用）
 首頁 · 市場儀表板 · 幣種掃描 · 鯨魚追蹤 · 板塊排行 · 技術診斷 · 💬 聊天室
 
-## 即時聊天室
-- 頁面：`chat.html`
-- Supabase `messages` 表（欄位：id, user_id, content, image_path, platform, created_at）
-- `platform = 'bitoalliance'`（與交易大師分離）
-- Storage bucket：`chat-images`（Public）
-- 權限：遊俠/會員以上才能進入，布衣看到封鎖畫面
-- 頭銜顯示：Bitunix VIP 稱號 + 盟主/遊俠身份
-- 盟主/管理員可刪除任何留言
+---
 
-## 盟主申請體系
-- **會員自主申請**：`profile.html` → 填申請資料 → superadmin「盟主申請審核」→ 核准自動升 master + 配發優惠碼
-- **盟主推薦直客**：`admin.html` → 「推薦新盟主」→ superadmin「盟主推薦審核」→ 核准
-- **分層架構**：`parent_id` 記錄直屬上級盟主，支援無限層級
-- **盟主列表**：superadmin 顯示層級縮排、第幾層、上級盟主、直客數
+## 三貓咪隧道 + PHL 共振系統（新）
 
-## profiles 表新增欄位（盟主申請）
+### 指標體系
+- **三貓咪隧道 V124**：高斯核回歸，bandwidth=14，deviation=1.5
+  - 小貓咪（1x）/ 中貓咪（2x）/ 大貓咪（4x）
+- **PHL 指標**（SMI-based）
+  - V1：lk=10, ld=3, lema=3
+  - V2：lk=20, ld=6, lema=6
+  - V3：lk=30, ld=9, lema=9（V1的三倍）
+
+### 策略時框組合
+| 組別 | 小貓咪 | 中貓咪 | 大貓咪 | 線別 | 持倉 |
+|------|--------|--------|--------|------|------|
+| 15m/30m | 15m | 30m | 1h | 短線 | 2~8小時 |
+| H1/H2 | 1h | 2h | 4h | 中線 | 8~24小時 |
+| H4/H8 | 4h | 8h | 12h | 中長線 | 1~3天 |
+
+### 觸發條件（完整版）
 ```
-master_apply_reason, master_apply_intro, master_apply_clients,
-master_apply_contact, master_apply_at, master_apply_status
--- status: none / pending / approved / rejected
+做多觸發：
+① 小貓咪下軌 < 中貓咪下軌（小穿中）
+② 價格觸及大貓咪下軌（N根5內）
+③ PHL V1 超賣（< -40）
+④ PHL V2 超賣（< -trig_v2，預設-45）
+⑤ PHL V3 超賣（< -40）
+⑥ V1 黃金交叉（SMI上穿EMA，最近5根內）
+↑ 全部成立 = 完整觸發
 ```
+
+### 出場邏輯
+- **逆勢單**（大貓咪方向相反）：V1 反向交叉快出
+- **順勢單**（大貓咪方向一致）：V2 或 V3 反向交叉慢出（設定可選）
+
+### Bitunix K線 API 重要注意
+- 單次最多 100 根，需分段抓取拼接
+- 回傳順序：由新到舊（data[0]=最新）
+- 需反轉為由舊到新再計算高斯帶
+- 使用 `startTime + endTime` 確保拿到最新數據
+- Thread-local cache 避免跨請求汙染
+
+### 後端關鍵函數
+- `fetch_kline_segment()`：單段抓取
+- `fetch_kline_analysis()`：分段拼接（最多 200~500 根）
+- `calc_gaussian_bands()`：高斯核回歸帶計算
+- `calc_smi_analysis()`：PHL SMI 計算
+- `calc_analysis_group()`：單組觸發/條件計算
+- `calc_resonance_advice()`：線別建議
+
+### 前端共振儀表板（analysis.html / live.html）
+- 三組時框各顯示：貓咪共振柱 + PHL V1 + V2 + V3 + 護航小貓咪
+- 柱子顏色：上段綠（超買）/ 中段灰（中間）/ 下段桃紅（超賣）
+- 橫線 = 當前位置，▲▼ = 方向
+- Badge：⚡ 做多/做空共振 / ⏳ 接近（≥3條件）/ —
+- 條件清單：各條件 ✅⏳ 即時顯示
+- live.html 共振面板每 60 秒自動刷新，倒數計時顯示
+
+### Pine Script 指標（BitoCat 共振策略）
+- 最新版：V16
+- 檔案：`bitocat_strategy_v16.pine`
+- 功能：
+  - 進場箭頭（▲▼）
+  - 止損偵測（灰色 ✕ 覆蓋）
+  - 出場圓圈（●）
+  - 保留最近 N 個訊號（設定可調）
+  - Label 開關（預設關閉）
+  - 順逆勢判斷（大貓咪方向）
+  - alert() + alertcondition() 雙軌快訊
+- 設定面板：
+  - 策略模式：15m/30m / H1/H2
+  - V2 觸發門檻：45（可調 40~60）
+  - 止損緩衝：0.3%
+  - 順勢出場：V2 / V3
+  - 保留最近幾個訊號：10
+  - 顯示進場標籤：☐（預設關閉）
+  - 發出快訊：✅
+
+### 下一步計劃
+1. 繼續測試 V16 指標，調整 V2 門檻（45/50/55）
+2. 轉成 Pine Script strategy() 做回測
+3. 評估移植到台股/美股（更大時框）
 
 ---
 
@@ -252,6 +318,9 @@ master_apply_contact, master_apply_at, master_apply_status
 - [x] 即時聊天室（頭銜顯示 + 圖片）
 - [x] LINE 封鎖引導
 - [x] Telegram 頻道整合
+- [x] 三貓咪+PHL共振分析系統（analysis.html + live.html）
+- [x] BitoCat 共振策略 Pine Script（V16）
+- [x] 幣種深度分析入口加入 index.html
 
 ## Google OAuth
 - Supabase：已啟用 Google provider
