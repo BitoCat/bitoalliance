@@ -432,26 +432,37 @@ function renderGroups(groups) {
       ${makePillar({pos:ep.pos,direction:ep.direction}, epName, true, false)}
     ` : '';
 
-    // 交叉狀態文字：用 cross_state 而非 trigger_zone
-    const crossLabel = g.tunnel ? (
-      g.tunnel.cross_state === 'long_cross'  ? '⚡ 下軌交叉' :
-      g.tunnel.cross_state === 'short_cross' ? '⚡ 上軌交叉' :
-      g.tunnel.cross_state === 'near_upper'  ? '↑ 高位' :
-      g.tunnel.cross_state === 'near_lower'  ? '↓ 低位' : ''
-    ) : '';
+    // 條件狀態（做多/做空）
+    const isLong  = g.long_trigger || g.long_partial
+    const isShort = g.short_trigger || g.short_partial
+    const cond    = g.long_trigger || g.long_partial ? g.cond_long : g.cond_short
 
+    // Badge
     const badge = g.long_trigger
-      ?`<span class="res-badge rb-long">⚡ 觸發做多</span>`
-      :g.short_trigger
-        ?`<span class="res-badge rb-short">⚡ 觸發做空</span>`
-        :g.long_escort
-          ?`<span class="res-badge rb-escort">🛡️ 護航做多</span>`
-          :g.short_escort
-            ?`<span class="res-badge rb-escort" style="background:#e6f1fb;color:#c04828">🛡️ 護航做空</span>`
-            :`<span style="font-size:10px;color:var(--text2)">—</span>`;
+      ? `<span class="res-badge rb-long">⚡ 做多共振</span>`
+      : g.short_trigger
+        ? `<span class="res-badge rb-short">⚡ 做空共振</span>`
+        : g.long_partial
+          ? `<span class="res-badge" style="background:#d4f0e0;color:#1a5c2a;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600">⏳ 做多接近</span>`
+          : g.short_partial
+            ? `<span class="res-badge" style="background:#fce8e4;color:#c04828;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600">⏳ 做空接近</span>`
+            : `<span style="font-size:10px;color:var(--text2)">—</span>`;
 
-    // 護航柱提示
-    const escortHint = ep ? `<div style="font-size:9px;color:var(--text2);text-align:center;margin-top:2px">${ep.at_lower?'🟢 護航低點':ep.at_upper?'🔴 護航高點':'護航中段'}</div>` : '';
+    // 條件清單（只在有訊號或接近時顯示）
+    const COND_LABELS = {
+      cat_cross: '貓咪穿越',
+      phl_v1:    'PHL V1',
+      phl_v2:    'PHL V2',
+      phl_v3:    'PHL V3',
+      big_touch: '大貓咪觸及',
+      v1_cross:  'V1方向',
+    };
+    const condHTML = (g.long_trigger || g.short_trigger || g.long_partial || g.short_partial) && cond
+      ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px;justify-content:center">
+          ${Object.entries(cond).map(([k,v]) =>
+            `<span style="font-size:8px;padding:1px 5px;border-radius:8px;background:${v?'#d4f0e0':'#f1efe8'};color:${v?'#1a5c2a':'#aaa'}">${v?'✅':'⏳'} ${COND_LABELS[k]||k}</span>`
+          ).join('')}
+        </div>` : '';
 
     return `<div class="group-card ${cls}">
       <div class="group-label">${g.label}</div>
@@ -464,6 +475,7 @@ function renderGroups(groups) {
       </div>
       ${crossLabel ? `<div style="font-size:9px;text-align:center;color:${tunnelColor(g.tunnel?.cross_state)};margin-top:2px">${crossLabel}</div>` : ''}
       <div class="group-badge">${badge}</div>
+      ${condHTML}
     </div>`;
   }).join('');
   return `<div class="resonance-card">
