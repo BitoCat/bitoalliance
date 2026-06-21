@@ -478,15 +478,28 @@ function renderResonanceGroup(g) {
 
   const t = g.tunnel||{}, v1 = g.v1||{}, v2 = g.v2||{}, ep = g.escort_pillar;
   const tunnelData = {pos:t.pos??0.5, direction:t.direction||'up', cross_state:t.cross_state};
+  const cond = g.long_trigger||g.long_partial ? g.cond_long : g.cond_short;
 
-  const badge = isLong?`<div style="font-size:9px;background:#0c8e3c;color:#d4f0dc;border-radius:4px;padding:1px 5px;text-align:center;">⚡ 做多</div>`:
-                isShort?`<div style="font-size:9px;background:#C0392B;color:#fce8e4;border-radius:4px;padding:1px 5px;text-align:center;">⚡ 做空</div>`:
-                isEscort?`<div style="font-size:9px;background:#185fa5;color:#d0e6f7;border-radius:4px;padding:1px 5px;text-align:center;">🛡️ 護航</div>`:
-                `<div style="font-size:9px;color:#8B6F47;text-align:center;">—</div>`;
+  const badge = g.long_trigger
+    ? `<div style="font-size:9px;background:#0c8e3c;color:#d4f0dc;border-radius:4px;padding:1px 5px;">⚡ 做多共振</div>`
+    : g.short_trigger
+      ? `<div style="font-size:9px;background:#C0392B;color:#fce8e4;border-radius:4px;padding:1px 5px;">⚡ 做空共振</div>`
+      : g.long_partial
+        ? `<div style="font-size:9px;background:#d4f0e0;color:#1a5c2a;border-radius:4px;padding:1px 5px;">⏳ 做多接近</div>`
+        : g.short_partial
+          ? `<div style="font-size:9px;background:#fce8e4;color:#c04828;border-radius:4px;padding:1px 5px;">⏳ 做空接近</div>`
+          : `<div style="font-size:9px;color:#8B6F47;">—</div>`;
 
   const crossTxt = t.cross_state==='long_cross'?'⚡ 下軌交叉':t.cross_state==='short_cross'?'⚡ 上軌交叉':t.cross_state==='near_upper'?'↑ 高位':t.cross_state==='near_lower'?'↓ 低位':'';
-  const escortCol = ep ? (ep.at_lower?'#0c8e3c':ep.at_upper?'#C0392B':'#8B6F47') : '#8B6F47';
-  const escortTxt = ep ? (ep.at_lower?'🟢 護航低位':ep.at_upper?'🔴 護航高位':'護航中段') : '';
+
+  // 條件清單（精簡版，live 用）
+  const CLABELS = {cat_cross:'貓咪',phl_v1:'V1',phl_v2:'V2',phl_v3:'V3',big_touch:'大貓',v1_cross:'方向'};
+  const condHTML = (g.long_trigger||g.short_trigger||g.long_partial||g.short_partial) && cond
+    ? `<div style="display:flex;gap:2px;flex-wrap:wrap;justify-content:center;margin-top:2px">
+        ${Object.entries(cond).map(([k,v])=>
+          `<span style="font-size:7px;padding:1px 3px;border-radius:4px;background:${v?'#d4f0e0':'#f1efe8'};color:${v?'#1a5c2a':'#aaa'}">${v?'✅':'⏳'}${CLABELS[k]||k}</span>`
+        ).join('')}
+      </div>` : '';
 
   return `<div style="background:${bg};border:${border};border-radius:6px;padding:6px 8px;display:flex;flex-direction:column;gap:3px;">
     <div style="display:flex;align-items:center;justify-content:space-between;">
@@ -501,7 +514,7 @@ function renderResonanceGroup(g) {
       ${ep?`<div style="width:1px;background:#d4b896;height:60px;margin:0 2px;flex-shrink:0;"></div>${makeLivePillar(ep.pos??0.5, ep.direction||'up', null, false, ep.tf, true)}`:''}
     </div>
     ${crossTxt?`<div style="font-size:9px;color:${tunnelColor(t.cross_state)};text-align:center;">${crossTxt}</div>`:''}
-    ${escortTxt?`<div style="font-size:9px;color:${escortCol};text-align:center;">${escortTxt}</div>`:''}
+    ${condHTML}
   </div>`;
 }
 
