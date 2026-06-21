@@ -26,8 +26,6 @@ body {
   display: flex;
   flex-direction: column;
 }
-
-/* ── Navbar ── */
 .navbar {
   background: var(--dark);
   padding: 0 32px;
@@ -45,236 +43,73 @@ body {
 .nav-brand { font-size: 16px; font-weight: 600; color: #EDE0CE; letter-spacing: .04em; }
 .nav-right { display: flex; align-items: center; gap: 16px; }
 .nav-user { font-size: 13px; color: var(--bright); }
-.nav-badge {
-  background: var(--accent);
-  color: white;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 10px;
-  letter-spacing: .04em;
-}
+.nav-badge { background: var(--accent); color: white; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; letter-spacing: .04em; }
 .nav-badge.direct { background: var(--up); }
 .nav-badge.ranger { background: var(--ranger); }
 .nav-badge.free   { background: var(--muted); }
-.btn-logout {
-  background: transparent;
-  border: 1px solid #5C3D2A;
-  color: var(--bright);
-  font-size: 13px;
-  padding: 6px 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all .2s;
-}
+.btn-logout { background: transparent; border: 1px solid #5C3D2A; color: var(--bright); font-size: 13px; padding: 6px 14px; border-radius: 8px; cursor: pointer; transition: all .2s; }
 .btn-logout:hover { border-color: var(--bright); color: #EDE0CE; }
-
-/* ── 主內容 ── */
-.main {
-  flex: 1;
-  padding: 24px 32px;
-  max-width: 1400px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-/* ── 歡迎列 ── */
-.welcome-bar {
-  background: var(--dark);
-  border-radius: 14px;
-  padding: 20px 28px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 24px;
-}
+.main { flex: 1; padding: 24px 32px; max-width: 1400px; margin: 0 auto; width: 100%; }
+.welcome-bar { background: var(--dark); border-radius: 14px; padding: 20px 28px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
 .welcome-text { color: #EDE0CE; }
 .welcome-title { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
 .welcome-sub { font-size: 13px; color: var(--bright); }
 .welcome-actions { display: flex; gap: 10px; }
-.btn {
-  padding: 10px 20px;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  border: none;
-  transition: opacity .2s;
-  text-decoration: none;
-  display: inline-block;
-  text-align: center;
-}
+.btn { padding: 10px 20px; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: opacity .2s; text-decoration: none; display: inline-block; text-align: center; }
 .btn:hover { opacity: .85; }
 .btn-primary { background: var(--accent); color: white; }
 .btn-ghost { background: rgba(237,224,206,.1); color: #EDE0CE; border: 1px solid #5C3D2A; }
-
-/* ── 快速數據列 ── */
-.data-row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  margin-bottom: 24px;
-}
-.data-card {
-  background: var(--panel);
-  border-radius: 12px;
-  padding: 18px 20px;
-  border: 1px solid var(--border);
-}
+.data-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+.data-card { background: var(--panel); border-radius: 12px; padding: 18px 20px; border: 1px solid var(--border); }
 .data-label { font-size: 11px; color: var(--muted); letter-spacing: .04em; margin-bottom: 6px; }
 .data-val { font-size: 28px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
 .data-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
-.up { color: var(--up); }
-.dn { color: var(--down); }
-
-/* ── 功能入口 ── */
-.section-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--muted);
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  margin-bottom: 14px;
-}
-.features {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-  margin-bottom: 24px;
-}
-.feature-card {
-  background: var(--panel);
-  border-radius: 14px;
-  padding: 24px;
-  border: 1px solid var(--border);
-  cursor: pointer;
-  transition: all .2s;
-  text-decoration: none;
-  display: block;
-}
-.feature-card:hover {
-  border-color: var(--accent);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(61,43,31,.10);
-}
+.up { color: var(--up); } .dn { color: var(--down); }
+.section-title { font-size: 14px; font-weight: 600; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 14px; }
+.features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
+.feature-card { background: var(--panel); border-radius: 14px; padding: 24px; border: 1px solid var(--border); cursor: pointer; transition: all .2s; text-decoration: none; display: block; }
+.feature-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(61,43,31,.10); }
 .feature-card.locked { opacity: .55; cursor: default; }
 .feature-card.locked:hover { transform: none; border-color: var(--border); box-shadow: none; }
 .feature-icon { font-size: 32px; margin-bottom: 12px; }
 .feature-name { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
 .feature-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
-.feature-tag {
-  display: inline-block;
-  font-size: 10px;
-  padding: 2px 8px;
-  border-radius: 6px;
-  margin-top: 10px;
-  font-weight: 500;
-}
+.feature-tag { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 6px; margin-top: 10px; font-weight: 500; }
 .tag-free    { background: #EAF3DE; color: #27500A; }
 .tag-member  { background: #FEF3E2; color: #8B4A00; }
 .tag-coming  { background: #F0F0F0; color: #888; }
 .tag-ranger  { background: #d4ede6; color: #2a6a54; }
-
-/* ── 升級 CTA ── */
-.upgrade-cta {
-  background: linear-gradient(135deg,#1a1008 0%,#2d1f10 60%,#1a2a20 100%);
-  border-radius: 16px;
-  padding: 28px 32px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  flex-wrap: wrap;
-  margin-bottom: 24px;
-}
-.cta-label {
-  font-size: 11px; font-weight: 700; letter-spacing: 2px;
-  color: #7ab8a4; margin-bottom: 8px; text-transform: uppercase;
-}
+.tag-new     { background: #e8f0fe; color: #1a5fa5; }
+.upgrade-cta { background: linear-gradient(135deg,#1a1008 0%,#2d1f10 60%,#1a2a20 100%); border-radius: 16px; padding: 28px 32px; display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 24px; }
+.cta-label { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: #7ab8a4; margin-bottom: 8px; text-transform: uppercase; }
 .cta-title { font-size: 20px; font-weight: 700; color: #f5e8d8; margin-bottom: 6px; }
 .cta-desc  { font-size: 13px; color: #b0907a; line-height: 1.6; }
 .cta-btns  { display: flex; gap: 10px; flex-wrap: wrap; flex-shrink: 0; }
-.cta-btn-ranger {
-  padding: 11px 22px; border-radius: 9px; font-size: 14px; font-weight: 700;
-  background: #4a7a6a; color: #fff; text-decoration: none;
-  display: inline-flex; align-items: center; gap: 6px;
-  transition: opacity .2s;
-}
+.cta-btn-ranger { padding: 11px 22px; border-radius: 9px; font-size: 14px; font-weight: 700; background: #4a7a6a; color: #fff; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: opacity .2s; }
 .cta-btn-ranger:hover { opacity: .85; }
-.cta-btn-ghost {
-  padding: 11px 22px; border-radius: 9px; font-size: 14px; font-weight: 700;
-  background: rgba(255,255,255,.1); color: #f5e8d8; text-decoration: none;
-  border: 1px solid rgba(255,255,255,.2);
-  display: inline-flex; align-items: center; gap: 6px;
-  transition: opacity .2s;
-}
+.cta-btn-ghost { padding: 11px 22px; border-radius: 9px; font-size: 14px; font-weight: 700; background: rgba(255,255,255,.1); color: #f5e8d8; text-decoration: none; border: 1px solid rgba(255,255,255,.2); display: inline-flex; align-items: center; gap: 6px; transition: opacity .2s; }
 .cta-btn-ghost:hover { opacity: .85; }
-
-/* ── 下方兩欄 ── */
-.bottom-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
-.panel-card {
-  background: var(--panel);
-  border-radius: 14px;
-  padding: 24px;
-  border: 1px solid var(--border);
-}
-.panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
+.bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.panel-card { background: var(--panel); border-radius: 14px; padding: 24px; border: 1px solid var(--border); }
+.panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 .panel-title-text { font-size: 15px; font-weight: 600; color: var(--text); }
-
-/* 快訊列表 */
-.alert-item {
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+.alert-item { padding: 12px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
 .alert-item:last-child { border-bottom: none; }
 .alert-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .alert-info { flex: 1; }
 .alert-signal { font-size: 13px; font-weight: 500; color: var(--text); }
 .alert-meta   { font-size: 11px; color: var(--muted); margin-top: 2px; }
-
-/* loading */
-.skeleton {
-  background: linear-gradient(90deg, var(--border) 25%, var(--bg) 50%, var(--border) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border-radius: 6px;
-  height: 20px;
-}
+.skeleton { background: linear-gradient(90deg, var(--border) 25%, var(--bg) 50%, var(--border) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 6px; height: 20px; }
 @keyframes shimmer { to { background-position: -200% 0; } }
-
-/* 響應式 */
-@media (max-width: 900px) {
-  .data-row  { grid-template-columns: repeat(2, 1fr); }
-  .features  { grid-template-columns: repeat(2, 1fr); }
-  .bottom-grid { grid-template-columns: 1fr; }
-}
-@media (max-width: 600px) {
-  .main      { padding: 16px; }
-  .data-row  { grid-template-columns: 1fr 1fr; }
-  .features  { grid-template-columns: 1fr; }
-  .welcome-bar { flex-direction: column; gap: 16px; align-items: flex-start; }
-  .upgrade-cta { flex-direction: column; }
-}
+@media (max-width: 900px) { .data-row { grid-template-columns: repeat(2, 1fr); } .features { grid-template-columns: repeat(2, 1fr); } .bottom-grid { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .main { padding: 16px; } .data-row { grid-template-columns: 1fr 1fr; } .features { grid-template-columns: 1fr; } .welcome-bar { flex-direction: column; gap: 16px; align-items: flex-start; } .upgrade-cta { flex-direction: column; } }
 </style>
 </head>
 <body>
 
-<!-- Navbar -->
 <nav class="navbar">
   <div class="nav-left">
-    <img src="data:image/png;base64,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" class="nav-logo" alt="BitoAlliance">
+    <img src="data:image/png;base64,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" class="nav-logo" alt="BitoAlliance">
     <span class="nav-brand">比特聯盟 BitoAlliance</span>
   </div>
   <div class="nav-right">
@@ -284,46 +119,24 @@ body {
   </div>
 </nav>
 
-<!-- 主內容 -->
 <div class="main">
-
-  <!-- 歡迎列 -->
   <div class="welcome-bar">
     <div class="welcome-text">
       <div class="welcome-title" id="welcomeTitle">歡迎回來！</div>
       <div class="welcome-sub" id="welcomeSub">載入會員資訊中...</div>
     </div>
     <div class="welcome-actions">
-      
       <a href="profile.html" class="btn btn-primary">👤 帳號設定</a>
     </div>
   </div>
 
-  <!-- 快速數據列 -->
   <div class="data-row">
-    <div class="data-card">
-      <div class="data-label">BTC / USDT</div>
-      <div class="data-val" id="btcPrice">—</div>
-      <div class="data-sub" id="btcChg">載入中...</div>
-    </div>
-    <div class="data-card">
-      <div class="data-label">資金費率</div>
-      <div class="data-val" id="fundingRate">—</div>
-      <div class="data-sub" id="fundingSub">—</div>
-    </div>
-    <div class="data-card">
-      <div class="data-label">市場多空比</div>
-      <div class="data-val" id="lsRatio">—</div>
-      <div class="data-sub" id="lsSub">—</div>
-    </div>
-    <div class="data-card">
-      <div class="data-label">恐懼貪婪指數</div>
-      <div class="data-val" id="fgVal">—</div>
-      <div class="data-sub" id="fgSub">—</div>
-    </div>
+    <div class="data-card"><div class="data-label">BTC / USDT</div><div class="data-val" id="btcPrice">—</div><div class="data-sub" id="btcChg">載入中...</div></div>
+    <div class="data-card"><div class="data-label">資金費率</div><div class="data-val" id="fundingRate">—</div><div class="data-sub" id="fundingSub">—</div></div>
+    <div class="data-card"><div class="data-label">市場多空比</div><div class="data-val" id="lsRatio">—</div><div class="data-sub" id="lsSub">—</div></div>
+    <div class="data-card"><div class="data-label">恐懼貪婪指數</div><div class="data-val" id="fgVal">—</div><div class="data-sub" id="fgSub">—</div></div>
   </div>
 
-  <!-- 功能入口 -->
   <div class="section-title">功能選單</div>
   <div class="features">
 
@@ -346,6 +159,14 @@ body {
       <div class="feature-name">鯨魚追蹤</div>
       <div class="feature-desc">大戶持倉變化、OI 異動、大單追蹤</div>
       <span class="feature-tag tag-member">會員功能</span>
+    </a>
+
+    <!-- 新增：幣種深度分析 -->
+    <a href="analysis.html" class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-name">幣種深度分析</div>
+      <div class="feature-desc">三貓咪隧道 + PHL 三線共振儀表板，多時框觸發條件即時顯示</div>
+      <span class="feature-tag tag-new">新功能</span>
     </a>
 
     <a href="concepts.html" class="feature-card">
@@ -378,14 +199,11 @@ body {
 
   </div>
 
-  <!-- 升級 CTA（僅布衣顯示） -->
   <div class="upgrade-cta" id="upgradeCta" style="display:none;">
     <div>
       <div class="cta-label">🗡️ 解鎖高階功能</div>
       <div class="cta-title" id="ctaTitle">選擇你的方式，升級身份</div>
-      <div class="cta-desc" id="ctaDesc">
-        成為<strong style="color:#f5e8d8;">遊俠</strong>（租用指標）或加入盟主成為<strong style="color:#f5e8d8;">會員</strong>，解鎖網站完整功能
-      </div>
+      <div class="cta-desc" id="ctaDesc">成為<strong style="color:#f5e8d8;">遊俠</strong>（租用指標）或加入盟主成為<strong style="color:#f5e8d8;">會員</strong>，解鎖網站完整功能</div>
     </div>
     <div class="cta-btns">
       <a href="indicator.html" class="cta-btn-ranger">🗡️ 租用指標（$3,600/年）</a>
@@ -393,10 +211,7 @@ body {
     </div>
   </div>
 
-  <!-- 下方兩欄 -->
   <div class="bottom-grid">
-
-    <!-- 最新快訊 -->
     <div class="panel-card">
       <div class="panel-header">
         <div class="panel-title-text">🐱 BitoCat 最新快訊</div>
@@ -408,8 +223,6 @@ body {
         <div class="skeleton" style="width:60%;"></div>
       </div>
     </div>
-
-    <!-- Bitunix 熱門合約 -->
     <div class="panel-card">
       <div class="panel-header">
         <div class="panel-title-text">🔥 Bitunix 熱門合約</div>
@@ -421,9 +234,7 @@ body {
         <div class="skeleton" style="width:75%;"></div>
       </div>
     </div>
-
   </div>
-
 </div>
 
 <script>
@@ -445,98 +256,35 @@ async function init() {
   const { data } = await sb.auth.getSession();
   if (!data.session) { window.location.href = 'login.html'; return; }
   currentUser = data.session.user;
-  loadProfile();
-  loadMarketData();
-  loadAlerts();
-  loadHotList();
-  setInterval(loadMarketData, 30000);
-  setInterval(loadAlerts, 30000);
+  loadProfile(); loadMarketData(); loadAlerts(); loadHotList();
+  setInterval(loadMarketData, 30000); setInterval(loadAlerts, 30000);
 }
 
-// ── 用戶資訊 ──
 async function loadProfile() {
   const email = currentUser.email || '';
   document.getElementById('navEmail').textContent = email;
-
-  const { data: profile } = await sb
-    .from('profiles')
-    .select('plan, is_direct_client, display_name, indicator_expires_at')
-    .eq('id', currentUser.id)
-    .single();
-
+  const { data: profile } = await sb.from('profiles').select('plan, is_direct_client, display_name, indicator_expires_at').eq('id', currentUser.id).single();
   const name = profile?.display_name || email.split('@')[0];
   document.getElementById('welcomeTitle').textContent = `歡迎回來，${name}！`;
-
   const plan = profile?.plan || 'free';
   const isDirect = profile?.is_direct_client;
   const isRanger = plan === 'ranger';
   const isMaster = plan === 'master' || plan === 'admin';
-
-  // Nav badge
-  let badgeText = '布衣', badgeClass = 'nav-badge free';
-  let subText = '選擇升級方式，解鎖更多功能';
-
-  if (isMaster) {
-    badgeText = plan === 'admin' ? '系統管理員' : '盟主';
-    badgeClass = 'nav-badge';
-    subText = '歡迎回來！';
-  } else if (isDirect || plan === 'direct') {
-    badgeText = '會員'; badgeClass = 'nav-badge direct';
-    subText = '會員身份 · BitoCat 指標使用中';
-  } else if (isRanger) {
-    badgeText = '🗡️ 遊俠'; badgeClass = 'nav-badge ranger';
-    const exp = profile?.indicator_expires_at;
-    subText = exp
-      ? `指標授權至 ${new Date(exp).toLocaleDateString('zh-TW')}`
-      : '遊俠身份 · 指標使用中';
-  } else if (['tw','us','all'].includes(plan)) {
-    badgeText = '付費會員'; badgeClass = 'nav-badge';
-    subText = '方案：' + plan.toUpperCase();
-  }
-
+  let badgeText = '布衣', badgeClass = 'nav-badge free', subText = '選擇升級方式，解鎖更多功能';
+  if (isMaster) { badgeText = plan === 'admin' ? '系統管理員' : '盟主'; badgeClass = 'nav-badge'; subText = '歡迎回來！'; }
+  else if (isDirect || plan === 'direct') { badgeText = '會員'; badgeClass = 'nav-badge direct'; subText = '會員身份 · BitoCat 指標使用中'; }
+  else if (isRanger) { badgeText = '🗡️ 遊俠'; badgeClass = 'nav-badge ranger'; const exp = profile?.indicator_expires_at; subText = exp ? `指標授權至 ${new Date(exp).toLocaleDateString('zh-TW')}` : '遊俠身份 · 指標使用中'; }
+  else if (['tw','us','all'].includes(plan)) { badgeText = '付費會員'; badgeClass = 'nav-badge'; subText = '方案：' + plan.toUpperCase(); }
   document.getElementById('navBadge').textContent = badgeText;
   document.getElementById('navBadge').className = badgeClass;
   document.getElementById('welcomeSub').textContent = subText;
-
-  // 功能卡片 & CTA 根據身份調整
   const isFree = !isDirect && !isRanger && !isMaster && !['tw','us','all','direct'].includes(plan);
-
-  if (isFree) {
-    // 布衣：顯示升級 CTA，功能卡顯示「了解升級方案」
-    document.getElementById('upgradeCta').style.display = 'flex';
-    document.getElementById('joinCard').href = 'indicator.html';
-    document.getElementById('joinCardTitle').textContent = '解鎖高階功能';
-    document.getElementById('joinCardDesc').textContent = '成為遊俠或加入盟主成為會員，享有完整網站功能';
-    document.getElementById('joinCardTag').textContent = '了解方案';
-    document.getElementById('joinCardTag').className = 'feature-tag tag-ranger';
-  } else if (isRanger) {
-    // 遊俠：卡片改成帳號設定
-    document.getElementById('joinCard').href = 'profile.html';
-    document.getElementById('joinCardTitle').textContent = '我的遊俠帳號';
-    document.getElementById('joinCardDesc').textContent = '查看指標授權狀態與到期日';
-    document.getElementById('joinCardTag').textContent = '🗡️ 遊俠';
-    document.getElementById('joinCardTag').className = 'feature-tag tag-ranger';
-  } else {
-    // 會員/盟主：卡片改成後台或帳號
-    document.getElementById('joinCard').href = isMaster ? 'admin.html' : 'profile.html';
-    document.getElementById('joinCardTitle').textContent = isMaster ? '盟主後台' : '帳號管理';
-    document.getElementById('joinCardDesc').textContent = isMaster ? '管理會員、審核 VIP 截圖' : '查看帳號資訊與會員狀態';
-    document.getElementById('joinCardTag').textContent = isMaster ? '⚔️ 盟主' : '✅ 會員';
-    document.getElementById('joinCardTag').className = 'feature-tag tag-member';
-  }
-
-  // admin 額外顯示超管連結
-  if (plan === 'admin') {
-    const bar = document.querySelector('.welcome-actions');
-    const link = document.createElement('a');
-    link.href = 'superadmin.html';
-    link.className = 'btn btn-primary';
-    link.textContent = '⚙️ 超管後台';
-    bar.appendChild(link);
-  }
+  if (isFree) { document.getElementById('upgradeCta').style.display = 'flex'; document.getElementById('joinCard').href = 'indicator.html'; document.getElementById('joinCardTitle').textContent = '解鎖高階功能'; document.getElementById('joinCardDesc').textContent = '成為遊俠或加入盟主成為會員，享有完整網站功能'; document.getElementById('joinCardTag').textContent = '了解方案'; document.getElementById('joinCardTag').className = 'feature-tag tag-ranger'; }
+  else if (isRanger) { document.getElementById('joinCard').href = 'profile.html'; document.getElementById('joinCardTitle').textContent = '我的遊俠帳號'; document.getElementById('joinCardDesc').textContent = '查看指標授權狀態與到期日'; document.getElementById('joinCardTag').textContent = '🗡️ 遊俠'; document.getElementById('joinCardTag').className = 'feature-tag tag-ranger'; }
+  else { document.getElementById('joinCard').href = isMaster ? 'admin.html' : 'profile.html'; document.getElementById('joinCardTitle').textContent = isMaster ? '盟主後台' : '帳號管理'; document.getElementById('joinCardDesc').textContent = isMaster ? '管理會員、審核 VIP 截圖' : '查看帳號資訊與會員狀態'; document.getElementById('joinCardTag').textContent = isMaster ? '⚔️ 盟主' : '✅ 會員'; document.getElementById('joinCardTag').className = 'feature-tag tag-member'; }
+  if (plan === 'admin') { const bar = document.querySelector('.welcome-actions'); const link = document.createElement('a'); link.href = 'superadmin.html'; link.className = 'btn btn-primary'; link.textContent = '⚙️ 超管後台'; bar.appendChild(link); }
 }
 
-// ── 市場數據 ──
 async function loadMarketData() {
   try {
     const r = await fetch(`${BITO_API}/live-data?symbol=BTCUSDT`);
@@ -544,109 +292,51 @@ async function loadMarketData() {
     const t = d.ticker || {};
     const price = parseFloat(t.lastPrice), open = parseFloat(t.open);
     const fmt1 = v => v.toLocaleString('en-US', {minimumFractionDigits:1, maximumFractionDigits:1});
-    if (price > 0) {
-      document.getElementById('btcPrice').textContent = '$' + fmt1(price);
-      if (open > 0) {
-        const chg = ((price - open) / open) * 100;
-        const el = document.getElementById('btcChg');
-        el.textContent = (chg >= 0 ? '▲ +' : '▼ ') + Math.abs(chg).toFixed(2) + '% (24h)';
-        el.className = 'data-sub ' + (chg >= 0 ? 'up' : 'dn');
-      }
-    }
-    const f = d.funding || {};
-    const rate = parseFloat(f.fundingRate);
-    if (!isNaN(rate)) {
-      const rateEl = document.getElementById('fundingRate');
-      rateEl.textContent = (rate >= 0 ? '+' : '') + (rate * 100).toFixed(4) + '%';
-      rateEl.className = 'data-val ' + (rate > 0 ? 'dn' : rate < 0 ? 'up' : '');
-      document.getElementById('fundingSub').textContent = '結算週期 ' + (f.fundingInterval || 8) + ' 小時';
-    }
+    if (price > 0) { document.getElementById('btcPrice').textContent = '$' + fmt1(price); if (open > 0) { const chg = ((price - open) / open) * 100; const el = document.getElementById('btcChg'); el.textContent = (chg >= 0 ? '▲ +' : '▼ ') + Math.abs(chg).toFixed(2) + '% (24h)'; el.className = 'data-sub ' + (chg >= 0 ? 'up' : 'dn'); } }
+    const f = d.funding || {}, rate = parseFloat(f.fundingRate);
+    if (!isNaN(rate)) { const rateEl = document.getElementById('fundingRate'); rateEl.textContent = (rate >= 0 ? '+' : '') + (rate * 100).toFixed(4) + '%'; rateEl.className = 'data-val ' + (rate > 0 ? 'dn' : rate < 0 ? 'up' : ''); document.getElementById('fundingSub').textContent = '結算週期 ' + (f.fundingInterval || 8) + ' 小時'; }
     const fg = d.fg || {};
-    if (fg.value) {
-      const v = parseInt(fg.value);
-      const el = document.getElementById('fgVal');
-      el.textContent = v;
-      el.className = 'data-val ' + (v <= 25 ? 'dn' : v >= 75 ? 'up' : '');
-      document.getElementById('fgSub').textContent = fg.value_classification || '';
-    }
+    if (fg.value) { const v = parseInt(fg.value); const el = document.getElementById('fgVal'); el.textContent = v; el.className = 'data-val ' + (v <= 25 ? 'dn' : v >= 75 ? 'up' : ''); document.getElementById('fgSub').textContent = fg.value_classification || ''; }
   } catch(e) {}
-
   try {
     const r = await fetch(`${BINANCE}/futures/data/globalLongShortAccountRatio?symbol=BTCUSDT&period=5m&limit=1`);
-    const data = await r.json();
-    const d = Array.isArray(data) ? data[0] : data;
-    if (d) {
-      const lp = parseFloat(d.longAccount || 0) * 100;
-      const sp = parseFloat(d.shortAccount || 0) * 100;
-      if (lp > 0) {
-        const el = document.getElementById('lsRatio');
-        el.textContent = lp.toFixed(0) + '% / ' + sp.toFixed(0) + '%';
-        el.className = 'data-val ' + (lp > sp ? 'up' : 'dn');
-        document.getElementById('lsSub').textContent = lp > sp ? '多方佔優' : '空方佔優';
-      }
-    }
+    const data = await r.json(); const d = Array.isArray(data) ? data[0] : data;
+    if (d) { const lp = parseFloat(d.longAccount || 0) * 100, sp = parseFloat(d.shortAccount || 0) * 100; if (lp > 0) { const el = document.getElementById('lsRatio'); el.textContent = lp.toFixed(0) + '% / ' + sp.toFixed(0) + '%'; el.className = 'data-val ' + (lp > sp ? 'up' : 'dn'); document.getElementById('lsSub').textContent = lp > sp ? '多方佔優' : '空方佔優'; } }
   } catch(e) {}
 }
 
-// ── 最新快訊 ──
 async function loadAlerts() {
   try {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/bitocat_alerts?type=eq.tunnel&order=created_at.desc&limit=5`,
-      { headers: SB_HEADERS }
-    );
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/bitocat_alerts?type=eq.tunnel&order=created_at.desc&limit=5`, { headers: SB_HEADERS });
     const data = await r.json();
     const el = document.getElementById('alertList');
-    if (!Array.isArray(data) || data.length === 0) {
-      el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:24px;font-size:13px;">尚無快訊記錄</div>';
-      return;
-    }
+    if (!Array.isArray(data) || data.length === 0) { el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:24px;font-size:13px;">尚無快訊記錄</div>'; return; }
     el.innerHTML = data.map(a => {
       const isUp = (a.signal || '').toLowerCase() === 'upper';
-      const color = isUp ? 'var(--down)' : 'var(--up)';
-      const icon  = isUp ? '▲' : '▼';
+      const color = isUp ? 'var(--down)' : 'var(--up)', icon = isUp ? '▲' : '▼';
       const t = new Date(a.created_at);
-      const ts = t.toLocaleDateString('zh-TW', {month:'numeric',day:'numeric'}) + ' ' +
-                 t.toLocaleTimeString('zh-TW', {hour:'2-digit',minute:'2-digit',hour12:false});
+      const ts = t.toLocaleDateString('zh-TW', {month:'numeric',day:'numeric'}) + ' ' + t.toLocaleTimeString('zh-TW', {hour:'2-digit',minute:'2-digit',hour12:false});
       const price = a.price ? ' @ ' + parseFloat(a.price).toLocaleString('en-US', {minimumFractionDigits:1,maximumFractionDigits:1}) : '';
-      return `<div class="alert-item">
-        <div class="alert-dot" style="background:${color};"></div>
-        <div class="alert-info">
-          <div class="alert-signal" style="color:${color};">${icon} ${a.timeframe || ''} ${isUp ? '上軌觸及' : '下軌觸及'}</div>
-          <div class="alert-meta">${a.ticker || 'BTCUSDT'}${price} · ${ts}</div>
-        </div>
-      </div>`;
+      return `<div class="alert-item"><div class="alert-dot" style="background:${color};"></div><div class="alert-info"><div class="alert-signal" style="color:${color};">${icon} ${a.timeframe || ''} ${isUp ? '上軌觸及' : '下軌觸及'}</div><div class="alert-meta">${a.ticker || 'BTCUSDT'}${price} · ${ts}</div></div></div>`;
     }).join('');
   } catch(e) {}
 }
 
-// ── 熱門合約 ──
 async function loadHotList() {
   try {
     const r = await fetch(`${BITO_API}/live-data?symbol=BTCUSDT`);
-    const j = await r.json();
-    const data = j.hot || [];
+    const j = await r.json(); const data = j.hot || [];
     const el = document.getElementById('hotList');
     if (!data.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:12px 0;">載入中...</div>'; return; }
     el.innerHTML = data.map(item => {
-      const sym = (item.symbol||'').replace('USDT','');
-      const price = parseFloat(item.lastPrice), open = parseFloat(item.open);
-      const chg = open > 0 ? ((price-open)/open*100) : 0;
-      const col = chg >= 0 ? 'var(--up)' : 'var(--down)';
-      const sign = chg >= 0 ? '+' : '';
-      const prStr = price >= 100
-        ? price.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})
-        : price.toLocaleString('en-US',{minimumFractionDigits:3,maximumFractionDigits:4});
-      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
-        <span style="font-size:14px;font-weight:600;color:var(--text);min-width:60px;">${sym}</span>
-        <span style="font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;">${prStr}</span>
-        <span style="font-size:14px;font-weight:600;color:${col};">${sign}${chg.toFixed(2)}%</span>
-      </div>`;
+      const sym = (item.symbol||'').replace('USDT',''), price = parseFloat(item.lastPrice), open = parseFloat(item.open);
+      const chg = open > 0 ? ((price-open)/open*100) : 0, col = chg >= 0 ? 'var(--up)' : 'var(--down)', sign = chg >= 0 ? '+' : '';
+      const prStr = price >= 100 ? price.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1}) : price.toLocaleString('en-US',{minimumFractionDigits:3,maximumFractionDigits:4});
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);"><span style="font-size:14px;font-weight:600;color:var(--text);min-width:60px;">${sym}</span><span style="font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;">${prStr}</span><span style="font-size:14px;font-weight:600;color:${col};">${sign}${chg.toFixed(2)}%</span></div>`;
     }).join('');
   } catch(e) {}
 }
 
-// ── 登出 ──
 async function doLogout() {
   if (!sb) return;
   await sb.auth.signOut();
