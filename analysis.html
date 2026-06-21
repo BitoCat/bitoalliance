@@ -592,7 +592,7 @@ async function load() {
 }
 
 /* ── 權限 ── */
-async function checkAuth() {
+async async function checkAuth() {
   const {data:{session}} = await sb.auth.getSession();
   if(!session){location.href='login.html';return false;}
   const {data:p} = await sb.from('profiles').select('plan').eq('id',session.user.id).single();
