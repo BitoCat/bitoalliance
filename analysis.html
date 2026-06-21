@@ -191,8 +191,14 @@ header h1{font-size:17px;font-weight:600;}
 const BITO_API  = 'https://web-production-f4735.up.railway.app';
 const SUPA_URL  = 'https://kldumnxdlgovaxtiszyn.supabase.co';
 const SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsZHVtbnhkbGdvdmF4dGlzenluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjIyNDgsImV4cCI6MjA5MzY5ODI0OH0.P_anfYpSV2tgCPIQ7uZDVBjUFY3UhfEXk9u3XjlzBHI';
-const sb = supabase.createClient(SUPA_URL, SUPA_ANON);
+let sb = null;
 let currentSym = 'BTCUSDT', tvTF = '60';
+
+window.addEventListener('DOMContentLoaded', () => {
+  try { sb = supabase.createClient(SUPA_URL, SUPA_ANON); } catch(e) {}
+  loadTV(currentSym, tvTF);
+  checkAuth();
+});
 
 function loadTV(symbol, tf) {
   document.getElementById('tvChart').innerHTML = '';
@@ -592,7 +598,7 @@ async function load() {
 }
 
 /* ── 權限 ── */
-async async function checkAuth() {
+async function checkAuth() {
   const {data:{session}} = await sb.auth.getSession();
   if(!session){location.href='login.html';return false;}
   const {data:p} = await sb.from('profiles').select('plan').eq('id',session.user.id).single();
