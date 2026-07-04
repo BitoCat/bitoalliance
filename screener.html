@@ -122,6 +122,7 @@ function loadData(){
   xhr.open('GET', url);
   xhr.setRequestHeader('apikey', SB_ANON);
   xhr.setRequestHeader('Authorization', 'Bearer ' + SB_ANON);
+  xhr.setRequestHeader('Cache-Control', 'no-cache');
   xhr.onload = function(){
     var rows = [];
     try { rows = JSON.parse(xhr.responseText) || []; } catch(e){}
