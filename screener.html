@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>型態篩選器 - 比特聯盟</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;
+         background:#edd4be; color:#4a3728; padding-bottom:40px; }
+  .topbar { background:#5b4636; color:#f5e6d3; padding:14px 16px; display:flex;
+            align-items:center; gap:12px; }
+  .topbar a { color:#f5e6d3; text-decoration:none; font-size:15px; }
+  .topbar h1 { font-size:18px; flex:1; text-align:center; margin-right:40px; }
+  .wrap { max-width:960px; margin:0 auto; padding:16px; }
+  .meta { font-size:13px; color:#7a6a58; margin:4px 2px 12px; }
+  .tabs { display:flex; gap:8px; margin-bottom:12px; }
+  .tab { flex:1; text-align:center; padding:10px; border-radius:10px; cursor:pointer;
+         background:#f5e6d3; border:2px solid #d9c3ab; font-size:15px; font-weight:600; }
+  .tab.active { background:#5b4636; color:#f5e6d3; border-color:#5b4636; }
+  .patterns { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+              gap:8px; margin-bottom:8px; }
+  .pbtn { padding:10px 8px; border-radius:10px; background:#f5e6d3; cursor:pointer;
+          border:2px solid #d9c3ab; font-size:13px; text-align:center; }
+  .pbtn.active { background:#b5651d; color:#fff; border-color:#b5651d; }
+  .pbtn .cnt { font-size:12px; opacity:.75; }
+  .pdesc { font-size:13px; color:#7a6a58; background:#f5e6d3; border-radius:8px;
+           padding:8px 12px; margin-bottom:12px; }
+  table { width:100%; border-collapse:collapse; background:#fff8f0; border-radius:12px;
+          overflow:hidden; font-size:14px; }
+  th { background:#5b4636; color:#f5e6d3; padding:9px 6px; font-size:13px;
+       cursor:pointer; white-space:nowrap; user-select:none; }
+  td { padding:9px 6px; border-bottom:1px solid #eedfcc; text-align:center; white-space:nowrap; }
+  td.sym { font-weight:700; text-align:left; padding-left:12px; }
+  td.sym a { color:#4a3728; text-decoration:none; }
+  .up { color:#0a8f4e; } .dn { color:#d64545; }
+  .empty { text-align:center; padding:36px 12px; color:#7a6a58; font-size:14px;
+           background:#fff8f0; border-radius:12px; }
+  .tblwrap { overflow-x:auto; border-radius:12px; }
+  .lock { text-align:center; padding:60px 20px; }
+  .lock a { display:inline-block; margin-top:16px; background:#b5651d; color:#fff;
+            padding:12px 28px; border-radius:10px; text-decoration:none; }
+</style>
+</head>
+<body>
+<div class="topbar"><a href="index.html">← 首頁</a><h1>📡 型態篩選器</h1></div>
+
+<div class="wrap" id="main" style="display:none">
+  <div class="meta" id="scanMeta">載入中…</div>
+  <div class="tabs">
+    <div class="tab active" data-m="crypto" onclick="switchMarket('crypto')">🪙 加密貨幣</div>
+    <div class="tab" data-m="stock" onclick="switchMarket('stock')">📈 股票幣</div>
+  </div>
+  <div class="patterns" id="patternBtns"></div>
+  <div class="pdesc" id="patternDesc"></div>
+  <div class="tblwrap"><table id="tbl" style="display:none">
+    <thead><tr>
+      <th onclick="sortBy('symbol')">幣種</th>
+      <th onclick="sortBy('price')">現價</th>
+      <th onclick="sortBy('change_24h_pct')">24h%</th>
+      <th onclick="sortBy('change_7d_pct')">7天%</th>
+      <th onclick="sortBy('volume_24h')">24h量</th>
+      <th onclick="sortBy('funding_rate')">資金費率</th>
+      <th onclick="sortBy('rel_volume')">量比</th>
+      <th onclick="sortBy('dist_ath_pct')">距高點%</th>
+      <th onclick="sortBy('dist_low_pct')">距低點%</th>
+    </tr></thead>
+    <tbody id="tbody"></tbody>
+  </table></div>
+  <div class="empty" id="emptyBox" style="display:none"></div>
+</div>
+
+<div class="wrap lock" id="lockBox" style="display:none">
+  <h2>此功能為會員限定</h2>
+  <p style="margin-top:10px;color:#7a6a58">加入比特聯盟解鎖每日型態篩選</p>
+  <a href="index.html">回首頁了解方案</a>
+</div>
+
+<script>
+var SB_URL = 'https://kldumnxdlgovaxtiszyn.supabase.co';
+var SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsZHVtbnhkbGdvdmF4dGlzenluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjIyNDgsImV4cCI6MjA5MzY5ODI0OH0.P_anfYpSV2tgCPIQ7uZDVBjUFY3UhfEXk9u3XjlzBHI';
+var VALID_PLANS = ['ranger','direct','master','admin'];
+
+var PATTERNS = {
+  pullback_ma20:  {name:'🔵 強勢回調月線起漲', desc:'價格站上10日線、尚在25日線之下的月線攻防區,且月線在季線之上 - 衝刺期的回調起漲點'},
+  deep_pullback:  {name:'🔄 深度回調起漲',     desc:'同為月線攻防區,但月線在季線之下 - 深度修正後的起漲嘗試'},
+  pullback_ma60:  {name:'🔷 強勢回調季線起漲', desc:'價格站上10日線、回到季線正負5%且季線上揚 - 大級別支撐的回調買點'},
+  reversal_ma20:  {name:'🟢 低檔站上月線',     desc:'昨日在月線下、今日站上,且位於低檔區、量比放大1.5倍以上'},
+  reversal_ma60:  {name:'💚 低檔站上季線',     desc:'近5日從季線下方站上季線,月線開始上彎 - 低檔轉強訊號'},
+  high_52w:       {name:'⭐ 突破一年新高',     desc:'收盤創近一年新高且量比1.2倍以上 - 最強勢的突破型態'},
+  bull_alignment: {name:'🚀 多頭排列',         desc:'10日>25日>60日線且價格在三線之上,距高點20%內 - 標準多頭結構'},
+  laggard:        {name:'🏃 落後補漲',         desc:'價格>月線>季線但距高點還有20~45% - 結構轉多但尚未大漲的補漲候選'}
+};
+
+var sb = supabase.createClient(SB_URL, SB_ANON);
+var allRows = [], curMarket = 'crypto', curPattern = null;
+var sortKey = 'volume_24h', sortDesc = true;
+
+(async function init(){
+  try {
+    var s = await sb.auth.getSession();
+    var session = s.data ? s.data.session : null;
+    if (!session) { location.href = 'login.html'; return; }
+    var p = await sb.from('profiles').select('plan').eq('id', session.user.id).single();
+    var plan = p.data ? p.data.plan : null;
+    if (VALID_PLANS.indexOf(plan) === -1) {
+      document.getElementById('lockBox').style.display = 'block';
+      return;
+    }
+    document.getElementById('main').style.display = 'block';
+    loadData();
+  } catch(e) {
+    document.getElementById('lockBox').style.display = 'block';
+  }
+})();
+
+function loadData(){
+  var url = SB_URL + '/rest/v1/crypto_screener_results?market=eq.' + curMarket +
+    '&order=scan_date.desc,scan_slot.desc&limit=1000&x=' + Date.now();
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', url);
+  xhr.setRequestHeader('apikey', SB_ANON);
+  xhr.setRequestHeader('Authorization', 'Bearer ' + SB_ANON);
+  xhr.onload = function(){
+    var rows = [];
+    try { rows = JSON.parse(xhr.responseText) || []; } catch(e){}
+    if (rows.length) {
+      var d = rows[0].scan_date, sl = rows[0].scan_slot;
+      allRows = rows.filter(function(r){ return r.scan_date === d && r.scan_slot === sl; });
+      document.getElementById('scanMeta').textContent =
+        '掃描時間:' + d + ' ' + (sl === 'am' ? '早盤(08:05)' : '晚盤(20:05)') +
+        (curMarket === 'stock' ? ' - 股票幣於美股休市日不更新' : '');
+    } else {
+      allRows = [];
+      document.getElementById('scanMeta').textContent = '尚無掃描資料';
+    }
+    if (!curPattern || !PATTERNS[curPattern]) curPattern = null;
+    renderPatternBtns();
+    renderTable();
+  };
+  xhr.send();
+}
+
+function switchMarket(m){
+  curMarket = m; curPattern = null;
+  var tabs = document.querySelectorAll('.tab');
+  for (var i=0;i<tabs.length;i++)
+    tabs[i].className = 'tab' + (tabs[i].getAttribute('data-m') === m ? ' active' : '');
+  loadData();
+}
+
+function countBy(pt){
+  var n = 0;
+  for (var i=0;i<allRows.length;i++) if (allRows[i].pattern === pt) n++;
+  return n;
+}
+
+function renderPatternBtns(){
+  var html = '';
+  for (var pt in PATTERNS) {
+    var n = countBy(pt);
+    html += '<div class="pbtn' + (curPattern === pt ? ' active' : '') +
+      '" onclick="pickPattern(\'' + pt + '\')">' + PATTERNS[pt].name +
+      '<div class="cnt">' + n + ' 檔</div></div>';
+  }
+  document.getElementById('patternBtns').innerHTML = html;
+  document.getElementById('patternDesc').textContent =
+    curPattern ? PATTERNS[curPattern].desc : '點選型態查看今日入選標的';
+}
+
+function pickPattern(pt){
+  curPattern = (curPattern === pt) ? null : pt;
+  renderPatternBtns();
+  renderTable();
+}
+
+function sortBy(k){
+  if (sortKey === k) sortDesc = !sortDesc; else { sortKey = k; sortDesc = true; }
+  renderTable();
+}
+
+function fmtPrice(p){
+  if (p == null) return '-';
+  if (p >= 1000) return p.toLocaleString('en-US', {maximumFractionDigits:0});
+  if (p >= 1) return p.toFixed(2);
+  return p.toFixed(6).replace(/0+$/,'');
+}
+function fmtVol(v){
+  if (v == null) return '-';
+  if (v >= 1e9) return (v/1e9).toFixed(1) + 'B';
+  if (v >= 1e6) return (v/1e6).toFixed(1) + 'M';
+  return Math.round(v).toLocaleString('en-US');
+}
+function fmtPct(v, signed){
+  if (v == null) return '-';
+  var t = (signed && v > 0 ? '+' : '') + v + '%';
+  return '<span class="' + (v > 0 ? 'up' : (v < 0 ? 'dn' : '')) + '">' + t + '</span>';
+}
+
+function renderTable(){
+  var rows = curPattern
+    ? allRows.filter(function(r){ return r.pattern === curPattern; })
+    : allRows.slice();
+  if (!curPattern) {
+    var seen = {};
+    rows = rows.filter(function(r){
+      if (seen[r.symbol]) return false; seen[r.symbol] = 1; return true;
+    });
+  }
+  rows.sort(function(a,b){
+    var x = a[sortKey], y = b[sortKey];
+    if (x == null) return 1; if (y == null) return -1;
+    if (typeof x === 'string') return sortDesc ? y.localeCompare(x) : x.localeCompare(y);
+    return sortDesc ? y - x : x - y;
+  });
+  var tbl = document.getElementById('tbl'), box = document.getElementById('emptyBox');
+  if (!rows.length) {
+    tbl.style.display = 'none';
+    box.style.display = 'block';
+    box.textContent = curPattern
+      ? '今日此型態無入選標的 - 型態是每日快照,空手日是正常的,寧缺勿濫'
+      : '本輪掃描無任何訊號';
+    return;
+  }
+  box.style.display = 'none';
+  tbl.style.display = 'table';
+  var html = '';
+  for (var i=0;i<rows.length;i++){
+    var r = rows[i];
+    var sym = r.symbol.replace('USDT','').replace('1000','1000·');
+    html += '<tr>' +
+      '<td class="sym"><a href="diagnosis.html?symbol=' + r.symbol + '">' + sym + '</a></td>' +
+      '<td>' + fmtPrice(r.price) + '</td>' +
+      '<td>' + fmtPct(r.change_24h_pct, true) + '</td>' +
+      '<td>' + fmtPct(r.change_7d_pct, true) + '</td>' +
+      '<td>' + fmtVol(r.volume_24h) + '</td>' +
+      '<td>' + (r.funding_rate == null ? '-' : r.funding_rate + '%') + '</td>' +
+      '<td>' + (r.rel_volume == null ? '-' : r.rel_volume) + '</td>' +
+      '<td>' + (r.dist_ath_pct == null ? '-' : r.dist_ath_pct + '%') + '</td>' +
+      '<td>' + (r.dist_low_pct == null ? '-' : '+' + r.dist_low_pct + '%') + '</td>' +
+      '</tr>';
+  }
+  document.getElementById('tbody').innerHTML = html;
+}
+</script>
+</body>
+</html>
