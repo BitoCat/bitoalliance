@@ -117,7 +117,7 @@ var sortKey = 'volume_24h', sortDesc = true;
 
 function loadData(){
   var url = SB_URL + '/rest/v1/crypto_screener_results?market=eq.' + curMarket +
-    '&order=scan_date.desc,scan_slot.desc&limit=1000&x=';
+    '&order=scan_date.desc,scan_slot.desc&limit=1000';
   var xhr = new XMLHttpRequest();
   xhr.open('GET', url);
   xhr.setRequestHeader('apikey', SB_ANON);
