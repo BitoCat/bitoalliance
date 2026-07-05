@@ -149,7 +149,7 @@ function loadData(){
       var d = rows[0].scan_date, sl = rows[0].scan_slot;
       allRows = rows.filter(function(r){ return r.scan_date === d && r.scan_slot === sl; });
       document.getElementById('scanMeta').textContent =
-        '掃描時間:' + d + ' ' + (sl === 'am' ? '早盤(08:05)' : '晚盤(20:05)') +
+        '掃描時間:' + d + ' ' + (sl === 'am' ? '早盤(08:05)' : (sl === 'pm' ? '晚盤(20:05)' : sl.replace('h','') + ':05(4H)')) +
         (curMarket === 'stock' ? ' - 股票幣於美股休市日不更新' : '');
     } else {
       allRows = [];
