@@ -89,17 +89,17 @@ var SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJl
 var VALID_PLANS = ['ranger','direct','master','admin'];
 
 var PATTERNS = {
-  pullback_ma20:  {name:'🔵 強勢回調月線起漲', desc:'價格站上10日線、尚在25日線之下的月線攻防區,且月線在季線之上 - 衝刺期的回調起漲點'},
-  deep_pullback:  {name:'🔄 深度回調起漲',     desc:'同為月線攻防區,但月線在季線之下 - 深度修正後的起漲嘗試'},
-  pullback_ma60:  {name:'🔷 強勢回調季線起漲', desc:'價格站上10日線、回到季線正負5%且季線上揚 - 大級別支撐的回調買點'},
-  reversal_ma20:  {name:'🟢 低檔站上月線',     desc:'昨日在月線下、今日站上,且位於低檔區、量比放大1.5倍以上'},
-  reversal_ma60:  {name:'💚 低檔站上季線',     desc:'近5日從季線下方站上季線,月線開始上彎 - 低檔轉強訊號'},
-  high_52w:       {name:'⭐ 突破一年新高',     desc:'收盤創近一年新高且量比1.2倍以上 - 最強勢的突破型態'},
-  bull_alignment: {name:'🚀 多頭排列',         desc:'10日>25日>60日線且價格在三線之上,距高點20%內 - 標準多頭結構'},
-  laggard:        {name:'🏃 落後補漲',         desc:'價格>月線>季線但距高點還有20~45% - 結構轉多但尚未大漲的補漲候選'},
-  deep_reversal:  {name:'🌊 深水反轉',       desc:'距一年高點80%以上的深水區,今日帶量(量比2倍)站上月線 - 深跌後的第一次反轉嘗試。小幣專屬型態,訊號屬高風險高賠率,務必分批、控倉'},
-  sleeper_wake:   {name:'💤 沉睡甦醒',       desc:'貼著一年低點橫盤、波動極窄,今日突然爆量3倍 - 價格未動但資金進場的腳印。小幣專屬型態,適合分批埋伏,非重倉訊號'},
-  short_squeeze:  {name:'🔥 空頭擁擠',       desc:'深跌60%以上+資金費率轉負(空單付費)+連三日守住不創新低 - 空方擁擠但砸不動,軋空反彈的火藥庫。小幣專屬型態,波動劇烈'} 
+  pullback_ma20:  {name:'🔵 強勢蓄力',     desc:'強勢幣回檔蓄力的關鍵位置 - 完整判讀邏輯詳見教學影片'},
+  deep_pullback:  {name:'🔄 深蹲起跳',     desc:'深度修正後的起漲嘗試 - 完整判讀邏輯詳見教學影片'},
+  pullback_ma60:  {name:'🔷 大支撐反彈',   desc:'回踩大級別支撐的反彈點 - 完整判讀邏輯詳見教學影片'},
+  reversal_ma20:  {name:'🟢 低檔轉強',     desc:'低檔區帶量轉強的第一訊號 - 完整判讀邏輯詳見教學影片'},
+  reversal_ma60:  {name:'💚 底部翻轉',     desc:'底部結構翻多的確認訊號 - 完整判讀邏輯詳見教學影片'},
+  high_52w:       {name:'⭐ 創新高',       desc:'帶量創一年新高的最強型態 - 完整判讀邏輯詳見教學影片'},
+  bull_alignment: {name:'🚀 完美結構',     desc:'均線與價格的標準多頭結構 - 完整判讀邏輯詳見教學影片'},
+  laggard:        {name:'🏃 補漲候選',     desc:'結構轉多但尚未大漲的補漲候選 - 完整判讀邏輯詳見教學影片'},
+  deep_reversal:  {name:'🌊 深水反轉',     desc:'深水區的帶量反轉嘗試,高賠率型態,務必控倉分批 - 詳見教學影片'},
+  sleeper_wake:   {name:'💤 沉睡甦醒',     desc:'沉寂已久突然爆量的甦醒訊號,高賠率型態,非重倉訊號 - 詳見教學影片'},
+  short_squeeze:  {name:'🔥 軋空火藥庫',   desc:'空方擁擠但價格不跌的軋空候選,波動劇烈 - 詳見教學影片'}
 };
 
 var sb = supabase.createClient(SB_URL, SB_ANON);
