@@ -48,6 +48,11 @@
 
 <div class="wrap" id="main" style="display:none">
   <div class="meta" id="scanMeta">載入中…</div>
+
+<div class="tabs" style="margin-bottom:8px">
+    <div class="tab active" data-tf="1d" onclick="switchTf('1d')">📅 日線</div>
+    <div class="tab" data-tf="4h" onclick="switchTf('4h')">⏱ 4小時</div>
+  </div> 
   <div class="tabs">
     <div class="tab active" data-m="crypto" onclick="switchMarket('crypto')">🪙 主流幣</div>
     <div class="tab" data-m="alt" onclick="switchMarket('alt')">💎 小幣</div>
@@ -99,6 +104,15 @@ var PATTERNS = {
 
 var sb = supabase.createClient(SB_URL, SB_ANON);
 var allRows = [], curMarket = 'crypto', curPattern = null;
+
+var curTf = '1d';
+function switchTf(tf){
+  curTf = tf;
+  var tabs = document.querySelectorAll('[data-tf]');
+  for (var i=0;i<tabs.length;i++)
+    tabs[i].className = 'tab' + (tabs[i].getAttribute('data-tf') === tf ? ' active' : '');
+  loadData();
+} 
 var sortKey = 'volume_24h', sortDesc = true;
 
 (async function init(){
@@ -121,6 +135,7 @@ var sortKey = 'volume_24h', sortDesc = true;
 
 function loadData(){
   var url = SB_URL + '/rest/v1/crypto_screener_results?market=eq.' + curMarket +
+    '&timeframe=eq.' + curTf +
     '&order=scan_date.desc,scan_slot.desc&limit=1000';
   var xhr = new XMLHttpRequest();
   xhr.open('GET', url);
