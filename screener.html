@@ -52,7 +52,8 @@
 <div class="tabs" style="margin-bottom:8px">
     <div class="tab active" data-tf="1d" onclick="switchTf('1d')">📅 日線</div>
     <div class="tab" data-tf="4h" onclick="switchTf('4h')">⏱ 4小時</div>
-  </div> 
+    <div class="tab" data-tf="sniper" onclick="switchTf('sniper')">🎯 狙擊手</div>
+</div> 
   <div class="tabs">
     <div class="tab active" data-m="crypto" onclick="switchMarket('crypto')">🪙 主流幣</div>
     <div class="tab" data-m="alt" onclick="switchMarket('alt')">💎 小幣</div>
@@ -134,9 +135,17 @@ var sortKey = 'volume_24h', sortDesc = true;
 })();
 
 function loadData(){
-  var url = SB_URL + '/rest/v1/crypto_screener_results?market=eq.' + curMarket +
-    '&timeframe=eq.' + curTf +
-    '&order=scan_date.desc,scan_slot.desc&limit=1000';
+  var url;
+  if (curTf === 'sniper') {
+    var since = new Date(Date.now() - 7*86400000).toISOString().slice(0,10);
+    url = SB_URL + '/rest/v1/crypto_screener_results?timeframe=eq.1h' +
+      '&scan_date=gte.' + since +
+      '&order=created_at.desc&limit=200';
+  } else {
+    url = SB_URL + '/rest/v1/crypto_screener_results?market=eq.' + curMarket +
+      '&timeframe=eq.' + curTf +
+      '&order=scan_date.desc,scan_slot.desc&limit=1000';
+  }
   var xhr = new XMLHttpRequest();
   xhr.open('GET', url);
   xhr.setRequestHeader('apikey', SB_ANON);
@@ -145,12 +154,19 @@ function loadData(){
   xhr.onload = function(){
     var rows = [];
     try { rows = JSON.parse(xhr.responseText) || []; } catch(e){}
+    if (curTf === 'sniper') {
+      allRows = rows;
+      document.getElementById('scanMeta').textContent =
+        rows.length ? '最近 7 天狙擊記錄(每小時偵測,六條件全亮才觸發)'
+                    : '最近 7 天無狙擊訊號 - 完整觸發是稀有事件,寧缺勿濫';
+      renderSniper();
+      return;
+    }
     if (rows.length) {
       var d = rows[0].scan_date, sl = rows[0].scan_slot;
       allRows = rows.filter(function(r){ return r.scan_date === d && r.scan_slot === sl; });
       document.getElementById('scanMeta').textContent =
-        '掃描時間:' + d + ' ' + (sl === 'am' ? '早盤(08:05)' : (sl === 'pm' ? '晚盤(20:05)' : sl.replace('h','') + ':05(4H)')) +
-        (curMarket === 'stock' ? ' - 股票幣於美股休市日不更新' : '');
+        '掃描時間:' + d + ' ' + (sl === 'am' ? '早盤(08:05)' : (sl === 'pm' ? '晚盤(20:05)' : sl.replace('h','') + ':05(4H)'));
     } else {
       allRows = [];
       document.getElementById('scanMeta').textContent = '尚無掃描資料';
@@ -218,7 +234,40 @@ function fmtPct(v, signed){
   return '<span class="' + (v > 0 ? 'up' : (v < 0 ? 'dn' : '')) + '">' + t + '</span>';
 }
 
+function renderSniper(){
+  document.getElementById('patternBtns').innerHTML = '';
+  document.getElementById('patternDesc').textContent =
+    '🎯 逆勢狙擊手:H1/H2 三貓咪+PHL 六條件共振,完整觸發才開槍。詳細判讀邏輯見教學影片';
+  var tbl = document.getElementById('tbl'), box = document.getElementById('emptyBox');
+  if (!allRows.length) {
+    tbl.style.display = 'none';
+    box.style.display = 'block';
+    box.textContent = '最近 7 天無狙擊訊號';
+    return;
+  }
+  box.style.display = 'none';
+  tbl.style.display = 'table';
+  var head = tbl.querySelector('thead tr');
+  head.innerHTML = '<th>幣種</th><th>方向</th><th>觸發價</th><th>觸發時間</th>';
+  var html = '';
+  for (var i=0;i<allRows.length;i++){
+    var r = allRows[i];
+    var isLong = r.pattern === 'tunnel_long';
+    var t = r.created_at ? r.created_at.replace('T',' ').slice(5,16) : (r.scan_date + ' ' + r.scan_slot);
+    html += '<tr>' +
+      '<td class="sym"><a href="analysis.html?symbol=' + r.symbol + '">' + r.symbol.replace('USDT','') + '</a></td>' +
+      '<td><span class="' + (isLong ? 'up' : 'dn') + '">' + (isLong ? '🟢 做多' : '🔴 做空') + '</span></td>' +
+      '<td>' + fmtPrice(r.price) + '</td>' +
+      '<td>' + t + '</td>' +
+      '</tr>';
+  }
+  document.getElementById('tbody').innerHTML = html;
+}
+ 
 function renderTable(){
+
+var head = document.getElementById('tbl').querySelector('thead tr');
+  head.innerHTML = '<th onclick="sortBy(\'symbol\')">幣種</th><th onclick="sortBy(\'price\')">現價</th><th onclick="sortBy(\'change_24h_pct\')">24h%</th><th onclick="sortBy(\'change_7d_pct\')">7天%</th><th onclick="sortBy(\'volume_24h\')">24h量</th><th onclick="sortBy(\'funding_rate\')">資金費率</th><th onclick="sortBy(\'rel_volume\')">量比</th><th onclick="sortBy(\'dist_ath_pct\')">距高點%</th><th onclick="sortBy(\'dist_low_pct\')">距低點%</th>';
   var rows = curPattern
     ? allRows.filter(function(r){ return r.pattern === curPattern; })
     : allRows.slice();
