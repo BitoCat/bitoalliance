@@ -80,13 +80,6 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:99;
 .empty{font-size:12.5px;color:var(--mute);font-family:var(--mono)}
 .locked-line{margin-top:9px;padding-top:9px;border-top:1px dashed var(--line);font-size:12px;color:var(--mute)}
 .locked-line b{color:var(--amber);cursor:pointer}
-.phl{display:flex;gap:4px;overflow-x:auto;padding-bottom:3px}
-.phl .col{flex:0 0 auto;min-width:44px;text-align:center}
-.phl .tf{font-size:10px;color:var(--mute);font-family:var(--mono);margin-bottom:3px}
-.phl .st{font-size:10.5px;font-weight:600;padding:4px 2px;border-radius:6px;font-family:var(--mono)}
-.phl .st.up{color:#0e2a17;background:var(--up)}
-.phl .st.down{color:#2a0f0d;background:var(--down)}
-.phl .st.mid{color:var(--dim);background:var(--bg)}
 /* 會員解鎖預告卡 */
 .member{background:linear-gradient(160deg,rgba(255,176,32,.10),var(--panel));border:1px solid rgba(255,176,32,.22)}
 .mrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
@@ -191,22 +184,10 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:99;
   <div class="sowhat" id="liqMap">計算中…</div>
 </section>
 
-<section class="card">
-  <div class="hd"><div class="name"><i>◎</i> 今日型態命中 · BTC</div>
-    <span class="badge link" onclick="location.href='screener.html'">進 screener ›</span></div>
-  <div class="chips" id="patterns"><span class="empty">連線 /analysis…</span></div>
-  <div class="locked-line">🔒 三池全掃（主流／小幣／股幣）更多幣種訊號 · <b id="lockScan">會員解鎖 ›</b></div>
-</section>
-
-<section class="card">
-  <div class="hd"><div class="name"><i>≣</i> PHL 多時框</div><span class="badge free">即時強弱</span></div>
-  <div class="phl" id="phlTable"><span class="empty">計算多時框強弱…</span></div>
-</section>
-
 <!-- 會員解鎖預告卡 -->
 <section class="card member">
   <div class="hd"><div class="name"><i>★</i> 加入後解鎖</div><span class="badge real">會員專屬</span></div>
-  <div class="mrow"><span class="mi">⚡</span><div class="mt"><b>即時訊號推播</b><small>三貓咪共振／型態觸發，第一時間送到你的 Telegram／Discord</small></div><span class="lk">🔒</span></div>
+  <div class="mrow"><span class="mi">⚡</span><div class="mt"><b>即時訊號推播</b><small>貓咪隧道訊號觸發，第一時間送到你的 Telegram／Discord</small></div><span class="lk">🔒</span></div>
   <div class="mrow"><span class="mi">🎯</span><div class="mt"><b>全幣種掃描</b><small>主流／小幣／股幣三池全掃 + 會員 screener，機會不漏接</small></div><span class="lk">🔒</span></div>
   <div class="mrow"><span class="mi">🎥</span><div class="mt"><b>盟主直播 + 社群</b><small>盤中直播判讀、即時聊天室，跟著一起打不孤單</small></div><span class="lk">🔒</span></div>
   <div class="mrow"><span class="mi">🔥</span><div class="mt"><b>進階籌碼</b><small>清算熱力圖、跨交易所全量爆倉，籌碼看得比別人深</small></div><span class="lk">🔒</span></div>
@@ -244,8 +225,7 @@ const CFG={
   liqWs:'wss://fstream.binance.com/ws/!forceOrder@arr',
   leverages:[25,50,100],
   refreshMs:45000,
-  fundingHotPct:0.03,
-  phlTfs:[['5m','5m'],['15m','15m'],['30m','30m'],['1h','H1'],['2h','H2'],['4h','H4'],['8h','H8'],['12h','H12'],['1d','D']],
+  fundingHotPct:0.03,['15m','15m'],['30m','30m'],['1h','H1'],['2h','H2'],['4h','H4'],['8h','H8'],['12h','H12'],['1d','D']],
   // 貓咪隧道快訊頻道（給之後 webhook 推播用的 chat_id，不是公開連結）
   tgAlertChatId:'-1003946997019',
 };
@@ -263,7 +243,7 @@ const S={price:null,priceUp:true};
 
 /* CTA：一律捲到代理陣容區 */
 function goJoin(e){if(e)e.preventDefault();document.getElementById('join').scrollIntoView({behavior:'smooth'});}
-$('joinBtn').onclick=goJoin; $('cmdCta').onclick=goJoin; $('lockScan').onclick=goJoin;
+$('joinBtn').onclick=goJoin; $('cmdCta').onclick=goJoin;
 function copyCode(el,code){try{navigator.clipboard.writeText(code);const o=el.textContent;el.textContent='已複製 ✓';setTimeout(()=>el.textContent=o,1200);}catch(_){}}
 function renderAgents(){
   $('agentLineup').innerHTML=AGENTS.map(a=>`
@@ -277,11 +257,11 @@ function renderAgents(){
 }
 renderAgents();
 
-/* ============ /analysis：隧道 + PHL + 分數 + 資金 ============ */
+/* ============ /analysis：貓咪隧道 + 分數 + 資金 ============ */
 async function loadAnalysis(){
   try{
     const d=await j(`${CFG.bitoApi}${CFG.analysisPath}?symbol=${CFG.symbol}`);
-    renderTunnel(d); renderCommand(d); renderFunding(d); renderPatterns(d);
+    renderTunnel(d); renderCommand(d); renderFunding(d);
   }catch(e){
     $('cmdLine').innerHTML='/analysis 連不上 · 確認路徑<span class="cursor">&nbsp;</span>';
     $('btcSo').textContent='隧道資料抓不到（/analysis）。';
@@ -299,31 +279,27 @@ function renderTunnel(d){
   const dirs=g.map(x=>x.tunnel?.direction);
   const allUp=dirs.every(x=>x==='up'), allDn=dirs.every(x=>x==='down');
   $('btcSo').textContent=allUp?'三貓咪偕漲、方向一致偏多 → 順勢做多，回踩中軌找點。'
-    :allDn?'三貓咪偕跌、一致偏空 → 反彈當逃命，別接刀。':'三貓咪方向分歧、未共振 → 方向未定，等一致再表態。';
+    :allDn?'三貓咪偕跌、一致偏空 → 反彈當逃命，別接刀。':'三貓咪方向分歧 → 方向未定，等一致再表態。';
   const names=['短 15/30','中 H1/H2','長 H4/H8'];
   $('cats').innerHTML=g.slice(0,3).map((x,i)=>{const tt=x.tunnel||{};const[zz,cc]=zone(tt.cross_state);
     const ar=tt.direction==='up'?'▲':tt.direction==='down'?'▼':'·';
     return `<div class="cat"><div class="cl">${names[i]||x.label}</div><div class="cv ${cc}">${ar} ${zz}</div></div>`;}).join('');
 }
 function renderCommand(d){
-  const sc=d.score||{}, adv=d.resonance_advice||{};
-  const dir=sc.direction||adv.direction||'—', score=sc.score;
+  const sc=d.score||{};
+  const dir=sc.direction||'—', score=sc.score;
   const isLong=/多/.test(dir), isShort=/空/.test(dir);
   const col=isLong?'var(--up)':isShort?'var(--down)':'var(--warn)';
   const bg=isLong?'rgba(63,208,127,.15)':isShort?'rgba(255,95,86,.15)':'rgba(255,210,74,.15)';
   $('cmdDot').style.background=col; const st=$('cmdStance'); st.textContent=dir; st.style.color=col; st.style.background=bg;
   const b=sc.breakdown||{}, parts=[];
-  if(adv.has_signal){parts.push('三貓咪共振');if(adv.trigger_labels?.length)parts.push(adv.trigger_labels.join('/')+' 觸發');}
-  else parts.push('三貓咪未共振');
-  if(score!=null)parts.push('分數 '+score);
+  if(score!=null)parts.push('分數 '+score); parts.push(dir);
+  const mid=(d.groups||[])[1]||(d.groups||[])[0]||{}; const cs=mid.tunnel?.cross_state;
+  parts.push(cs==='near_upper'?'隧道貼上緣':cs==='near_lower'?'隧道貼下緣':cs==='short_cross'?'隧道空穿越':cs==='long_cross'?'隧道多穿越':'隧道內');
   $('cmdLine').innerHTML=parts.join('・')+'<span class="cursor">&nbsp;</span>';
   $('cmdSub').textContent=`趨勢 ${b.trend??'—'}｜結構 ${b.structure??'—'}｜動能 ${b.momentum??'—'}｜波動 ${b.volatility??'—'}`;
-  $('cmdAct').textContent=adv.has_signal?`→ ${dir}，${adv.timeframe_type||''}訊號，續抱約 ${adv.hold_hours||'—'}`
-    :`→ 目前${dir}、無進場訊號，先觀望，等三貓咪共振再動手`;
-  // 轉換文案：訊號觸發那一刻最有感
-  $('cmdCta').textContent=adv.has_signal
-    ? '⚡ 訊號剛觸發，盟友已即時收到推播 —— 免費加入，下次別錯過 →'
-    : '想在訊號觸發的當下第一時間收到推播？免費加入比特聯盟 →';
+  $('cmdAct').textContent=`→ 市場溫度：${dir}。細部進出場請看你的貓咪隧道 TradingView 指標`;
+  $('cmdCta').textContent='想即時收到貓咪隧道訊號推播？免費加入比特聯盟 →';
 }
 function renderFunding(d){
   const f=d.funding; if(!f)return;
@@ -332,16 +308,6 @@ function renderFunding(d){
   v.className='v '+(hot?'down':neg?'up':'neutral'); $('cFund').className='radar '+(hot?'r-down':neg?'r-up':'r-warn');
   $('fundSo').textContent=hot?'多方過熱、槓桿擁擠 → 反彈別追多，留意回檔洗槓桿'
     :neg?'費率翻負、空方付錢給多方 → 空頭擁擠易軋空，偏多可留意':'成本中性 → 無明顯過熱，看技術面主導';
-}
-function renderPatterns(d){
-  const box=$('patterns'), g=d.groups||[], sc=d.score||{};
-  const hits=g.filter(x=>x.long_trigger||x.short_trigger);
-  if(hits.length){box.innerHTML=hits.map(x=>{const dir=x.long_trigger?'long':'short';
-    return `<span class="chip ${dir}">${x.label} ${x.long_trigger?'多':'空'}</span>`;}).join('');return;}
-  const partial=g.filter(x=>x.long_partial||x.short_partial);
-  box.innerHTML=partial.length?partial.map(x=>`<span class="chip brand">${x.label} ${x.long_partial?'偏多':'偏空'}醞釀</span>`).join('')
-    +`<span class="empty" style="width:100%">尚無完整觸發 · 分數 ${sc.score??''} ${sc.direction??''}</span>`
-    :`<span class="empty">今日無型態觸發 · 分數 ${sc.score??''} ${sc.direction??''}</span>`;
 }
 
 /* ============ 免費籌碼源 ============ */
@@ -397,35 +363,10 @@ function renderLiq(){
   $('liqFeed').innerHTML=big.length?big.map(e=>`<div class="${e.isLong?'l':'s'}">▸ ${fmtK(e.val)} ${e.sym} ${e.isLong?'多單被爆':'空單被爆'}</div>`).join('')
     :'<span class="empty">尚無大額強平（&gt;$30K）</span>';
 }
-/* PHL 多時框強弱（自有計算） */
-function ema(a,len){const k=2/(len+1);let e=a[0];const o=[e];for(let i=1;i<a.length;i++){e=a[i]*k+e*(1-k);o.push(e);}return o;}
-const emaEma=(a,l)=>ema(ema(a,l),l);
-function phlStatus(hi,lo,cl,lk=10,ld=3,lema=3){
-  const rel=[],rng=[];
-  for(let i=0;i<cl.length;i++){let hh=-1e18,ll=1e18;for(let x=Math.max(0,i-lk+1);x<=i;x++){if(hi[x]>hh)hh=hi[x];if(lo[x]<ll)ll=lo[x];}
-    rel.push(cl[i]-(hh+ll)/2);rng.push(hh-ll);}
-  const er=emaEma(rel,ld),eg=emaEma(rng,ld);
-  const osc=er.map((v,i)=>eg[i]!==0?200*(v/eg[i]):0),slow=ema(osc,lema);
-  const s=osc.at(-1),sl=slow.at(-1),sp=osc.at(-2),slp=slow.at(-2);
-  const up=sp<=slp&&s>sl,dn=sp>=slp&&s<sl;
-  if(s>40)return up?['超買⬇','down']:['超買⬆','up'];
-  if(s<-40)return dn?['超賣⬆','up']:['超賣⬇','down'];
-  return s>sl?['中段⬆','mid']:['中段⬇','mid'];
-}
-async function loadPhl(){
-  const box=$('phlTable');
-  try{const cells=await Promise.all(CFG.phlTfs.map(async([tf,lbl])=>{
-    try{const k=await j(`${CFG.fapi}/fapi/v1/klines?symbol=${CFG.symbol}&interval=${tf}&limit=40`);
-      const hi=k.map(x=>+x[2]),lo=k.map(x=>+x[3]),cl=k.map(x=>+x[4]);const[txt,cls]=phlStatus(hi,lo,cl);
-      return `<div class="col"><div class="tf">${lbl}</div><div class="st ${cls}">${txt}</div></div>`;
-    }catch(_){return `<div class="col"><div class="tf">${lbl}</div><div class="st mid">—</div></div>`;}}));
-    box.innerHTML=cells.join('');
-  }catch(e){box.innerHTML='<span class="empty">PHL 表計算失敗。</span>';}
-}
 /* 時鐘 & 排程 */
 function tick(){const d=new Date(),p=n=>String(n).padStart(2,'0');$('clock').textContent=`${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
 async function refreshAll(){
-  await Promise.allSettled([loadAnalysis(),loadOI(),loadLS(),loadFng(),loadPhl()]);
+  await Promise.allSettled([loadAnalysis(),loadOI(),loadLS(),loadFng()]);
   calcLiqMap();$('stamp').textContent=new Date().toLocaleTimeString('zh-TW');
 }
 setInterval(tick,1000);tick();
@@ -434,5 +375,4 @@ connectLiq();setInterval(renderLiq,5000);
 </script>
 </body>
 </html>
-
 
