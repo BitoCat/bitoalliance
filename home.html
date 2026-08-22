@@ -96,6 +96,35 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:99;
 .mrow .mt b{font-size:13px;display:block}
 .mrow .mt small{font-size:11px;color:var(--mute);line-height:1.4}
 .mrow .lk{font-size:13px;opacity:.7}
+
+/* 代理陣容 / 加入區 */
+.join{background:radial-gradient(120% 80% at 50% 0%,rgba(255,176,32,.14),transparent 65%),var(--panel-hi);
+  border:1px solid rgba(255,176,32,.22);border-radius:16px;padding:18px 14px;margin:16px 0 10px}
+.join-h{text-align:center;margin-bottom:16px}
+.join-h .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:3px;color:var(--amber)}
+.join-h h2{font-size:20px;font-weight:700;margin:4px 0 6px}
+.join-h p{font-size:12px;color:var(--dim);line-height:1.55;max-width:320px;margin:0 auto}
+.lineup{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.agent{flex:1 1 140px;max-width:180px;background:var(--panel);border:1px solid rgba(255,176,32,.25);
+  border-radius:14px;padding:14px 10px 12px;text-align:center;position:relative;
+  box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.agent .rank{position:absolute;top:8px;right:10px;color:var(--amber);font-size:12px}
+.agent .ava{width:60px;height:60px;border-radius:50%;margin:2px auto 8px;display:grid;place-items:center;
+  font-size:24px;font-weight:700;color:#1a1206;background:linear-gradient(150deg,var(--amber),#C97B12);
+  box-shadow:0 0 0 3px rgba(255,176,32,.18),0 6px 16px rgba(255,176,32,.3);overflow:hidden}
+.agent .ava img{width:100%;height:100%;object-fit:cover}
+.agent .ava.ph{background:#2e2820;color:var(--mute);box-shadow:0 0 0 3px rgba(243,233,216,.07),0 6px 16px rgba(0,0,0,.3)}
+.agent .an{font-size:14px;font-weight:700}
+.agent .atag{font-size:11px;color:var(--mute);margin:2px 0 8px;min-height:14px;line-height:1.3}
+.agent .acode{font-size:11px;color:var(--dim);font-family:var(--mono);margin-bottom:9px}
+.agent .acode b{color:var(--amber);cursor:pointer;border-bottom:1px dashed rgba(255,176,32,.4)}
+.agent .abtn{display:block;text-decoration:none;border-radius:9px;padding:8px;font-size:12.5px;font-weight:700;
+  color:#1a1206;background:linear-gradient(135deg,var(--amber),#E8951A)}
+.steps{display:flex;gap:6px;margin-top:16px}
+.step{flex:1;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:8px 6px;
+  font-size:11px;color:var(--dim);text-align:center;line-height:1.4}
+.step b{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;
+  background:var(--amber);color:#1a1206;font-size:11px;margin-bottom:3px}
 /* 常駐 CTA */
 .cta-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:460px;z-index:100;
   padding:10px 14px 14px;background:linear-gradient(to top,var(--bg-deep) 60%,transparent)}
@@ -121,7 +150,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:99;
   <div class="cmd-line" id="cmdLine">連線 /analysis…<span class="cursor">&nbsp;</span></div>
   <div class="cmd-sub" id="cmdSub"></div>
   <div class="cmd-act" id="cmdAct"></div>
-  <a class="cmd-cta" id="cmdCta" href="#"></a>
+  <a class="cmd-cta" id="cmdCta" href="#join"></a>
 </section>
 
 <section class="card">
@@ -183,10 +212,25 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:99;
   <div class="mrow"><span class="mi">🔥</span><div class="mt"><b>進階籌碼</b><small>清算熱力圖、跨交易所全量爆倉，籌碼看得比別人深</small></div><span class="lk">🔒</span></div>
 </section>
 
+<!-- 代理陣容 / 加入 -->
+<section class="join" id="join">
+  <div class="join-h">
+    <span class="eyebrow">加入比特聯盟</span>
+    <h2>選擇你的引路人</h2>
+    <p><b style="color:var(--amber)">加入不收任何會員費</b>——用代理邀請碼註冊 Bitunix、入金交易，即免費解鎖上方所有 🔒 功能與福利。</p>
+  </div>
+  <div class="lineup" id="agentLineup"></div>
+  <div class="steps">
+    <div class="step"><b>1</b>選一位代理</div>
+    <div class="step"><b>2</b>邀請碼註冊 Bitunix、入金交易 BTC</div>
+    <div class="step"><b>3</b>免費成為盟友，解鎖全功能</div>
+  </div>
+</section>
+
 <div class="foot">比特聯盟作戰室 · 資料僅供參考，非投資建議<br>更新於 <span id="stamp">—</span></div>
 
 <div class="cta-bar">
-  <a class="cta-btn" id="joinBtn" href="#">免費加入比特聯盟 →<em>解鎖即時推播・全池掃描・直播社群</em></a>
+  <a class="cta-btn" id="joinBtn" href="#join">免費加入比特聯盟 →<em>用代理邀請碼在 Bitunix 交易，功能福利全免費・不收會員費</em></a>
 </div>
 
 <script>
@@ -202,20 +246,36 @@ const CFG={
   refreshMs:45000,
   fundingHotPct:0.03,
   phlTfs:[['5m','5m'],['15m','15m'],['30m','30m'],['1h','H1'],['2h','H2'],['4h','H4'],['8h','H8'],['12h','H12'],['1d','D']],
-  // ↓↓↓ 這兩個換成你的真實連結（註冊頁 / Telegram）↓↓↓
-  signupUrl:'https://bitocat.github.io/bitoalliance/#join',
-  tgUrl:'https://t.me/your_channel',
+  // 貓咪隧道快訊頻道（給之後 webhook 推播用的 chat_id，不是公開連結）
+  tgAlertChatId:'-1003946997019',
 };
+/* ↓↓↓ 代理陣容：把 name / code / url 換成真實資料，要加代理就多一筆 ↓↓↓ */
+const SIL='<svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor" aria-hidden="true"><circle cx="12" cy="8" r="4.2"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7z"/></svg>';
+const AGENTS=[
+  {name:'毛哥',  code:'Pooc', url:'https://www.bitunix.com/register?vipCode=Pooc', tagline:'', photo:''},
+  {name:'宗瑋', code:'dMUH', url:'https://www.bitunix.com/register?vipCode=dMUH', tagline:'', photo:''},
+];
 const $=id=>document.getElementById(id);
 const fmtUSD=n=>'$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:0});
 const fmtK=n=>{n=Math.abs(n);return n>=1e9?'$'+(n/1e9).toFixed(2)+'B':n>=1e6?'$'+(n/1e6).toFixed(2)+'M':n>=1e3?'$'+(n/1e3).toFixed(1)+'K':'$'+n.toFixed(0)};
 const j=async u=>{const r=await fetch(u);if(!r.ok)throw new Error(r.status);return r.json()};
 const S={price:null,priceUp:true};
 
-/* CTA 連結 */
-$('joinBtn').href=CFG.signupUrl;
-$('cmdCta').href=CFG.signupUrl;
-$('lockScan').onclick=()=>location.href=CFG.signupUrl;
+/* CTA：一律捲到代理陣容區 */
+function goJoin(e){if(e)e.preventDefault();document.getElementById('join').scrollIntoView({behavior:'smooth'});}
+$('joinBtn').onclick=goJoin; $('cmdCta').onclick=goJoin; $('lockScan').onclick=goJoin;
+function copyCode(el,code){try{navigator.clipboard.writeText(code);const o=el.textContent;el.textContent='已複製 ✓';setTimeout(()=>el.textContent=o,1200);}catch(_){}}
+function renderAgents(){
+  $('agentLineup').innerHTML=AGENTS.map(a=>`
+    <div class="agent"><div class="rank">★</div>
+      <div class="ava${a.photo?'':' ph'}">${a.photo?`<img src="${a.photo}" alt="${a.name}">`:SIL}</div>
+      <div class="an">${a.name}</div>
+      <div class="atag">${a.tagline||''}</div>
+      <div class="acode">邀請碼 <b onclick="copyCode(this,'${a.code}')">${a.code}</b></div>
+      <a class="abtn" href="${a.url}" target="_blank" rel="noopener">跟${a.name}加入 →</a>
+    </div>`).join('');
+}
+renderAgents();
 
 /* ============ /analysis：隧道 + PHL + 分數 + 資金 ============ */
 async function loadAnalysis(){
@@ -262,7 +322,7 @@ function renderCommand(d){
     :`→ 目前${dir}、無進場訊號，先觀望，等三貓咪共振再動手`;
   // 轉換文案：訊號觸發那一刻最有感
   $('cmdCta').textContent=adv.has_signal
-    ? '⚡ 訊號剛觸發，會員已即時收到推播 —— 免費加入，下次別錯過 →'
+    ? '⚡ 訊號剛觸發，盟友已即時收到推播 —— 免費加入，下次別錯過 →'
     : '想在訊號觸發的當下第一時間收到推播？免費加入比特聯盟 →';
 }
 function renderFunding(d){
@@ -374,4 +434,3 @@ connectLiq();setInterval(renderLiq,5000);
 </script>
 </body>
 </html>
-
