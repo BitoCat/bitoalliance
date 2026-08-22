@@ -68,7 +68,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:99;
 .needle.up{background:var(--up)}.needle.up::after{background:var(--up)}
 .needle.down{background:var(--down)}.needle.down::after{background:var(--down)}
 .gscale{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--mute);margin-top:3px}
-/* PHL / 技術面 表 */
+/* 技術面表 */
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
 .mini{background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:8px;text-align:center}
 .mini .ml{font-size:10px;color:var(--mute);font-family:var(--mono)}
@@ -110,28 +110,13 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:99;
 </section>
 
 <section class="card">
-  <div class="hd"><div class="name"><i>◎</i> 共振建議</div><span class="badge" id="advBadge">/analysis</span></div>
-  <div class="advice" id="advice">讀取中…</div>
-</section>
-
-<section class="card">
   <div class="hd"><div class="name"><i>◈</i> 三貓咪隧道</div><span class="badge">巢狀三層</span></div>
   <div id="tunnels"><div class="empty">讀取隧道…</div></div>
 </section>
 
 <section class="card">
-  <div class="hd"><div class="name"><i>≣</i> PHL 三線</div><span class="badge">V1 / V2 / V3</span></div>
-  <div class="grid3" id="phl"><div class="empty">讀取中…</div></div>
-</section>
-
-<section class="card">
   <div class="hd"><div class="name"><i>▤</i> 多時框技術面</div></div>
   <table class="tbl" id="ind"><tbody><tr><td class="empty">讀取中…</td></tr></tbody></table>
-</section>
-
-<section class="card">
-  <div class="hd"><div class="name"><i>⌘</i> 訊號組成</div><span class="badge" id="condLabel">—</span></div>
-  <div class="cond" id="cond"><div class="empty">讀取中…</div></div>
 </section>
 
 <div class="foot">比特聯盟 · 幣種深度分析 · 資料僅供參考，非投資建議<br>更新於 <span id="stamp">—</span></div>
@@ -161,7 +146,7 @@ function zoneText(cs){return cs==='near_upper'?'貼上緣':cs==='near_lower'?'�
 async function load(){
   try{
     const d=await j(`${CFG.bitoApi}${CFG.analysisPath}?symbol=${CUR}`);
-    renderHero(d); renderAdvice(d); renderTunnels(d); renderPhl(d); renderInd(d); renderCond(d);
+    renderHero(d); renderTunnels(d); renderInd(d);
     $('stamp').textContent=new Date().toLocaleTimeString('zh-TW');
   }catch(e){ $('advice').textContent='/analysis 連不上，確認端點與幣種代碼。'; }
 }
@@ -182,17 +167,6 @@ function renderHero(d){
       <span class="fl" style="${pos?'left:50%':'right:50%'};width:${w/2}%;background:${col}"></span></span>
       <span class="v" style="color:${col}">${v>0?'+':''}${v}</span></div>`;
   }).join('');
-}
-function renderAdvice(d){
-  const a=d.resonance_advice||{}, sc=d.score||{};
-  if(a.has_signal){
-    $('advice').innerHTML=`<b style="color:${dirColor(a.direction)}">${a.direction}</b> · ${a.timeframe_type||''}訊號`
-      +(a.trigger_labels?.length?` · 觸發 ${a.trigger_labels.join('、')}`:'')
-      +`<br><span class="mut">建議續抱約 ${a.hold_hours||'—'}${a.warning?' · '+a.warning:''}</span>`;
-  }else{
-    $('advice').innerHTML=`<b style="color:${dirColor(sc.direction)}">${sc.direction||'觀望'}</b> · 三貓咪未共振`
-      +`<br><span class="mut">目前無進場訊號，${(a.no_signal_labels||[]).join('、')||'各時框'} 皆待觸發，等共振再動手。</span>`;
-  }
 }
 function renderTunnels(d){
   const g=d.groups||[]; const names=['短線 15/30','中線 H1/H2','長線 H4/H8'];
@@ -216,19 +190,6 @@ function renderTunnels(d){
     </div>`;
   }).join('');
 }
-function renderPhl(d){
-  const g=d.groups||[]; if(!g.length){$('phl').innerHTML='<div class="empty">—</div>';return;}
-  // 取中線組的 v1/v2/v3
-  const src=g[1]||g[0];
-  const items=[['V1',src.v1],['V2',src.v2],['V3',src.v3]];
-  $('phl').innerHTML=items.map(([k,v])=>{
-    v=v||{}; const ob=v.overbought,os=v.oversold;
-    const txt=ob?'超買':os?'超賣':(v.direction==='up'||v.direction==='crossup'?'偏強':'偏弱');
-    const cls=ob?'down':os?'up':(/up/.test(v.direction||'')?'up':'down');
-    return `<div class="mini"><div class="ml">${k}</div><div class="mv ${cls}">${txt}</div>
-      <div class="ml" style="margin-top:3px">${(v.pos!=null?(v.pos*100).toFixed(0)+'%':'—')}</div></div>`;
-  }).join('');
-}
 function renderInd(d){
   const ind=d.indicators||[]; if(!ind.length){$('ind').innerHTML='<tbody><tr><td class="empty">—</td></tr></tbody>';return;}
   const head=`<thead><tr><th>時框</th><th>KDJ</th><th>MACD</th><th>RSI</th></tr></thead>`;
@@ -244,18 +205,6 @@ function renderInd(d){
   }).join('');
   $('ind').innerHTML=head+'<tbody>'+body+'</tbody>';
 }
-function renderCond(d){
-  const g=d.groups||[]; const src=g.find(x=>x.long_trigger||x.short_trigger)||g[g.length-1]||{};
-  $('condLabel').textContent=src.label||'—';
-  const map={big_touch:'觸大隧道',cat_cross:'貓咪穿越',phl_v1:'PHL V1',phl_v2:'PHL V2',phl_v3:'PHL V3',v1_cross:'V1 交叉'};
-  const side=(obj,title,color)=>{
-    obj=obj||{};
-    const rows=Object.keys(map).map(k=>`<div class="ck${obj[k]?' on':''}"><span class="mk">${obj[k]?'✔':'·'}</span>${map[k]}</div>`).join('');
-    return `<div class="side"><b style="color:${color}">${title}</b>${rows}</div>`;
-  };
-  $('cond').innerHTML=side(src.cond_long,'做多條件','var(--up)')+side(src.cond_short,'做空條件','var(--down)');
-}
-
 function tick(){const d=new Date(),p=n=>String(n).padStart(2,'0');$('clock').textContent=`${p(d.getHours())}:${p(d.getMinutes())}`;}
 renderCoins(); load();
 setInterval(tick,1000);tick();
@@ -263,3 +212,4 @@ setInterval(load,CFG.refreshMs);
 </script>
 </body>
 </html>
+
