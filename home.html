@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>比特聯盟 · 作戰室</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   比特聯盟 作戰室 — 戰情室琥珀 (Amber Terminal)
+   配色全在下方 :root 變數，要改色只動這裡。
+   ============================================================ */
+:root{
+  --bg:#17120B;         /* 溫暖濃咖啡底 */
+  --bg-deep:#100C06;    /* 頁面最底 */
+  --panel:#211A10;      /* 卡片 */
+  --panel-hi:#2A2114;   /* 抬升卡片 */
+  --line:rgba(243,233,216,.09);
+  --amber:#FFB020;      /* 品牌主色 */
+  --amber-soft:#FFD24A;
+  --up:#3FD07F;         /* 訊號：多 / 好 */
+  --down:#FF5F56;       /* 訊號：空 / 警 */
+  --warn:#FFD24A;       /* 訊號：過熱 / 注意 */
+  --text:#F3E9D8;
+  --dim:#B7A488;
+  --mute:#85765C;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Noto Sans TC',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg-deep);color:var(--text);font-family:var(--sans)}
+body{max-width:460px;margin:0 auto;padding:14px 14px 40px;position:relative;min-height:100vh}
+/* CRT 掃描線 — 招牌質感，極淡不礙讀 */
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:99;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0,rgba(0,0,0,.16) 1px,transparent 1px,transparent 3px);
+  mix-blend-mode:multiply;opacity:.5}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+
+/* ---- 頁首 ---- */
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.brand{display:flex;align-items:center;gap:9px}
+.brand .logo{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;
+  background:linear-gradient(150deg,var(--amber),#C97B12);color:#1a1206;font-weight:700;font-size:16px}
+.brand b{font-size:15px;letter-spacing:.5px}
+.brand span{display:block;font-size:10px;color:var(--mute);letter-spacing:3px;font-family:var(--mono)}
+.clock{font-family:var(--mono);font-size:11px;color:var(--dim);text-align:right;line-height:1.5}
+.clock .dot{color:var(--up)}
+
+/* ---- 作戰指令（招牌） ---- */
+.command{background:
+    radial-gradient(120% 140% at 0% 0%,rgba(255,176,32,.13),transparent 60%),var(--panel-hi);
+  border:1px solid rgba(255,176,32,.25);border-radius:14px;padding:14px 15px;margin-bottom:14px;position:relative;overflow:hidden}
+.command .row1{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.command .tag{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--amber);letter-spacing:1px}
+.pulse{width:9px;height:9px;border-radius:50%;background:var(--warn);box-shadow:0 0 0 0 currentColor;animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,210,74,.5)}70%{box-shadow:0 0 0 8px rgba(255,210,74,0)}100%{box-shadow:0 0 0 0 rgba(255,210,74,0)}}
+.stance{font-size:11px;font-weight:700;padding:3px 11px;border-radius:20px}
+.cmd-line{font-family:var(--mono);font-size:14.5px;line-height:1.55;color:var(--amber-soft);min-height:22px}
+.cmd-line .cursor{display:inline-block;width:8px;background:var(--amber);animation:blink 1.1s step-end infinite;margin-left:1px}
+@keyframes blink{50%{opacity:0}}
+.cmd-act{font-size:13px;color:var(--dim);margin-top:6px;line-height:1.55}
+
+/* ---- 卡片 ---- */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:12px 14px;margin-bottom:10px}
+.card .hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.card .hd .name{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:500;color:var(--text)}
+.card .hd .name i{font-size:15px;color:var(--amber);font-style:normal}
+.badge{font-size:10.5px;padding:2px 8px;border-radius:20px;font-family:var(--mono)}
+.badge.free{color:var(--up);background:rgba(63,208,127,.12)}
+.badge.raw{color:var(--warn);background:rgba(255,210,74,.13)}
+.badge.link{color:var(--amber);cursor:pointer}
+.sect-lbl{display:flex;align-items:center;justify-content:space-between;margin:16px 2px 8px;font-size:12.5px;font-weight:700;color:var(--dim);letter-spacing:1px}
+
+/* 溫度計 */
+.big{font-family:var(--mono);font-size:26px;font-weight:600;letter-spacing:.5px}
+.pos{font-size:12.5px;font-weight:500}
+.pos.up{color:var(--up)} .pos.down{color:var(--down)} .pos.mid{color:var(--warn)}
+.sowhat{font-size:12.5px;color:var(--dim);margin-top:5px;line-height:1.5}
+
+/* 三雷達 */
+.radar{border-left:3px solid var(--line);border-radius:0 12px 12px 0;padding-left:11px}
+.radar.r-up{border-left-color:var(--up)} .radar.r-down{border-left-color:var(--down)} .radar.r-warn{border-left-color:var(--warn)}
+.radar .top{display:flex;justify-content:space-between;align-items:center;margin:0}
+.radar .k{font-size:12.5px;color:var(--dim)}
+.radar .v{font-family:var(--mono);font-size:15px;font-weight:600}
+.v.up{color:var(--up)} .v.down{color:var(--down)} .v.warn{color:var(--warn)} .v.neutral{color:var(--text)}
+
+/* 爆倉即時 */
+.liq-feed{font-family:var(--mono);font-size:12.5px;line-height:1.7;max-height:76px;overflow:hidden}
+.liq-feed .l{color:var(--down)} .liq-feed .s{color:var(--up)}
+.liq-sum{display:flex;gap:14px;font-family:var(--mono);font-size:11px;color:var(--mute);margin-top:4px}
+
+/* 型態命中 chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12px;padding:3px 10px;border-radius:20px}
+.chip.long{color:var(--up);background:rgba(63,208,127,.12)}
+.chip.short{color:var(--down);background:rgba(255,95,86,.12)}
+.chip.brand{color:var(--amber);background:rgba(255,176,32,.12)}
+.empty{font-size:12.5px;color:var(--mute);font-family:var(--mono)}
+
+.foot{text-align:center;font-family:var(--mono);font-size:10.5px;color:var(--mute);margin-top:18px;line-height:1.7}
+
+@media (prefers-reduced-motion: reduce){
+  .pulse,.cmd-line .cursor{animation:none}
+  body::before{opacity:.3}
+}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+</style>
+</head>
+<body>
+<h1 class="sr-only">比特聯盟作戰室首頁</h1>
+
+<header class="top">
+  <div class="brand">
+    <div class="logo">貓</div>
+    <div><b>比特聯盟</b><span>WAR ROOM</span></div>
+  </div>
+  <div class="clock">
+    <div><span class="dot">●</span> LIVE</div>
+    <div id="clock">--:--:--</div>
+  </div>
+</header>
+
+<!-- 招牌：今日作戰指令 -->
+<section class="command" aria-live="polite">
+  <div class="row1">
+    <div class="tag"><span class="pulse" id="cmdDot"></span> 今日作戰指令</div>
+    <span class="stance" id="cmdStance" style="background:rgba(255,210,74,.15);color:var(--warn)">讀取中</span>
+  </div>
+  <div class="cmd-line" id="cmdLine">連線中<span class="cursor">&nbsp;</span></div>
+  <div class="cmd-act" id="cmdAct"></div>
+</section>
+
+<!-- 大盤溫度計 -->
+<section class="card">
+  <div class="hd"><div class="name"><i>◈</i> 大盤溫度計 · BTC</div>
+    <span class="badge raw">暫用均線帶</span></div>
+  <div style="display:flex;align-items:baseline;gap:10px">
+    <span class="big" id="btcPrice">$--</span>
+    <span class="pos mid" id="btcPos">—</span>
+  </div>
+  <div class="sowhat" id="btcSo">計算隧道位置中…（待接三貓咪新版算法）</div>
+</section>
+
+<div class="sect-lbl"><span>籌碼三雷達</span><span class="badge free">免費源</span></div>
+
+<section class="card">
+  <div class="radar r-warn" id="cFund">
+    <div class="top"><span class="k">資金費率 / 8h</span><span class="v neutral" id="fundV">—</span></div>
+    <div class="sowhat" id="fundSo">讀取中…</div>
+  </div>
+</section>
+<section class="card">
+  <div class="radar r-up" id="cOi">
+    <div class="top"><span class="k">OI 未平倉 / 24h</span><span class="v neutral" id="oiV">—</span></div>
+    <div class="sowhat" id="oiSo">讀取中…</div>
+  </div>
+</section>
+<section class="card">
+  <div class="radar r-warn" id="cLs">
+    <div class="top"><span class="k">多空比 · 大戶持倉</span><span class="v neutral" id="lsV">—</span></div>
+    <div class="sowhat" id="lsSo">讀取中…</div>
+  </div>
+</section>
+
+<!-- 恐懼貪婪 -->
+<section class="card">
+  <div class="hd"><div class="name"><i>☺</i> BTC 恐懼貪婪</div></div>
+  <div class="top" style="display:flex;justify-content:space-between;align-items:center">
+    <span class="sowhat" id="fngSo" style="margin:0;max-width:64%">讀取中…</span>
+    <span class="v neutral" id="fngV" style="font-size:17px">—</span>
+  </div>
+</section>
+
+<!-- 爆倉即時偵測 -->
+<section class="card">
+  <div class="hd"><div class="name"><i>⚡</i> 爆倉即時偵測</div>
+    <span class="badge raw">偵測 · 非全量</span></div>
+  <div class="liq-feed" id="liqFeed" aria-live="polite"><span class="empty">連線 Binance 強平流…</span></div>
+  <div class="liq-sum"><span>近 5 分：多單爆 <b id="liqLong" style="color:var(--down)">$0</b></span>
+    <span>空單爆 <b id="liqShort" style="color:var(--up)">$0</b></span></div>
+</section>
+
+<!-- 清算價位估算 -->
+<section class="card">
+  <div class="hd"><div class="name"><i>▦</i> 清算價位估算</div>
+    <span class="badge raw">估算</span></div>
+  <div class="sowhat" id="liqMap">計算中…</div>
+</section>
+
+<!-- 今日型態命中 -->
+<section class="card">
+  <div class="hd"><div class="name"><i>◎</i> 今日型態命中</div>
+    <span class="badge link" onclick="location.href='screener.html'">進 screener ›</span></div>
+  <div class="chips" id="patterns"><span class="empty">掃描器連線中…</span></div>
+</section>
+
+<div class="foot">比特聯盟作戰室 · 資料僅供參考，非投資建議<br>更新於 <span id="stamp">—</span></div>
+
+<script>
+/* ================= 設定區（要調就改這裡） ================= */
+const CFG = {
+  symbol:'BTCUSDT',
+  fapi:'https://fapi.binance.com',
+  fng:'https://api.alternative.me/fng/?limit=2',
+  bitoApi:'https://web-production-f4735.up.railway.app',
+  analysisPath:'/analysis',            // ← 若掃描器路徑不同，改這行
+  liqWs:'wss://fstream.binance.com/ws/!forceOrder@arr',
+  leverages:[25,50,100],
+  refreshMs:45000,
+  fundingHotPct:0.03,                   // 8h 資金費率過熱門檻(%)
+};
+const $=id=>document.getElementById(id);
+const fmtUSD=n=>'$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:0});
+const fmtK=n=>{n=Math.abs(n);return n>=1e9?'$'+(n/1e9).toFixed(2)+'B':n>=1e6?'$'+(n/1e6).toFixed(2)+'M':n>=1e3?'$'+(n/1e3).toFixed(1)+'K':'$'+n.toFixed(0)};
+const j=async u=>{const r=await fetch(u);if(!r.ok)throw new Error(r.status);return r.json()};
+
+/* 共享狀態，供作戰指令綜合判讀 */
+const S={price:null,prevClose:null,pricePos:null,fundPct:null,oiChg:null,retailLS:null,fng:null};
+
+/* ---------- 溫度計：價 + 暫用均線帶 ---------- */
+async function loadPrice(){
+  try{
+    const k=await j(`${CFG.fapi}/fapi/v1/klines?symbol=${CFG.symbol}&interval=1h&limit=60`);
+    const cl=k.map(x=>+x[4]); const price=cl.at(-1); S.price=price; S.prevClose=cl.at(-2);
+    // 暫用均線帶：EMA20 ± 平均離差
+    const n=20, kf=2/(n+1); let ema=cl[cl.length-n];
+    for(let i=cl.length-n+1;i<cl.length;i++) ema=cl[i]*kf+ema*(1-kf);
+    const dev=cl.slice(-n).reduce((a,c)=>a+Math.abs(c-ema),0)/n*1.6;
+    const up=ema+dev, lo=ema-dev;
+    let pos,cls; if(price>up){pos='隧道上緣';cls='up';} else if(price<lo){pos='隧道下緣';cls='down';} else {pos='隧道中軌';cls='mid';}
+    S.pricePos=pos;
+    $('btcPrice').textContent=fmtUSD(price);
+    const pe=$('btcPos'); pe.textContent='▲ '+pos; pe.className='pos '+cls;
+    $('btcSo').textContent = cls==='up' ? '所以呢：貼上緣＝強勢但乖離大，追多易套。'
+      : cls==='down' ? '所以呢：跌破下緣＝轉弱，反彈先當逃命，別急著抄底。'
+      : '所以呢：隧道內震盪，方向未定，等突破再表態。';
+  }catch(e){ $('btcPrice').textContent='連線失敗'; $('btcSo').textContent='BTC 價暫時抓不到，稍後自動重試。'; }
+}
+
+/* ---------- 資金費率 ---------- */
+async function loadFunding(){
+  try{
+    const d=await j(`${CFG.fapi}/fapi/v1/premiumIndex?symbol=${CFG.symbol}`);
+    const pct=+d.lastFundingRate*100; S.fundPct=pct; const hot=pct>CFG.fundingHotPct, neg=pct<0;
+    const v=$('fundV'); v.textContent=(pct>=0?'+':'')+pct.toFixed(3)+'%'+(hot?' 偏高':neg?' 偏空':' 中性');
+    v.className='v '+(hot?'down':neg?'up':'neutral');
+    $('cFund').className='radar '+(hot?'r-down':neg?'r-up':'r-warn');
+    $('fundSo').textContent = hot ? '多方過熱、槓桿擁擠 → 反彈別追多，留意回檔洗槓桿'
+      : neg ? '空方付錢給多方 → 空頭擁擠，易軋空，偏多可留意'
+      : '成本中性 → 無明顯過熱，看技術面主導';
+  }catch(e){ $('fundV').textContent='—'; $('fundSo').textContent='資金費率暫時抓不到。'; }
+}
+
+/* ---------- OI 24h 變化 ---------- */
+async function loadOI(){
+  try{
+    const a=await j(`${CFG.fapi}/futures/data/openInterestHist?symbol=${CFG.symbol}&period=1h&limit=24`);
+    const f=+a[0].sumOpenInterestValue, l=+a.at(-1).sumOpenInterestValue, chg=(l-f)/f*100; S.oiChg=chg;
+    const inc=chg>0; const v=$('oiV'); v.textContent=(chg>=0?'+':'')+chg.toFixed(1)+'%'+(inc?' 增倉':' 減倉');
+    v.className='v '+(inc?'up':'down'); $('cOi').className='radar '+(inc?'r-up':'r-down');
+    const up=(S.price??0)>=(S.prevClose??0);
+    $('oiSo').textContent = inc&&up ? '價漲＋增倉＝資金進場、趨勢有續航 → 順勢做多'
+      : inc&&!up ? '價跌＋增倉＝空方加碼 → 下跌有柴火，別接刀'
+      : !inc&&up ? '價漲＋減倉＝空頭回補為主 → 續航力存疑，別追高'
+      : '價跌＋減倉＝資金撤離、動能轉弱 → 觀望為宜';
+  }catch(e){ $('oiV').textContent='—'; $('oiSo').textContent='OI 暫時抓不到。'; }
+}
+
+/* ---------- 多空比 / 大戶 ---------- */
+async function loadLS(){
+  try{
+    const [g,t]=await Promise.all([
+      j(`${CFG.fapi}/futures/data/globalLongShortAccountRatio?symbol=${CFG.symbol}&period=1h&limit=1`),
+      j(`${CFG.fapi}/futures/data/topLongShortPositionRatio?symbol=${CFG.symbol}&period=1h&limit=1`)
+    ]);
+    const retail=+g[0].longShortRatio, top=+t[0].longShortRatio; S.retailLS=retail;
+    const rLong=retail>1.05, rShort=retail<0.95;
+    const v=$('lsV'); v.textContent='散戶 '+(rLong?'偏多':rShort?'偏空':'均衡')+' '+retail.toFixed(2);
+    v.className='v '+(rLong?'warn':rShort?'warn':'neutral');
+    const diverge=(retail>1.1&&top<1)||(retail<0.9&&top>1.1);
+    $('cLs').className='radar '+(diverge?'r-down':'r-warn');
+    $('lsSo').textContent = diverge
+      ? `散戶 ${retail.toFixed(2)}、大戶 ${top.toFixed(2)} 方向背離 → 提防主力反向，設好停損`
+      : `散戶與大戶同向（大戶 ${top.toFixed(2)}）→ 順勢，但別加過頭`;
+  }catch(e){ $('lsV').textContent='—'; $('lsSo').textContent='多空比暫時抓不到。'; }
+}
+
+/* ---------- 恐懼貪婪 ---------- */
+async function loadFng(){
+  try{
+    const d=await j(CFG.fng); const cur=+d.data[0].value, prev=+d.data[1].value; S.fng=cur;
+    const zh=cur>=75?'極度貪婪':cur>=55?'貪婪':cur>=45?'中性':cur>=25?'恐懼':'極度恐懼';
+    const cls=cur>=55?'down':cur<=45?'up':'warn'; // 貪婪標紅(過熱)、恐懼標綠(機會)
+    const v=$('fngV'); v.textContent=cur+' · '+zh; v.className='v '+cls;
+    $('fngSo').textContent = cur>=75?'市場極貪 → 情緒頂區，順勢別重倉、留意反轉'
+      : cur<=25?'市場極恐 → 常是分批布局區，別追殺'
+      : `情緒${zh}（昨 ${prev}）→ ${cur>=55?'偏熱':cur<=45?'偏冷':'持平'}，配合技術面看`;
+  }catch(e){ $('fngV').textContent='—'; $('fngSo').textContent='恐懼貪婪指數抓不到（可能需經 bito-api 代抓）。'; }
+}
+
+/* ---------- 清算價位估算 ---------- */
+function calcLiqMap(){
+  if(!S.price){setTimeout(calcLiqMap,1500);return;}
+  const P=S.price; const rows=CFG.leverages.map(L=>({L,long:P*(1-1/L),short:P*(1+1/L)}));
+  const near=rows[rows.length-1]; // 最高槓桿=最近
+  $('liqMap').innerHTML=`下方 <b style="color:var(--down)">${fmtUSD(near.long)}</b> 為 ${near.L}x 多單密集清算區，`
+    +`上方 <b style="color:var(--up)">${fmtUSD(near.short)}</b> 為 ${near.L}x 空單區。`
+    +`<br><span style="color:var(--mute)">跌破下方易加速下殺、被獵殺停損；逼近上方易插針掃空單。</span>`;
+}
+
+/* ---------- 爆倉即時偵測（WebSocket） ---------- */
+const liqEvents=[];
+function connectLiq(){
+  let ws; try{ ws=new WebSocket(CFG.liqWs);}catch(e){return;}
+  ws.onmessage=ev=>{
+    try{
+      const m=JSON.parse(ev.data); const o=m.o||m; if(!o||!o.s)return;
+      const val=(+o.q)*(+(o.ap||o.p)); const isLong=o.S==='SELL'; // SELL=多單被強平
+      liqEvents.push({t:Date.now(),sym:o.s.replace('USDT',''),val,isLong});
+      if(o.s===CFG.symbol||val>50000) renderLiq();
+    }catch(_){}
+  };
+  ws.onclose=()=>setTimeout(connectLiq,4000);
+  ws.onerror=()=>{try{ws.close()}catch(_){}}
+}
+function renderLiq(){
+  const cut=Date.now()-5*60*1000; while(liqEvents.length&&liqEvents[0].t<cut) liqEvents.shift();
+  let L=0,Sh=0; liqEvents.forEach(e=>e.isLong?L+=e.val:Sh+=e.val);
+  $('liqLong').textContent=fmtK(L); $('liqShort').textContent=fmtK(Sh);
+  const big=liqEvents.filter(e=>e.val>30000).slice(-4).reverse();
+  const feed=$('liqFeed');
+  if(!big.length){ feed.innerHTML='<span class="empty">尚無大額強平（&gt;$30K）</span>'; return; }
+  feed.innerHTML=big.map(e=>`<div class="${e.isLong?'l':'s'}">▸ ${fmtK(e.val)} ${e.sym} ${e.isLong?'多單被爆':'空單被爆'}</div>`).join('');
+}
+
+/* ---------- 型態命中（打 bito-api /analysis） ---------- */
+async function loadPatterns(){
+  const box=$('patterns');
+  try{
+    const d=await j(`${CFG.bitoApi}${CFG.analysisPath}`);
+    const groups=d.groups||d.data?.groups||(Array.isArray(d)?d:[]);
+    const hits=groups.filter(g=>g.long_trigger||g.short_trigger);
+    if(!hits.length){ box.innerHTML='<span class="empty">今日尚無型態命中</span>'; return; }
+    box.innerHTML=hits.slice(0,8).map(g=>{
+      const dir=g.long_trigger?'long':g.short_trigger?'short':'brand';
+      return `<span class="chip ${dir}">${g.label||'訊號'}</span>`;
+    }).join('');
+  }catch(e){ box.innerHTML='<span class="empty">掃描器暫時連不上（確認 /analysis 路徑）</span>'; }
+}
+
+/* ---------- 今日作戰指令：綜合判讀 ---------- */
+function synth(){
+  let score=0; const f=[];
+  if(S.pricePos==='隧道上緣'){score+=2;f.push('站上隧道上緣');}
+  else if(S.pricePos==='隧道下緣'){score-=2;f.push('跌破隧道下緣');}
+  const up=(S.price??0)>=(S.prevClose??0);
+  if(S.oiChg!=null){ if(S.oiChg>0&&up){score+=1;f.push('OI 增倉助漲');} else if(S.oiChg>0&&!up){score-=1;f.push('OI 增倉助跌');} }
+  let overheat=false;
+  if(S.fundPct!=null&&S.fundPct>CFG.fundingHotPct){overheat=true;f.push('資金費率偏高');}
+  if(S.fng!=null){ if(S.fng>=75){overheat=true;f.push('情緒極貪');} else if(S.fng<=25){f.push('情緒極恐');} }
+  if(S.retailLS!=null){ if(S.retailLS>1.3){score-=1;f.push('散戶過度偏多');} else if(S.retailLS<0.77){score+=1;f.push('散戶過度偏空');} }
+
+  let stance,color,bg;
+  if(score>=2){stance='偏多';color='var(--up)';bg='rgba(63,208,127,.15)';}
+  else if(score<=-2){stance='偏空';color='var(--down)';bg='rgba(255,95,86,.15)';}
+  else {stance='觀望';color='var(--warn)';bg='rgba(255,210,74,.15)';}
+  if(overheat&&stance==='偏多') stance='偏多但過熱';
+
+  const dot=$('cmdDot'); dot.style.color=(stance.includes('多'))?'var(--up)':(stance==='偏空')?'var(--down)':'var(--warn)';
+  const st=$('cmdStance'); st.textContent=stance; st.style.color=color; st.style.background=bg;
+
+  const line = f.length ? f.slice(0,3).join('、') : '訊號收集中';
+  const act = stance.includes('過熱') ? '→ 短多格局，別追高；回踩不破隧道中軌再進場'
+    : stance==='偏多' ? '→ 順勢偏多，回踩找買點，停損放隧道下緣'
+    : stance==='偏空' ? '→ 偏空看待，反彈當逃命波，別搶反彈'
+    : '→ 方向未明，輕倉或觀望，等訊號一致再進場';
+  $('cmdLine').innerHTML=line+'<span class="cursor">&nbsp;</span>';
+  $('cmdAct').textContent=act;
+}
+
+/* ---------- 時鐘 & 排程 ---------- */
+function tick(){ const d=new Date(); const p=n=>String(n).padStart(2,'0');
+  $('clock').textContent=`${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; }
+async function refreshAll(){
+  await Promise.allSettled([loadPrice(),loadFunding(),loadOI(),loadLS(),loadFng(),loadPatterns()]);
+  calcLiqMap(); synth();
+  $('stamp').textContent=new Date().toLocaleTimeString('zh-TW');
+}
+setInterval(tick,1000); tick();
+refreshAll(); setInterval(refreshAll,CFG.refreshMs);
+connectLiq(); setInterval(renderLiq,5000);
+</script>
+</body>
+</html>
