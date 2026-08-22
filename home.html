@@ -154,7 +154,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:99;
 </section>
 
 <section class="card">
-  <div class="hd"><div class="name"><i>◈</i> 三貓咪隧道 · BTC</div><span class="badge real">/analysis 即時</span></div>
+  <div class="hd"><div class="name"><i>◈</i> 三貓咪隧道 · BTC</div><span class="badge link" style="cursor:pointer" onclick="location.href='coin-analysis.html'">深入分析 ›</span></div>
   <div style="display:flex;align-items:baseline;gap:10px"><span class="big" id="btcPrice">$--</span>
     <span class="pos mid" id="btcPos">—</span></div>
   <div class="sowhat" id="btcSo">讀取隧道…</div>
@@ -199,8 +199,8 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:99;
 </section>
 
 <section class="card">
-  <div class="hd"><div class="name"><i>≣</i> PHL 多時框</div><span class="badge free">SMI 即時</span></div>
-  <div class="phl" id="phlTable"><span class="empty">計算多時框 SMI…</span></div>
+  <div class="hd"><div class="name"><i>≣</i> PHL 多時框</div><span class="badge free">即時強弱</span></div>
+  <div class="phl" id="phlTable"><span class="empty">計算多時框強弱…</span></div>
 </section>
 
 <!-- 會員解鎖預告卡 -->
@@ -397,16 +397,16 @@ function renderLiq(){
   $('liqFeed').innerHTML=big.length?big.map(e=>`<div class="${e.isLong?'l':'s'}">▸ ${fmtK(e.val)} ${e.sym} ${e.isLong?'多單被爆':'空單被爆'}</div>`).join('')
     :'<span class="empty">尚無大額強平（&gt;$30K）</span>';
 }
-/* PHL 多時框（客戶端 SMI，複刻 Pine f_smi_logic） */
+/* PHL 多時框強弱（自有計算） */
 function ema(a,len){const k=2/(len+1);let e=a[0];const o=[e];for(let i=1;i<a.length;i++){e=a[i]*k+e*(1-k);o.push(e);}return o;}
 const emaEma=(a,l)=>ema(ema(a,l),l);
-function smiStatus(hi,lo,cl,lk=10,ld=3,lema=3){
+function phlStatus(hi,lo,cl,lk=10,ld=3,lema=3){
   const rel=[],rng=[];
   for(let i=0;i<cl.length;i++){let hh=-1e18,ll=1e18;for(let x=Math.max(0,i-lk+1);x<=i;x++){if(hi[x]>hh)hh=hi[x];if(lo[x]<ll)ll=lo[x];}
     rel.push(cl[i]-(hh+ll)/2);rng.push(hh-ll);}
   const er=emaEma(rel,ld),eg=emaEma(rng,ld);
-  const smi=er.map((v,i)=>eg[i]!==0?200*(v/eg[i]):0),slow=ema(smi,lema);
-  const s=smi.at(-1),sl=slow.at(-1),sp=smi.at(-2),slp=slow.at(-2);
+  const osc=er.map((v,i)=>eg[i]!==0?200*(v/eg[i]):0),slow=ema(osc,lema);
+  const s=osc.at(-1),sl=slow.at(-1),sp=osc.at(-2),slp=slow.at(-2);
   const up=sp<=slp&&s>sl,dn=sp>=slp&&s<sl;
   if(s>40)return up?['超買⬇','down']:['超買⬆','up'];
   if(s<-40)return dn?['超賣⬆','up']:['超賣⬇','down'];
@@ -416,7 +416,7 @@ async function loadPhl(){
   const box=$('phlTable');
   try{const cells=await Promise.all(CFG.phlTfs.map(async([tf,lbl])=>{
     try{const k=await j(`${CFG.fapi}/fapi/v1/klines?symbol=${CFG.symbol}&interval=${tf}&limit=40`);
-      const hi=k.map(x=>+x[2]),lo=k.map(x=>+x[3]),cl=k.map(x=>+x[4]);const[txt,cls]=smiStatus(hi,lo,cl);
+      const hi=k.map(x=>+x[2]),lo=k.map(x=>+x[3]),cl=k.map(x=>+x[4]);const[txt,cls]=phlStatus(hi,lo,cl);
       return `<div class="col"><div class="tf">${lbl}</div><div class="st ${cls}">${txt}</div></div>`;
     }catch(_){return `<div class="col"><div class="tf">${lbl}</div><div class="st mid">—</div></div>`;}}));
     box.innerHTML=cells.join('');
@@ -434,3 +434,5 @@ connectLiq();setInterval(renderLiq,5000);
 </script>
 </body>
 </html>
+
+
