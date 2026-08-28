@@ -61,9 +61,9 @@ tr.hi td.l{color:var(--amber);font-weight:700}
   <table>
     <thead><tr><th class="l">資金別</th><th class="r">當日</th><th class="r">近 3 日</th><th class="r">近 5 日</th></tr></thead>
     <tbody>
-      <tr class="hi"><td class="l">大戶持倉比 Δ</td><td class="r" id="t_d1">—</td><td class="r" id="t_d3">—</td><td class="r" id="t_d5">—</td></tr>
+      <tr><td class="l mut">大戶持倉比 Δ</td><td class="r" id="t_d1">—</td><td class="r" id="t_d3">—</td><td class="r" id="t_d5">—</td></tr>
       <tr><td class="l mut">未平倉 OI Δ</td><td class="r" id="o_d1">—</td><td class="r" id="o_d3">—</td><td class="r" id="o_d5">—</td></tr>
-      <tr><td class="l mut">現貨 ETF 淨流入</td><td class="r soon" colspan="3" style="text-align:right">即將推出（第二階段）</td></tr>
+      <tr class="hi"><td class="l">現貨 ETF 淨流入</td><td class="r" id="e_d1">—</td><td class="r" id="e_d3">—</td><td class="r" id="e_d5">—</td></tr>
     </tbody>
   </table>
 
@@ -84,16 +84,17 @@ tr.hi td.l{color:var(--amber);font-weight:700}
     <div class="legend">
       <span><span style="color:var(--up)">━</span> 大戶</span>
       <span><span style="color:var(--amber)">━</span> OI</span>
-      <span class="mut">━ ETF（即將推出）</span>
+      <span><span style="color:#6FB6C9">━</span> ETF</span>
     </div>
   </div>
   <div class="note" id="stamp">—</div>
 </section>
 
-<div class="foot">比特聯盟 · 資料僅供參考，非投資建議</div>
+<div class="foot">比特聯盟 · 資料僅供參考，非投資建議<br>籌碼 by Binance · ETF 資料 by TFTC (CC BY 4.0)</div>
 
 <script>
 const F='https://fapi.binance.com', SYM='BTCUSDT';
+const ETF='https://web-production-f4735.up.railway.app/etf-flow';
 const $=id=>document.getElementById(id);
 const j=async u=>{const r=await fetch(u);if(!r.ok)throw new Error(r.status);return r.json()};
 const pct=(a,b)=>b?((a-b)/Math.abs(b)*100):0;
@@ -101,7 +102,7 @@ const sgn=v=>(v>=0?'+':'')+v.toFixed(1)+'%';
 const cls=v=>v>0.05?'u':v<-0.05?'d':'w';
 function setΔ(id,v){const e=$(id);e.textContent=sgn(v);e.className='r '+cls(v);}
 
-let topSeries=[], oiSeries=[];
+let topSeries=[], oiSeries=[], etfSeries=[];
 
 async function loadTop(){
   try{
@@ -135,28 +136,40 @@ async function loadFR(){
     $('fr_r').textContent=hot?'過熱':neg?'偏空':'中性'; $('fr_r').className='r '+(hot?'d':neg?'u':'mut');
   }catch(e){ $('fr_v').textContent='—'; }
 }
+function fmtFlow(usd){const m=usd/1e6;const a=Math.abs(m);
+  const t=(m>=0?'+':'-')+(a>=1000?('$'+(a/1000).toFixed(2)+'B'):('$'+a.toFixed(0)+'M'));return t;}
+async function loadETF(){
+  try{
+    const d=await j(ETF); if(!d.ok)throw new Error('etf');
+    const set=(id,v)=>{const e=$(id);e.textContent=fmtFlow(v);const m=v/1e6;e.className='r '+(m>0.5?'u':m<-0.5?'d':'w');};
+    set('e_d1',d.today); set('e_d3',d.sum3); set('e_d5',d.sum5);
+    etfSeries=(d.series||[]).map(x=>x.net);
+    return d.sum5;
+  }catch(e){ ['e_d1','e_d3','e_d5'].forEach(i=>{const el=$(i);if(el){el.textContent='—';el.className='r';}}); return 0; }
+}
 function drawChart(){
   const svg=$('chart'); const W=380,x0=20,x1=360;
+  svg.innerHTML='<line x1="20" y1="92" x2="360" y2="92" stroke="rgba(243,233,216,.12)"/>';
   const line=(series,color)=>{
     if(series.length<2)return'';
     const mn=Math.min(...series),mx=Math.max(...series),rng=(mx-mn)||1;
     const pts=series.map((v,i)=>{const x=x0+(x1-x0)*i/(series.length-1);const y=88-(v-mn)/rng*68;return x.toFixed(0)+','+y.toFixed(0);}).join(' ');
     return `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2"/>`;
   };
-  svg.innerHTML='<line x1="20" y1="92" x2="360" y2="92" stroke="rgba(243,233,216,.12)"/>'
-    +line(topSeries,'#3FD07F')+line(oiSeries,'#FFB020');
+    let etfCum=[],run=0; etfSeries.forEach(v=>{run+=v; etfCum.push(run);});
+    svg.innerHTML+=line(topSeries,'#3FD07F')+line(oiSeries,'#FFB020')+line(etfCum,'#6FB6C9');
 }
-function verdict(td5,od5){
-  let s=0; if(td5>0)s++; if(td5<0)s--; if(od5>0)s++; if(od5<0)s--;
+function verdict(td5,od5,ed5){
+  let s=0; if(td5>0)s++; if(td5<0)s--; if(od5>0)s++; if(od5<0)s--; if(ed5>0)s++; if(ed5<0)s--;
   const [txt,col]=s>=1?['偏多','var(--up)']:s<=-1?['偏空','var(--down)']:['中性','var(--warn)'];
   $('verdict').textContent='近 5 日籌碼：'+txt; $('verdict').style.color=col;
-  $('vsub').textContent=`大戶 ${td5>=0?'加碼':'減碼'} · 未平倉 ${od5>=0?'資金進場':'資金撤離'}`;
+  $('vsub').textContent=`大戶 ${td5>=0?'加碼':'減碼'} · 未平倉 ${od5>=0?'進場':'撤離'} · ETF ${ed5>=0?'淨流入':'淨流出'}`;
 }
 async function run(){
-  const [td5,od5]=await Promise.all([loadTop(),loadOI()]);
+  const [td5,od5,ed5]=await Promise.all([loadTop(),loadOI(),loadETF()]);
   await Promise.all([loadLS(),loadFR()]);
-  drawChart(); verdict(td5,od5);
-  $('stamp').textContent='第一階段 · 免費源即時 · 更新於 '+new Date().toLocaleTimeString('zh-TW');
+  drawChart(); verdict(td5,od5,ed5);
+  $('stamp').textContent='更新於 '+new Date().toLocaleTimeString('zh-TW');
 }
 function tick(){const d=new Date(),p=n=>String(n).padStart(2,'0');$('clock').textContent=`${p(d.getHours())}:${p(d.getMinutes())}`;}
 setInterval(tick,1000);tick();
@@ -164,3 +177,4 @@ run(); setInterval(run,60000);
 </script>
 </body>
 </html>
+
