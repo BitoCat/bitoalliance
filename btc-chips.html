@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BTC 三大資金籌碼 · 比特聯盟</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#17120B;--bg-deep:#100C06;--panel:#211A10;--panel-hi:#2A2114;
+  --line:rgba(243,233,216,.09);--amber:#FFB020;--amber-soft:#FFD24A;
+  --up:#3FD07F;--down:#FF5F56;--warn:#FFD24A;--text:#F3E9D8;--dim:#B7A488;--mute:#85765C;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;--sans:'Noto Sans TC',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg-deep);color:var(--text);font-family:var(--sans)}
+body{max-width:460px;margin:0 auto;padding:14px 14px 40px;position:relative;min-height:100vh}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:99;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0,rgba(0,0,0,.16) 1px,transparent 1px,transparent 3px);
+  mix-blend-mode:multiply;opacity:.5}
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.back{font-family:var(--mono);font-size:12px;color:var(--amber);text-decoration:none}
+.title{font-size:14px;font-weight:700}
+.clock{font-family:var(--mono);font-size:11px;color:var(--mute)}
+.card{background:#17120B;border:1px solid rgba(255,176,32,.25);border-radius:14px;padding:15px 16px}
+.hd{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.hd .k{font-size:16px}.hd .t{font-size:16px;font-weight:700;color:var(--amber)}
+.verdict{font-size:13px;font-weight:700;margin-bottom:2px}
+.vsub{font-size:12px;color:var(--dim);margin-bottom:12px}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12.5px}
+thead tr{color:var(--mute);font-size:11px}
+th{font-weight:400;padding:4px 2px}
+th.l,td.l{text-align:left}
+th.r,td.r{text-align:right}
+td{padding:5px 2px}
+.u{color:var(--up)}.d{color:var(--down)}.w{color:var(--warn)}.mut{color:var(--mute)}
+tr.hi{background:rgba(255,176,32,.08)}
+tr.hi td.l{color:var(--amber);font-weight:700}
+.soon{color:var(--mute);font-size:11px}
+.divider{border-top:1px solid var(--line);margin:10px 0 8px}
+.sublbl{font-size:11px;color:var(--mute);font-family:var(--mono);margin:2px 0 4px}
+.legend{display:flex;gap:14px;justify-content:center;font-size:10.5px;color:var(--mute);font-family:var(--mono);margin-top:2px}
+.note{font-size:10px;color:#5b5140;text-align:center;margin-top:8px;font-family:var(--mono)}
+.foot{text-align:center;font-family:var(--mono);font-size:10.5px;color:var(--mute);margin-top:16px;line-height:1.7}
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="back" href="home.html">‹ 作戰室</a>
+  <span class="title">BTC 三大資金籌碼</span>
+  <span class="clock" id="clock">--:--</span>
+</header>
+
+<section class="card">
+  <div class="hd"><span class="k">🔑</span><span class="t">BTC 三大資金籌碼</span></div>
+  <div class="verdict" id="verdict" style="color:var(--warn)">讀取中…</div>
+  <div class="vsub" id="vsub">抓取 Binance 籌碼…</div>
+
+  <table>
+    <thead><tr><th class="l">資金別</th><th class="r">當日</th><th class="r">近 3 日</th><th class="r">近 5 日</th></tr></thead>
+    <tbody>
+      <tr class="hi"><td class="l">大戶持倉比 Δ</td><td class="r" id="t_d1">—</td><td class="r" id="t_d3">—</td><td class="r" id="t_d5">—</td></tr>
+      <tr><td class="l mut">未平倉 OI Δ</td><td class="r" id="o_d1">—</td><td class="r" id="o_d3">—</td><td class="r" id="o_d5">—</td></tr>
+      <tr><td class="l mut">現貨 ETF 淨流入</td><td class="r soon" colspan="3" style="text-align:right">即將推出（第二階段）</td></tr>
+    </tbody>
+  </table>
+
+  <div class="divider"></div>
+  <div class="sublbl">散戶槓桿</div>
+  <table>
+    <thead><tr><th class="l">項目</th><th class="r">現值</th><th class="r">判讀</th></tr></thead>
+    <tbody>
+      <tr><td class="l mut">多空比（散戶）</td><td class="r" id="ls_v">—</td><td class="r" id="ls_r">—</td></tr>
+      <tr><td class="l mut">資金費率 / 8h</td><td class="r" id="fr_v">—</td><td class="r" id="fr_r">—</td></tr>
+    </tbody>
+  </table>
+
+  <div style="margin-top:12px">
+    <svg viewBox="0 0 380 110" style="width:100%;height:auto" id="chart">
+      <line x1="20" y1="92" x2="360" y2="92" stroke="rgba(243,233,216,.12)"/>
+    </svg>
+    <div class="legend">
+      <span><span style="color:var(--up)">━</span> 大戶</span>
+      <span><span style="color:var(--amber)">━</span> OI</span>
+      <span class="mut">━ ETF（即將推出）</span>
+    </div>
+  </div>
+  <div class="note" id="stamp">—</div>
+</section>
+
+<div class="foot">比特聯盟 · 資料僅供參考，非投資建議</div>
+
+<script>
+const F='https://fapi.binance.com', SYM='BTCUSDT';
+const $=id=>document.getElementById(id);
+const j=async u=>{const r=await fetch(u);if(!r.ok)throw new Error(r.status);return r.json()};
+const pct=(a,b)=>b?((a-b)/Math.abs(b)*100):0;
+const sgn=v=>(v>=0?'+':'')+v.toFixed(1)+'%';
+const cls=v=>v>0.05?'u':v<-0.05?'d':'w';
+function setΔ(id,v){const e=$(id);e.textContent=sgn(v);e.className='r '+cls(v);}
+
+let topSeries=[], oiSeries=[];
+
+async function loadTop(){
+  try{
+    const a=await j(`${F}/futures/data/topLongShortPositionRatio?symbol=${SYM}&period=1d&limit=7`);
+    const r=a.map(x=>+x.longShortRatio); topSeries=r; const n=r.length, now=r[n-1];
+    setΔ('t_d1',pct(now,r[n-2])); setΔ('t_d3',pct(now,r[n-4]||r[0])); setΔ('t_d5',pct(now,r[n-6]||r[0]));
+    return pct(now,r[n-6]||r[0]);
+  }catch(e){ ['t_d1','t_d3','t_d5'].forEach(i=>$(i).textContent='—'); return 0; }
+}
+async function loadOI(){
+  try{
+    const a=await j(`${F}/futures/data/openInterestHist?symbol=${SYM}&period=1d&limit=7`);
+    const v=a.map(x=>+x.sumOpenInterestValue); oiSeries=v; const n=v.length, now=v[n-1];
+    setΔ('o_d1',pct(now,v[n-2])); setΔ('o_d3',pct(now,v[n-4]||v[0])); setΔ('o_d5',pct(now,v[n-6]||v[0]));
+    return pct(now,v[n-6]||v[0]);
+  }catch(e){ ['o_d1','o_d3','o_d5'].forEach(i=>$(i).textContent='—'); return 0; }
+}
+async function loadLS(){
+  try{
+    const a=await j(`${F}/futures/data/globalLongShortAccountRatio?symbol=${SYM}&period=1h&limit=1`);
+    const r=+a[0].longShortRatio; const hot=r>1.2,neg=r<0.83;
+    $('ls_v').textContent=r.toFixed(2); $('ls_v').className='r '+(hot||neg?'w':'');
+    $('ls_r').textContent=hot?'偏多擁擠':neg?'偏空擁擠':'均衡'; $('ls_r').className='r '+(hot||neg?'w':'mut');
+  }catch(e){ $('ls_v').textContent='—'; }
+}
+async function loadFR(){
+  try{
+    const d=await j(`${F}/fapi/v1/premiumIndex?symbol=${SYM}`); const p=+d.lastFundingRate*100;
+    const hot=p>0.03,neg=p<0;
+    $('fr_v').textContent=(p>=0?'+':'')+p.toFixed(3)+'%'; $('fr_v').className='r '+(hot?'d':neg?'u':'');
+    $('fr_r').textContent=hot?'過熱':neg?'偏空':'中性'; $('fr_r').className='r '+(hot?'d':neg?'u':'mut');
+  }catch(e){ $('fr_v').textContent='—'; }
+}
+function drawChart(){
+  const svg=$('chart'); const W=380,x0=20,x1=360;
+  const line=(series,color)=>{
+    if(series.length<2)return'';
+    const mn=Math.min(...series),mx=Math.max(...series),rng=(mx-mn)||1;
+    const pts=series.map((v,i)=>{const x=x0+(x1-x0)*i/(series.length-1);const y=88-(v-mn)/rng*68;return x.toFixed(0)+','+y.toFixed(0);}).join(' ');
+    return `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2"/>`;
+  };
+  svg.innerHTML='<line x1="20" y1="92" x2="360" y2="92" stroke="rgba(243,233,216,.12)"/>'
+    +line(topSeries,'#3FD07F')+line(oiSeries,'#FFB020');
+}
+function verdict(td5,od5){
+  let s=0; if(td5>0)s++; if(td5<0)s--; if(od5>0)s++; if(od5<0)s--;
+  const [txt,col]=s>=1?['偏多','var(--up)']:s<=-1?['偏空','var(--down)']:['中性','var(--warn)'];
+  $('verdict').textContent='近 5 日籌碼：'+txt; $('verdict').style.color=col;
+  $('vsub').textContent=`大戶 ${td5>=0?'加碼':'減碼'} · 未平倉 ${od5>=0?'資金進場':'資金撤離'}`;
+}
+async function run(){
+  const [td5,od5]=await Promise.all([loadTop(),loadOI()]);
+  await Promise.all([loadLS(),loadFR()]);
+  drawChart(); verdict(td5,od5);
+  $('stamp').textContent='第一階段 · 免費源即時 · 更新於 '+new Date().toLocaleTimeString('zh-TW');
+}
+function tick(){const d=new Date(),p=n=>String(n).padStart(2,'0');$('clock').textContent=`${p(d.getHours())}:${p(d.getMinutes())}`;}
+setInterval(tick,1000);tick();
+run(); setInterval(run,60000);
+</script>
+</body>
+</html>
