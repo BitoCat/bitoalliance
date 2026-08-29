@@ -80,6 +80,14 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:99;
 .empty{font-size:12.5px;color:var(--mute);font-family:var(--mono)}
 .locked-line{margin-top:9px;padding-top:9px;border-top:1px dashed var(--line);font-size:12px;color:var(--mute)}
 .locked-line b{color:var(--amber);cursor:pointer}
+/* 三大資金籌碼卡 */
+.ftbl{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12.5px}
+.ftbl th{color:var(--mute);font-size:11px;font-weight:400;padding:4px 2px}
+.ftbl th.l,.ftbl td.l{text-align:left}.ftbl th.r,.ftbl td.r{text-align:right}
+.ftbl td{padding:5px 2px}.ftbl .fm{color:var(--mute)}
+.ftbl tr.hi{background:rgba(255,176,32,.08)}.ftbl tr.hi td.l{color:var(--amber);font-weight:700}
+.fdiv{border-top:1px solid var(--line);margin:10px 0 8px}
+.flegend{display:flex;gap:14px;justify-content:center;font-size:10.5px;color:var(--mute);font-family:var(--mono);margin-top:2px}
 /* 會員解鎖預告卡 */
 .member{background:linear-gradient(160deg,rgba(255,176,32,.10),var(--panel));border:1px solid rgba(255,176,32,.22)}
 .mrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
@@ -154,16 +162,29 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:99;
   <div class="cats" id="cats"></div>
 </section>
 
-<div class="sect-lbl"><span>籌碼三雷達</span><span class="badge free">免費源</span></div>
-<section class="card"><div class="radar r-warn" id="cFund">
-  <div class="top"><span class="k">資金費率 / 8h · Bitunix</span><span class="v neutral" id="fundV">—</span></div>
-  <div class="sowhat" id="fundSo">讀取中…</div></div></section>
-<section class="card"><div class="radar r-up" id="cOi">
-  <div class="top"><span class="k">OI 未平倉 / 24h</span><span class="v neutral" id="oiV">—</span></div>
-  <div class="sowhat" id="oiSo">讀取中…</div></div></section>
-<section class="card"><div class="radar r-warn" id="cLs">
-  <div class="top"><span class="k">多空比 · 大戶持倉</span><span class="v neutral" id="lsV">—</span></div>
-  <div class="sowhat" id="lsSo">讀取中…</div></div></section>
+<section class="card" style="border-color:rgba(255,176,32,.22)">
+  <div class="hd"><div class="name"><i>🔑</i> BTC 三大資金籌碼</div><span class="badge free">籌碼即時</span></div>
+  <div id="cverdict" style="font-size:13px;font-weight:700;margin-bottom:2px;color:var(--warn)">讀取中…</div>
+  <div id="cvsub" style="font-size:11px;color:var(--mute);font-family:var(--mono);margin-bottom:10px"></div>
+  <table class="ftbl">
+    <thead><tr><th class="l">資金別</th><th class="r">當日</th><th class="r">近3日</th><th class="r">近5日</th></tr></thead>
+    <tbody>
+      <tr><td class="l fm">大戶持倉比 Δ</td><td class="r" id="t_d1">—</td><td class="r" id="t_d3">—</td><td class="r" id="t_d5">—</td></tr>
+      <tr class="hi"><td class="l">現貨 ETF 淨流入</td><td class="r" id="e_d1">—</td><td class="r" id="e_d3">—</td><td class="r" id="e_d5">—</td></tr>
+      <tr><td class="l fm">未平倉 OI Δ</td><td class="r" id="o_d1">—</td><td class="r" id="o_d3">—</td><td class="r" id="o_d5">—</td></tr>
+    </tbody>
+  </table>
+  <div class="fdiv"></div>
+  <div style="font-size:11px;color:var(--mute);font-family:var(--mono);margin-bottom:4px">散戶槓桿</div>
+  <table class="ftbl"><tbody>
+      <tr><td class="l fm">多空比（散戶）</td><td class="r" id="ls_v">—</td><td class="r fm" id="ls_r">—</td></tr>
+      <tr><td class="l fm">資金費率 / 8h</td><td class="r" id="fr_v">—</td><td class="r fm" id="fr_r">—</td></tr>
+  </tbody></table>
+  <div style="margin-top:12px">
+    <svg viewBox="0 0 380 110" style="width:100%;height:auto" id="cchart"><line x1="20" y1="92" x2="360" y2="92" stroke="rgba(243,233,216,.12)"/></svg>
+    <div class="flegend"><span><span style="color:var(--up)">━</span> 大戶</span><span><span style="color:var(--amber)">━</span> OI</span><span><span style="color:#6FB6C9">━</span> ETF</span></div>
+  </div>
+</section>
 
 <section class="card">
   <div class="hd"><div class="name"><i>☺</i> BTC 恐懼貪婪</div></div>
@@ -225,7 +246,7 @@ const CFG={
   liqWs:'wss://fstream.binance.com/ws/!forceOrder@arr',
   leverages:[25,50,100],
   refreshMs:45000,
-  fundingHotPct:0.03,['15m','15m'],['30m','30m'],['1h','H1'],['2h','H2'],['4h','H4'],['8h','H8'],['12h','H12'],['1d','D']],
+  fundingHotPct:0.03,
   // 貓咪隧道快訊頻道（給之後 webhook 推播用的 chat_id，不是公開連結）
   tgAlertChatId:'-1003946997019',
 };
@@ -261,7 +282,7 @@ renderAgents();
 async function loadAnalysis(){
   try{
     const d=await j(`${CFG.bitoApi}${CFG.analysisPath}?symbol=${CFG.symbol}`);
-    renderTunnel(d); renderCommand(d); renderFunding(d);
+    renderTunnel(d); renderCommand(d);
   }catch(e){
     $('cmdLine').innerHTML='/analysis 連不上 · 確認路徑<span class="cursor">&nbsp;</span>';
     $('btcSo').textContent='隧道資料抓不到（/analysis）。';
@@ -301,38 +322,21 @@ function renderCommand(d){
   $('cmdAct').textContent=`→ 市場溫度：${dir}。細部進出場請看你的貓咪隧道 TradingView 指標`;
   $('cmdCta').textContent='想即時收到貓咪隧道訊號推播？免費加入比特聯盟 →';
 }
-function renderFunding(d){
-  const f=d.funding; if(!f)return;
-  const pct=+f.fundingRate, hot=pct>CFG.fundingHotPct, neg=pct<0;
-  const v=$('fundV'); v.textContent=(pct>=0?'+':'')+pct.toFixed(3)+'%'+(hot?' 偏高':neg?' 偏空':' 中性');
-  v.className='v '+(hot?'down':neg?'up':'neutral'); $('cFund').className='radar '+(hot?'r-down':neg?'r-up':'r-warn');
-  $('fundSo').textContent=hot?'多方過熱、槓桿擁擠 → 反彈別追多，留意回檔洗槓桿'
-    :neg?'費率翻負、空方付錢給多方 → 空頭擁擠易軋空，偏多可留意':'成本中性 → 無明顯過熱，看技術面主導';
-}
 
-/* ============ 免費籌碼源 ============ */
-async function loadOI(){
-  try{const a=await j(`${CFG.fapi}/futures/data/openInterestHist?symbol=${CFG.symbol}&period=1h&limit=24`);
-    const f=+a[0].sumOpenInterestValue,l=+a.at(-1).sumOpenInterestValue,chg=(l-f)/f*100,inc=chg>0;
-    const v=$('oiV');v.textContent=(chg>=0?'+':'')+chg.toFixed(1)+'%'+(inc?' 增倉':' 減倉');
-    v.className='v '+(inc?'up':'down');$('cOi').className='radar '+(inc?'r-up':'r-down');
-    $('oiSo').textContent=inc&&S.priceUp?'價漲＋增倉＝資金進場、趨勢有續航 → 順勢做多'
-      :inc&&!S.priceUp?'價跌＋增倉＝空方加碼 → 下跌有柴火，別接刀'
-      :!inc&&S.priceUp?'價漲＋減倉＝空頭回補 → 續航存疑，別追高':'價跌＋減倉＝資金撤離 → 觀望為宜';
-  }catch(e){$('oiV').textContent='—';$('oiSo').textContent='OI 暫時抓不到。';}
-}
-async function loadLS(){
-  try{const[g,t]=await Promise.all([
-    j(`${CFG.fapi}/futures/data/globalLongShortAccountRatio?symbol=${CFG.symbol}&period=1h&limit=1`),
-    j(`${CFG.fapi}/futures/data/topLongShortPositionRatio?symbol=${CFG.symbol}&period=1h&limit=1`)]);
-    const r=+g[0].longShortRatio,tp=+t[0].longShortRatio,rL=r>1.05,rS=r<0.95;
-    const v=$('lsV');v.textContent='散戶 '+(rL?'偏多':rS?'偏空':'均衡')+' '+r.toFixed(2);
-    v.className='v '+(rL||rS?'warn':'neutral');
-    const dv=(r>1.1&&tp<1)||(r<0.9&&tp>1.1);$('cLs').className='radar '+(dv?'r-down':'r-warn');
-    $('lsSo').textContent=dv?`散戶 ${r.toFixed(2)}、大戶 ${tp.toFixed(2)} 方向背離 → 提防主力反向，設好停損`
-      :`散戶與大戶同向（大戶 ${tp.toFixed(2)}）→ 順勢，但別加過頭`;
-  }catch(e){$('lsV').textContent='—';$('lsSo').textContent='多空比暫時抓不到。';}
-}
+/* ============ 三大資金籌碼卡（免費源 + ETF 代抓） ============ */
+const ETFURL=CFG.bitoApi+'/etf-flow';
+let cTop=[],cOi=[],cEtf=[];
+const cpct=(a,b)=>b?((a-b)/Math.abs(b)*100):0;
+function cSetD(id,v){const e=$(id);if(!e)return;e.textContent=(v>=0?'+':'')+v.toFixed(1)+'%';e.style.color=v>0.05?'var(--up)':v<-0.05?'var(--down)':'var(--warn)';}
+function cFmtFlow(usd){const m=usd/1e6,a=Math.abs(m);return (m>=0?'+':'-')+(a>=1000?('$'+(a/1000).toFixed(2)+'B'):('$'+a.toFixed(0)+'M'));}
+async function cLoadTop(){try{const a=await j(`${CFG.fapi}/futures/data/topLongShortPositionRatio?symbol=${CFG.symbol}&period=1d&limit=7`);const r=a.map(x=>+x.longShortRatio);cTop=r;const n=r.length,now=r[n-1];cSetD('t_d1',cpct(now,r[n-2]));cSetD('t_d3',cpct(now,r[n-4]||r[0]));cSetD('t_d5',cpct(now,r[n-6]||r[0]));return cpct(now,r[n-6]||r[0]);}catch(e){return 0;}}
+async function cLoadOI(){try{const a=await j(`${CFG.fapi}/futures/data/openInterestHist?symbol=${CFG.symbol}&period=1d&limit=7`);const v=a.map(x=>+x.sumOpenInterestValue);cOi=v;const n=v.length,now=v[n-1];cSetD('o_d1',cpct(now,v[n-2]));cSetD('o_d3',cpct(now,v[n-4]||v[0]));cSetD('o_d5',cpct(now,v[n-6]||v[0]));return cpct(now,v[n-6]||v[0]);}catch(e){return 0;}}
+async function cLoadETF(){try{const d=await j(ETFURL);if(!d.ok)throw new Error('etf');const set=(id,x)=>{const e=$(id);e.textContent=cFmtFlow(x);const m=x/1e6;e.style.color=m>0.5?'var(--up)':m<-0.5?'var(--down)':'var(--warn)';};set('e_d1',d.today);set('e_d3',d.sum3);set('e_d5',d.sum5);cEtf=(d.series||[]).map(x=>x.net);return d.sum5;}catch(e){['e_d1','e_d3','e_d5'].forEach(i=>{const el=$(i);if(el)el.textContent='—';});return 0;}}
+async function cLoadLS(){try{const a=await j(`${CFG.fapi}/futures/data/globalLongShortAccountRatio?symbol=${CFG.symbol}&period=1h&limit=1`);const r=+a[0].longShortRatio,hot=r>1.2,neg=r<0.83;$('ls_v').textContent=r.toFixed(2);$('ls_v').style.color=hot||neg?'var(--warn)':'var(--text)';$('ls_r').textContent=hot?'偏多擁擠':neg?'偏空擁擠':'均衡';}catch(e){}}
+async function cLoadFR(){try{const d=await j(`${CFG.fapi}/fapi/v1/premiumIndex?symbol=${CFG.symbol}`);const p=+d.lastFundingRate*100,hot=p>0.03,neg=p<0;$('fr_v').textContent=(p>=0?'+':'')+p.toFixed(3)+'%';$('fr_v').style.color=hot?'var(--down)':neg?'var(--up)':'var(--text)';$('fr_r').textContent=hot?'過熱':neg?'偏空':'中性';}catch(e){}}
+function cDraw(){const svg=$('cchart');if(!svg)return;const x0=20,x1=360;const line=(ser,col)=>{if(ser.length<2)return'';const mn=Math.min(...ser),mx=Math.max(...ser),rng=(mx-mn)||1;const pts=ser.map((v,i)=>{const x=x0+(x1-x0)*i/(ser.length-1);const y=88-(v-mn)/rng*68;return x.toFixed(0)+','+y.toFixed(0);}).join(' ');return `<polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2"/>`;};let cum=[],run=0;cEtf.forEach(v=>{run+=v;cum.push(run);});svg.innerHTML='<line x1="20" y1="92" x2="360" y2="92" stroke="rgba(243,233,216,.12)"/>'+line(cTop,'#3FD07F')+line(cOi,'#FFB020')+line(cum,'#6FB6C9');}
+function cVerdict(td5,od5,ed5){let s=0;[td5,od5,ed5].forEach(x=>{if(x>0)s++;if(x<0)s--;});const [txt,col]=s>=1?['偏多','var(--up)']:s<=-1?['偏空','var(--down)']:['中性','var(--warn)'];const e=$('cverdict');e.textContent='近5日籌碼：'+txt;e.style.color=col;$('cvsub').textContent=`大戶 ${td5>=0?'加碼':'減碼'} · ETF ${ed5>=0?'淨流入':'淨流出'} · 未平倉 ${od5>=0?'進場':'撤離'}`;}
+async function loadChips(){const [t,o,e]=await Promise.all([cLoadTop(),cLoadOI(),cLoadETF()]);await Promise.all([cLoadLS(),cLoadFR()]);cDraw();cVerdict(t,o,e);}
 async function loadFng(){
   try{const d=await j(CFG.fng);const c=+d.data[0].value,p=+d.data[1].value;
     const zh=c>=75?'極度貪婪':c>=55?'貪婪':c>=45?'中性':c>=25?'恐懼':'極度恐懼',cls=c>=55?'down':c<=45?'up':'warn';
@@ -366,7 +370,7 @@ function renderLiq(){
 /* 時鐘 & 排程 */
 function tick(){const d=new Date(),p=n=>String(n).padStart(2,'0');$('clock').textContent=`${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
 async function refreshAll(){
-  await Promise.allSettled([loadAnalysis(),loadOI(),loadLS(),loadFng()]);
+  await Promise.allSettled([loadAnalysis(),loadChips(),loadFng()]);
   calcLiqMap();$('stamp').textContent=new Date().toLocaleTimeString('zh-TW');
 }
 setInterval(tick,1000);tick();
@@ -375,4 +379,6 @@ connectLiq();setInterval(renderLiq,5000);
 </script>
 </body>
 </html>
+
+
 
