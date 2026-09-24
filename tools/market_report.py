@@ -4,10 +4,10 @@
 
 台灣時間 00/04/08/12/16/20 點推「H4 完整版」，其他整點推「簡短版」。
 資料來源：
-  - OKX 公開 API：價格、K 棒、OI、資金費率、多空比、主動買賣、爆倉
+  - OKX 公開 API（日內資料，5 分鐘～4 小時）：價格、K 棒、OI、資金費率、
+    多空比、合約/現貨主動買賣、爆倉
   - Coinbase 公開 API：計算 Coinbase 溢價
   - CoinGecko：總市值、BTC 市佔、板塊輪動（只在完整版抓）
-  - alternative.me：恐懼貪婪指數（只在完整版抓）
 
 環境變數：
   DISCORD_WEBHOOK_URL  Discord Webhook 網址（必填，DRY_RUN 時可不填）
@@ -59,11 +59,6 @@ SECTORS = {
     "Data Availability": "資料可用性",
     "Infrastructure": "基礎設施",
     "NFT": "NFT",
-}
-
-FNG_ZH = {
-    "Extreme Fear": "極度恐懼", "Fear": "恐懼", "Neutral": "中性",
-    "Greed": "貪婪", "Extreme Greed": "極度貪婪",
 }
 
 COLOR_BULL = 0x2ECC71
@@ -131,45 +126,9 @@ def price_fmt(p):
     return f"${p:,.0f}" if p >= 1000 else f"${p:,.2f}"
 
 
-def kfmt(p):
-    if p >= 10000:
-        return f"{p / 1000:.2f}K"
-    if p >= 1000:
-        return f"{p / 1000:.3f}K"
-    return f"{p:,.2f}"
+# ───────────────────────── 抓資料（日內版：5 分鐘～4 小時） ─────────────────────────
 
-
-def range_bar(pos, n=12):
-    i = max(0, min(n - 1, int(pos / 100 * n)))
-    return "─" * i + "●" + "─" * (n - 1 - i)
-
-
-def pos_text(pos):
-    if pos < 25:
-        return "貼近下緣"
-    if pos > 75:
-        return "貼近上緣"
-    return "區間中段"
-
-
-def quad(p, o, th):
-    """價格 × OI 四象限解讀"""
-    if p is None or o is None:
-        return None, 0
-    if p > 0 and o > th:
-        return "價漲 + OI 增：多方新開倉推動", 1
-    if p > 0 and o < -th:
-        return "價漲 + OI 減：空方回補推動，力道存疑", 0
-    if p < 0 and o > th:
-        return "價跌 + OI 增：空方加倉，下跌有延續風險", -1
-    if p < 0 and o < -th:
-        return "價跌 + OI 減：多方停損、槓桿清洗中", 0
-    return "OI 變化不大：觀望為主", 0
-
-
-# ───────────────────────── 抓資料 ─────────────────────────
-
-def liquidations(c, hours=4, max_pages=10):
+def liquidations(c, hours=1.0, max_pages=10):
     """OKX 公開爆倉紀錄，加總最近 N 小時多/空爆倉金額（美元，近似值）"""
     cutoff = (time.time() - hours * 3600) * 1000
     long_usd = short_usd = 0.0
@@ -190,7 +149,7 @@ def liquidations(c, hours=4, max_pages=10):
                 continue
             v = (f(x.get("bkPx")) or 0) * (f(x.get("sz")) or 0) * c["ctval"]
             side = x.get("posSide")
-            if side == "net":  # 單向持倉模式：賣出強平 = 多單爆倉
+            if side == "net":  # 單向持倉：賣出強平 = 多單爆倉
                 side = "long" if x.get("side") == "sell" else "short"
             if side == "long":
                 long_usd += v
@@ -203,8 +162,23 @@ def liquidations(c, hours=4, max_pages=10):
     return long_usd, short_usd
 
 
-def coin_data(c, full):
+def taker_ratio(ccy, inst_type, now_ms):
+    """主動買賣比（買/賣），回傳 (近 15 分鐘, 近 1 小時)，只用已完成的 5 分鐘資料"""
+    tv = okx("/rubik/stat/taker-volume", ccy=ccy, instType=inst_type, period="5m")
+    if not tv:
+        return None, None
+    done = [r for r in rows_desc(tv) if int(r[0]) + 300_000 <= now_ms + 30_000]
+
+    def ratio(n):
+        sell = sum(f(r[1]) or 0 for r in done[:n])
+        buy = sum(f(r[2]) or 0 for r in done[:n])
+        return buy / sell if sell > 0 else None
+    return ratio(3), ratio(12)
+
+
+def coin_data(c):
     d = {}
+    now_ms = time.time() * 1000
     t = okx("/market/ticker", instId=c["swap"])
     if not t:
         return None
@@ -212,33 +186,41 @@ def coin_data(c, full):
     last = f(t["last"])
     d["last"] = last
     d["chg24"] = (last / f(t["open24h"]) - 1) * 100
-    d["hi24"], d["lo24"] = f(t["high24h"]), f(t["low24h"])
-    rng = d["hi24"] - d["lo24"]
-    d["pos"] = (last - d["lo24"]) / rng * 100 if rng > 0 else 50.0
 
-    # 1H K 棒：上一小時漲跌、量能倍數、各時間點價格
+    # 5 分鐘 K：近 1h / 4h 高低點、15 分鐘與 1 小時漲跌
     open_at = {}
-    k1 = okx("/market/candles", instId=c["swap"], bar="1H", limit="60")
-    if k1:
-        open_at = {int(k[0]): f(k[1]) for k in k1}
-        done = [k for k in k1 if k[8] == "1"]
-        if done:
-            d["p1bar"] = (f(done[0][4]) / f(done[0][1]) - 1) * 100
-            vols = [f(k[7]) or 0 for k in done[:25]]
-            if len(vols) > 5 and sum(vols[1:]) > 0:
-                d["volx"] = vols[0] / (sum(vols[1:]) / len(vols[1:]))
+    k5 = okx("/market/candles", instId=c["swap"], bar="5m", limit="49")
+    if k5:
+        k5 = sorted(k5, key=lambda k: int(k[0]), reverse=True)
+        open_at = {int(k[0]): f(k[1]) for k in k5}
+        h1, h4 = k5[:12], k5[:48]
+        d["hi1"], d["lo1"] = max(f(k[2]) for k in h1), min(f(k[3]) for k in h1)
+        d["hi4"], d["lo4"] = max(f(k[2]) for k in h4), min(f(k[3]) for k in h4)
+        if len(k5) > 3:
+            d["p15"] = (last / f(k5[2][1]) - 1) * 100
+        if len(k5) > 12:
+            d["p1"] = (last / f(k5[11][1]) - 1) * 100
+        rng = d["hi1"] - d["lo1"]
+        d["range1"] = rng
+        d["pos1"] = (last - d["lo1"]) / rng * 100 if rng > 0 else 50.0
 
-    # 4H K 棒：上一根 4H 漲跌、7 日高低
-    k4 = okx("/market/candles", instId=c["swap"], bar="4H", limit="43")
+    # 波動度：近 1 小時振幅 ÷ 過去 24 小時平均每小時振幅
+    k1 = okx("/market/candles", instId=c["swap"], bar="1H", limit="25")
+    if k1 and d.get("range1") is not None:
+        done = [k for k in k1 if k[8] == "1"]
+        rs = [f(k[2]) - f(k[3]) for k in done[:24]]
+        if rs and sum(rs) > 0:
+            d["volx"] = d["range1"] / (sum(rs) / len(rs))
+
+    # 上一根 4H（H4 報告用）
+    k4 = okx("/market/candles", instId=c["swap"], bar="4H", limit="3")
     if k4:
-        done4 = [k for k in k4 if k[8] == "1"]
+        done4 = sorted([k for k in k4 if k[8] == "1"], key=lambda k: int(k[0]), reverse=True)
         if done4:
             d["p4bar"] = (f(done4[0][4]) / f(done4[0][1]) - 1) * 100
-            d["hi7"] = max(f(k[2]) for k in done4[:42])
-            d["lo7"] = min(f(k[3]) for k in done4[:42])
 
-    # OI（OKX 該幣所有合約加總）
-    oi = okx("/rubik/stat/contracts/open-interest-volume", ccy=c["name"], period="1H")
+    # 合約持倉（OKX 該幣所有合約加總，5 分鐘資料）
+    oi = okx("/rubik/stat/contracts/open-interest-volume", ccy=c["name"], period="5m")
     if oi:
         oi = rows_desc(oi)
         d["oi"] = f(oi[0][1])
@@ -247,54 +229,40 @@ def coin_data(c, full):
             px = open_at.get(int(oi[i][0]))
             return f(oi[i][1]) / px if px else None
 
-        for h in (1, 4, 24):
-            if len(oi) > h and f(oi[h][1]):
-                d[f"oi{h}_usd"] = (f(oi[0][1]) / f(oi[h][1]) - 1) * 100
-                a, b = coin_oi(0), coin_oi(h)
-                d[f"oi{h}_coin"] = (a / b - 1) * 100 if a and b else None
-        for h in (1, 4):
-            if len(oi) > h:
-                p0, ph = open_at.get(int(oi[0][0])), open_at.get(int(oi[h][0]))
-                if p0 and ph:
-                    d[f"px{h}"] = (p0 / ph - 1) * 100
-        vals = [f(r[1]) for r in oi if f(r[1])]
-        if vals:
-            d["oi_pctl"] = sum(v <= vals[0] for v in vals) / len(vals) * 100
-            d["oi_days"] = len(vals) / 24
+        for key, i in (("15", 3), ("1h", 12)):
+            if len(oi) > i and f(oi[i][1]):
+                a, b = coin_oi(0), coin_oi(i)
+                d[f"oi{key}"] = (a / b - 1) * 100 if a and b else (f(oi[0][1]) / f(oi[i][1]) - 1) * 100
+                p0, pi = open_at.get(int(oi[0][0])), open_at.get(int(oi[i][0]))
+                if p0 and pi:
+                    d[f"px{key}"] = (p0 / pi - 1) * 100
 
-    # 資金費率（OKX 回傳小數，×100 變百分比）
+    # 資金費率 + 距離下次結算
     fr = okx("/public/funding-rate", instId=c["swap"])
     if fr:
         d["funding"] = f(fr[0]["fundingRate"]) * 100
+        ft = f(fr[0].get("fundingTime"))
+        if ft and ft > now_ms:
+            d["fund_min"] = (ft - now_ms) / 60000
 
-    # 散戶（全體帳戶）多空比
-    ra = okx("/rubik/stat/contracts/long-short-account-ratio", ccy=c["name"], period="1H")
+    # 散戶多空比（1 小時變化）、大戶持倉比
+    ra = okx("/rubik/stat/contracts/long-short-account-ratio", ccy=c["name"], period="5m")
     if ra:
         ra = rows_desc(ra)
         d["retail"] = f(ra[0][1])
-        if len(ra) > 4:
-            d["retail_chg"] = f(ra[0][1]) - f(ra[4][1])
-
-    # 大戶持倉多空比
+        if len(ra) > 12:
+            d["retail_chg"] = f(ra[0][1]) - f(ra[12][1])
     tp = okx("/rubik/stat/contracts/long-short-position-ratio-contract-top-trader",
-             instId=c["swap"], period="1H")
+             instId=c["swap"], period="5m")
     if tp:
         d["top_pos"] = f(rows_desc(tp)[0][1])
 
-    # 主動買賣量（只取已完成的小時）
-    tv = okx("/rubik/stat/taker-volume", ccy=c["name"], instType="CONTRACTS", period="1H")
-    if tv:
-        now_ms = time.time() * 1000
-        done = [r for r in rows_desc(tv) if int(r[0]) + 3_600_000 <= now_ms + 60_000]
-        sell4 = sum(f(r[1]) or 0 for r in done[:4])
-        buy4 = sum(f(r[2]) or 0 for r in done[:4])
-        if sell4 > 0:
-            d["taker4"] = buy4 / sell4
-        if done and f(done[0][1]):
-            d["taker1"] = f(done[0][2]) / f(done[0][1])
+    # 主動買賣：合約、現貨
+    d["tk15"], d["tk1h"] = taker_ratio(c["name"], "CONTRACTS", now_ms)
+    d["sp15"], d["sp1h"] = taker_ratio(c["name"], "SPOT", now_ms)
 
-    if full:
-        d["liq_long"], d["liq_short"] = liquidations(c, hours=4)
+    # 近 1 小時爆倉
+    d["liq_long"], d["liq_short"] = liquidations(c, hours=1)
     return d
 
 
@@ -317,119 +285,211 @@ def market_data():
         m["mcap"] = g["total_market_cap"]["usd"]
         m["mcap_chg"] = g.get("market_cap_change_percentage_24h_usd")
         m["btc_dom"] = g["market_cap_percentage"]["btc"]
-        m["eth_dom"] = g["market_cap_percentage"]["eth"]
     cats = get(CG + "/coins/categories", headers=headers)
     if cats:
         rows = [(SECTORS[x["name"]], x["market_cap_change_24h"]) for x in cats
                 if x.get("name") in SECTORS and x.get("market_cap_change_24h") is not None]
         rows.sort(key=lambda r: r[1], reverse=True)
         m["strong"], m["weak"] = rows[:3], rows[-3:][::-1]
-    fng = get("https://api.alternative.me/fng/?limit=1")
-    if fng and fng.get("data"):
-        x = fng["data"][0]
-        m["fng"] = (x["value"], FNG_ZH.get(x["value_classification"], x["value_classification"]))
     m["premium"] = coinbase_premium()
     return m
 
 
-# ───────────────────────── 多空判讀 ─────────────────────────
+# ───────────────────────── 局勢判讀（白話、日內） ─────────────────────────
 
-def judge(d, premium=None):
-    score, reasons = 0, []
+def pnum(p):
+    return f"{p:,.0f}" if p >= 1000 else f"{p:,.2f}"
 
-    o4 = d.get("oi4_coin") if d.get("oi4_coin") is not None else d.get("oi4_usd")
-    text, s = quad(d.get("px4"), o4, 0.5)
-    if text:
-        score += s
-        reasons.append(f"近 4h 價 {arrow_pct(d.get('px4'), 1)}、OI {arrow_pct(o4, 1)} → {text}")
+
+def hm(minutes):
+    h, m_ = divmod(int(minutes), 60)
+    return f"{h} 小時 {m_} 分" if h else f"{m_} 分鐘"
+
+
+def lights(d):
+    """燈號：(燈, 名稱, 白話)。🟢 利多 🔴 利空 🟡 留意（不分方向） ⚪ 中性"""
+    out = []
+
+    vx = d.get("volx")
+    if vx is not None:
+        if vx >= 1.8:
+            out.append(("🟡", "波動度", f"波動明顯放大，是平常的 {vx:.1f} 倍，行情正在動"))
+        elif vx >= 1.2:
+            out.append(("⚪", "波動度", f"波動略高於平常（{vx:.1f} 倍）"))
+        elif vx < 0.6:
+            out.append(("⚪", "波動度", f"波動收斂，只有平常的 {vx:.1f} 倍，行情清淡"))
+        else:
+            out.append(("⚪", "波動度", f"波動正常（{vx:.1f} 倍）"))
+
+    t15, t1 = d.get("tk15"), d.get("tk1h")
+    if t15 is not None and t1 is not None:
+        if t15 >= 1.1 and t1 >= 1.05:
+            out.append(("🟢", "買賣力道", "近 15 分鐘和 1 小時都是買方比較積極"))
+        elif t15 <= 0.9 and t1 <= 0.95:
+            out.append(("🔴", "買賣力道", "近 15 分鐘和 1 小時都是賣方比較積極"))
+        elif t15 >= 1.15:
+            out.append(("🟢", "買賣力道", "近 15 分鐘買方轉強"))
+        elif t15 <= 0.85:
+            out.append(("🔴", "買賣力道", "近 15 分鐘賣方轉強"))
+        else:
+            out.append(("⚪", "買賣力道", "買賣雙方力道差不多"))
+
+    p1, sp, ct = d.get("p1"), d.get("sp1h"), d.get("tk1h")
+    if p1 is not None and sp is not None and ct is not None:
+        if p1 > 0.1 and sp >= 1.05:
+            out.append(("🟢", "現貨 vs 合約", "上漲有現貨買盤支撐，走勢較扎實"))
+        elif p1 > 0.1 and ct >= 1.05:
+            out.append(("🟡", "現貨 vs 合約", "上漲主要由合約推動，容易急漲後拉回"))
+        elif p1 < -0.1 and sp <= 0.95:
+            out.append(("🔴", "現貨 vs 合約", "下跌有現貨賣壓，走勢較扎實"))
+        elif p1 < -0.1 and ct <= 0.95:
+            out.append(("🟡", "現貨 vs 合約", "下跌主要由合約推動，容易急跌後反彈"))
+        else:
+            out.append(("⚪", "現貨 vs 合約", "現貨和合約都沒有明顯帶動"))
+
+    px, o1, o15 = d.get("px1h"), d.get("oi1h"), d.get("oi15")
+    if px is not None and o1 is not None:
+        if px > 0 and o1 > 0.5:
+            item = ("🟢", "合約持倉", "上漲時合約交易者在加倉做多，有新資金推動")
+        elif px > 0 and o1 < -0.5:
+            item = ("⚪", "合約持倉", "上漲主要來自空單回補，力道還待確認")
+        elif px < 0 and o1 > 0.5:
+            item = ("🔴", "合約持倉", "下跌時合約交易者在加倉做空，賣壓可能延續")
+        elif px < 0 and o1 < -0.5:
+            item = ("⚪", "合約持倉", "下跌時多單在停損出場，賣壓正在消化")
+        else:
+            item = ("⚪", "合約持倉", "近 1 小時合約部位變化不大")
+        if o15 is not None and abs(o15) >= 1.0:
+            item = (item[0], item[1], item[2] + f"；近 15 分鐘合約部位急{'增' if o15 > 0 else '減'} {abs(o15):.1f}%")
+        out.append(item)
+
+    rc, tp = d.get("retail_chg"), d.get("top_pos")
+    if tp is not None:
+        if rc is not None and rc > 0.02 and tp < 1:
+            out.append(("🔴", "散戶 vs 大戶", "散戶在加碼做多，大戶反而偏空（通常大戶較準）"))
+        elif rc is not None and rc < -0.02 and tp > 1:
+            out.append(("🟢", "散戶 vs 大戶", "散戶在減碼做多，大戶反而偏多（通常大戶較準）"))
+        elif tp >= 1.05:
+            out.append(("🟢", "散戶 vs 大戶", "大戶持倉偏多"))
+        elif tp <= 0.95:
+            out.append(("🔴", "散戶 vs 大戶", "大戶持倉偏空"))
+        else:
+            out.append(("⚪", "散戶 vs 大戶", "散戶與大戶看法沒有明顯分歧"))
 
     fr = d.get("funding")
     if fr is not None:
+        fm = d.get("fund_min")
+        tail = f"（距離結算 {hm(fm)}{'，結算前後常有波動' if fm is not None and fm <= 30 else ''}）" if fm else ""
         if fr >= 0.03:
-            score -= 1
-            reasons.append(f"資金費率 {fr:.4f}% 偏高：多方擁擠")
+            out.append(("🔴", "多空費用", "做多的合約交易者太擁擠，容易被洗盤" + tail))
         elif fr <= -0.01:
-            score += 1
-            reasons.append(f"資金費率 {fr:.4f}% 為負：空方擁擠")
-
-    rc, tp = d.get("retail_chg"), d.get("top_pos")
-    if rc is not None and tp is not None:
-        if rc > 0.03 and tp < 1:
-            score -= 1
-            reasons.append("散戶加多、大戶持倉偏空：背離")
-        elif rc < -0.03 and tp > 1:
-            score += 1
-            reasons.append("散戶減多、大戶持倉偏多：背離")
-
-    tr = d.get("taker4")
-    if tr is not None:
-        if tr >= 1.1:
-            score += 1
-            reasons.append(f"4h 主動買盤主導（買賣比 {tr:.2f}）")
-        elif tr <= 0.9:
-            score -= 1
-            reasons.append(f"4h 主動賣壓主導（買賣比 {tr:.2f}）")
-
-    if premium is not None:
-        if premium >= 0.05:
-            score += 1
-            reasons.append("Coinbase 溢價為正：美國現貨買盤強")
-        elif premium <= -0.05:
-            score -= 1
-            reasons.append("Coinbase 溢價為負：美國現貨買盤弱")
+            out.append(("🟢", "多空費用", "做空的合約交易者太擁擠，容易出現軋空" + tail))
+        else:
+            out.append(("⚪", "多空費用", "做多做空都沒有過熱" + tail))
 
     ll, ls = d.get("liq_long"), d.get("liq_short")
-    if ll and ls is not None and ll > max(ls * 3, 1e6):
-        reasons.append("多單爆倉明顯多於空單：多方槓桿被清洗")
-    elif ls and ll is not None and ls > max(ll * 3, 1e6):
-        reasons.append("空單爆倉明顯多於多單：空方被軋")
+    if ll is not None and ls is not None:
+        if ls > ll * 2 and ls >= 3e5:
+            out.append(("🟢", "強制平倉", f"近 1 小時空單被強制平倉較多（{usd(ls)}），空方吃虧"))
+        elif ll > ls * 2 and ll >= 3e5:
+            out.append(("🔴", "強制平倉", f"近 1 小時多單被強制平倉較多（{usd(ll)}），多方吃虧"))
+        else:
+            out.append(("⚪", "強制平倉", "近 1 小時多空爆倉差不多"))
+    return out
 
-    if score >= 2:
-        return score, "偏多 🟢", COLOR_BULL, reasons
-    if score <= -2:
-        return score, "偏空 🔴", COLOR_BEAR, reasons
-    return score, "中性 ⚪", COLOR_NEUTRAL, reasons
+
+STATES = {
+    "偏多": ("📈", COLOR_BULL, "短線多方占優勢，順多較有利。"),
+    "短多": ("↗️", COLOR_BULL, "短線多方稍強，偏向短多。"),
+    "偏空": ("📉", COLOR_BEAR, "短線空方占優勢，順空較有利。"),
+    "短空": ("↘️", COLOR_BEAR, "短線空方稍強，偏向短空。"),
+    "膠著": ("⚖️", COLOR_NEUTRAL, "多空訊號互相抵銷，行情膠著。"),
+    "整理": ("↔️", COLOR_NEUTRAL, "多空力道都不明顯，行情在整理。"),
+}
+
+
+def situation(d, premium=None):
+    lt = lights(d)
+    greens = sum(1 for x in lt if x[0] == "🟢")
+    reds = sum(1 for x in lt if x[0] == "🔴")
+    net = greens - reds
+    if premium is not None:
+        net += 1 if premium >= 0.05 else -1 if premium <= -0.05 else 0
+    if net >= 3:
+        st = "偏多"
+    elif net == 2:
+        st = "短多"
+    elif net <= -3:
+        st = "偏空"
+    elif net == -2:
+        st = "短空"
+    elif greens >= 1 and reds >= 1:
+        st = "膠著"
+    else:
+        st = "整理"
+    return st, lt
+
+
+def pos_sentence(d):
+    p = d.get("pos1")
+    if p is None:
+        return ""
+    if p < 20:
+        return "價格貼近 1 小時低點。"
+    if p > 80:
+        return "價格貼近 1 小時高點。"
+    return "價格在 1 小時區間中間。"
+
+
+def level_lines(d):
+    def pair(a, b, la, lb):
+        return f"{pnum(a)}（{la}／{lb}）" if abs(a - b) < 1e-9 else f"{pnum(a)}（{la}）／{pnum(b)}（{lb}）"
+    return [
+        f"⬆️ 壓力 {pair(d['hi1'], d['hi4'], '1h 高', '4h 高')} → 站上轉強",
+        f"⬇️ 支撐 {pair(d['lo1'], d['lo4'], '1h 低', '4h 低')} → 跌破轉弱",
+    ]
+
+
+def raw_line(d):
+    parts = []
+    if d.get("oi") is not None:
+        parts.append(f"OI {usd(d['oi'])} 15m {arrow_pct(d.get('oi15'), 1)} 1h {arrow_pct(d.get('oi1h'), 1)}")
+    if d.get("funding") is not None:
+        parts.append(f"費率 {d['funding']:.4f}%")
+    if d.get("tk15") is not None:
+        parts.append(f"合約買賣比 15m {d['tk15']:.2f}/1h {d.get('tk1h') or 0:.2f}")
+    if d.get("sp1h") is not None:
+        parts.append(f"現貨買賣比 1h {d['sp1h']:.2f}")
+    if d.get("retail") is not None:
+        parts.append(f"散戶 {d['retail']:.2f}")
+    if d.get("top_pos") is not None:
+        parts.append(f"大戶 {d['top_pos']:.2f}")
+    if d.get("liq_long") is not None:
+        parts.append(f"1h 爆倉 多 {usd(d['liq_long'])}/空 {usd(d['liq_short'])}")
+    return "-# 數據：" + "｜".join(parts) if parts else ""
 
 
 # ───────────────────────── 組訊息 ─────────────────────────
 
-def full_coin_embed(c, d, premium, stamp):
-    if not d:
+def price_head(d, h4):
+    s = f"**{price_fmt(d['last'])}**　15m {arrow_pct(d.get('p15'), 2)}｜1h {arrow_pct(d.get('p1'), 2)}"
+    if h4 and d.get("p4bar") is not None:
+        s += f"｜上一根 4H {arrow_pct(d['p4bar'], 1)}"
+    return s + f"｜今天 {arrow_pct(d['chg24'], 1)}"
+
+
+def full_coin_embed(c, d, premium, stamp, h4):
+    if not d or "hi1" not in d:
         return {"title": f"{c['icon']} {c['name']}", "description": "資料暫缺", "color": COLOR_NEUTRAL}
-    score, label, color, reasons = judge(d, premium if c["name"] == "BTC" else None)
-    L = []
-    L.append(f"**{price_fmt(d['last'])}**　24h {arrow_pct(d['chg24'])}｜上一根 4H {arrow_pct(d.get('p4bar'))}")
-    L.append(f"24h 區間 {kfmt(d['lo24'])} `{range_bar(d['pos'])}` {kfmt(d['hi24'])}")
-    L.append(f"位置 {d['pos']:.0f}%（{pos_text(d['pos'])}）")
-    if d.get("hi7"):
-        L.append(f"7 日區間 {kfmt(d['lo7'])} ～ {kfmt(d['hi7'])}")
-    L.append("")
-    L.append("**📊 籌碼面（OKX）**")
-    if d.get("oi") is not None:
-        L.append(f"OI {usd(d['oi'])}｜1h {arrow_pct(d.get('oi1_coin'), 1)}｜4h {arrow_pct(d.get('oi4_coin'), 1)}"
-                 f"｜24h {arrow_pct(d.get('oi24_coin'), 1)}（幣本位）")
-        if d.get("oi_pctl") is not None:
-            L.append(f"OI 近 {d['oi_days']:.0f} 天位置 {d['oi_pctl']:.0f}%"
-                     + ("（偏高，槓桿擁擠）" if d["oi_pctl"] >= 80 else "（偏低）" if d["oi_pctl"] <= 20 else ""))
-    if d.get("funding") is not None:
-        L.append(f"資金費率 {d['funding']:.4f}%")
-    if d.get("retail") is not None:
-        rc = d.get("retail_chg")
-        rc_txt = f"（4h {'▲' if rc and rc > 0 else '▼' if rc and rc < 0 else '─'}{abs(rc or 0):.2f}）"
-        tp = d.get("top_pos")
-        L.append(f"散戶多空比 {d['retail']:.2f}{rc_txt}｜大戶持倉比 {tp:.2f}" if tp else
-                 f"散戶多空比 {d['retail']:.2f}{rc_txt}")
-    if d.get("taker4") is not None:
-        L.append(f"主動買賣比 4h {d['taker4']:.2f}｜1h {d.get('taker1', 0):.2f}")
-    if d.get("volx") is not None:
-        L.append(f"上一小時量能 {d['volx']:.1f} 倍（對比 24h 均量）")
-    if d.get("liq_long") is not None:
-        L.append(f"4h 爆倉：多單 {usd(d['liq_long'])}｜空單 {usd(d['liq_short'])}")
-    L.append("")
-    L.append(f"**🧭 判讀：{label}（{score:+d}）**")
-    for r in reasons[:5]:
-        L.append(f"• {r}")
-    L.append(f"偏多確認：站上 {kfmt(d['hi24'])}｜轉弱訊號：跌破 {kfmt(d['lo24'])}")
+    st, lt = situation(d, premium if c["name"] == "BTC" else None)
+    icon, color, desc = STATES[st]
+    L = [price_head(d, h4), "", f"**🧭 短線局勢：{icon} {st}**", desc + pos_sentence(d), "", "**🚦 燈號**"]
+    for light, name, text in lt:
+        L.append(f"{light} **{name}**：{text}")
+    L += ["", "**📍 關鍵價位**"] + level_lines(d)
+    rl = raw_line(d)
+    if rl:
+        L += ["", rl]
     return {"title": f"{c['icon']} {c['name']}", "description": "\n".join(L),
             "color": color, "timestamp": stamp}
 
@@ -437,41 +497,45 @@ def full_coin_embed(c, d, premium, stamp):
 def market_embed(m, stamp):
     L = []
     if m.get("mcap"):
-        L.append(f"總市值 {usd(m['mcap'])}（24h {arrow_pct(m.get('mcap_chg'))}）")
-        L.append(f"BTC 市佔 {m['btc_dom']:.1f}%｜ETH 市佔 {m['eth_dom']:.1f}%")
-        if m["btc_dom"] >= 55:
-            L.append("📌 BTC 市佔高，資金偏向比特幣，山寨相對弱勢")
+        L.append(f"加密市場今天 {arrow_pct(m.get('mcap_chg'), 1)}｜BTC 市佔 {m['btc_dom']:.1f}%"
+                 + ("（資金集中在比特幣）" if m["btc_dom"] >= 55 else ""))
     if m.get("strong"):
-        L.append("🔥 強勢板塊：" + "｜".join(f"{n} {arrow_pct(v, 1)}" for n, v in m["strong"]))
-        L.append("🧊 弱勢板塊：" + "｜".join(f"{n} {arrow_pct(v, 1)}" for n, v in m["weak"]))
-    if m.get("premium") is not None:
-        L.append(f"Coinbase 溢價 {m['premium']:+.3f}%")
-    if m.get("fng"):
-        L.append(f"恐懼貪婪 {m['fng'][0]}（{m['fng'][1]}，每日 08:00 更新）")
-    L.append("\n市場資料由 [CoinGecko](https://www.coingecko.com/en/api) 提供")
-    return {"title": "🌐 大盤", "description": "\n".join(L), "color": COLOR_NEUTRAL,
+        L.append("🔥 資金流入：" + "、".join(f"{n} {arrow_pct(v, 1)}" for n, v in m["strong"]))
+        L.append("🧊 資金流出：" + "、".join(f"{n} {arrow_pct(v, 1)}" for n, v in m["weak"]))
+    pr = m.get("premium")
+    if pr is not None:
+        if pr >= 0.05:
+            L.append(f"🟢 美國現貨買盤積極（Coinbase 溢價 {pr:+.3f}%）")
+        elif pr <= -0.05:
+            L.append(f"🔴 美國現貨買盤偏弱（Coinbase 溢價 {pr:+.3f}%）")
+        else:
+            L.append("⚪ 美國現貨買盤正常")
+    L.append("\n-# 市場資料由 [CoinGecko](https://www.coingecko.com/en/api) 提供")
+    return {"title": "🌐 大方向參考", "description": "\n".join(L), "color": COLOR_NEUTRAL,
             "timestamp": stamp}
 
 
 def short_embed(datas, title, stamp):
     L = []
-    worst = 0
     for c, d in datas:
-        if not d:
-            L.append(f"{c['icon']} {c['name']} 資料暫缺")
+        if not d or "hi1" not in d:
+            L += [f"{c['icon']} {c['name']} 資料暫缺", ""]
             continue
-        o1 = d.get("oi1_coin") if d.get("oi1_coin") is not None else d.get("oi1_usd")
-        L.append(f"{c['icon']} **{c['name']} {price_fmt(d['last'])}**　1h {arrow_pct(d.get('p1bar'))}"
-                 f"｜24h {arrow_pct(d['chg24'])}")
-        L.append(f"區間位置 {d['pos']:.0f}%（{pos_text(d['pos'])}）｜費率 {d.get('funding', 0):.4f}%"
-                 f"｜OI 1h {arrow_pct(o1, 1)}")
-        text, s = quad(d.get("px1"), o1, 0.3)
-        if text:
-            L.append(f"➡️ 近 1h 價 {arrow_pct(d.get('px1'), 1)}、OI {arrow_pct(o1, 1)} → {text}")
-            worst = s if abs(s) > abs(worst) else worst
+        st, lt = situation(d)
+        icon = STATES[st][0]
+        L.append(f"{c['icon']} **{c['name']} {price_fmt(d['last'])}**　15m {arrow_pct(d.get('p15'), 2)}"
+                 f"｜1h {arrow_pct(d.get('p1'), 2)}　局勢：{icon} **{st}**")
+        vol = [x for x in lt if x[1] == "波動度"]
+        key = [x for x in lt if x[1] != "波動度" and x[0] != "⚪"][:2]
+        for light, name, text in vol + key:
+            L.append(f"{light} {name}：{text}")
+        fm = d.get("fund_min")
+        if fm is not None and fm <= 60:
+            L.append(f"⏳ 距離資金費率結算 {hm(fm)}")
+        L.append(f"📍 壓力 {pnum(d['hi1'])}｜支撐 {pnum(d['lo1'])}（近 1 小時）")
         L.append("")
-    color = COLOR_BULL if worst > 0 else COLOR_BEAR if worst < 0 else COLOR_NEUTRAL
-    return {"title": title, "description": "\n".join(L).strip(), "color": color, "timestamp": stamp}
+    return {"title": title, "description": "\n".join(L).strip(), "color": COLOR_NEUTRAL,
+            "timestamp": stamp}
 
 
 # ───────────────────────── 主流程 ─────────────────────────
@@ -510,12 +574,12 @@ def main():
     hh = f"{hour:02d}:00"
     print(f"台灣時間 {now_tw:%Y-%m-%d %H:%M}，模式：{'H4 完整版' if full else '整點簡短版'}")
 
-    datas = [(c, coin_data(c, full)) for c in COINS]
+    datas = [(c, coin_data(c)) for c in COINS]
     footer = {"text": "比特聯盟 BitoAlliance｜籌碼：OKX｜僅供參考，非投資建議"}
 
     if full:
         m = market_data()
-        embeds = [full_coin_embed(c, d, m.get("premium"), stamp) for c, d in datas]
+        embeds = [full_coin_embed(c, d, m.get("premium"), stamp, hour % 4 == 0) for c, d in datas]
         embeds.append(market_embed(m, stamp))
         embeds[-1]["footer"] = footer
         payload = {"username": "比特聯盟", "content": f"## ⏰ {hh} " + ("H4 收盤報告" if hour % 4 == 0 else "完整報告"), "embeds": embeds}
@@ -529,3 +593,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
