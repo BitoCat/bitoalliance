@@ -344,6 +344,10 @@ def lights(d):
             out.append(("🔴", "現貨 vs 合約", "下跌有現貨賣壓，走勢較扎實"))
         elif p1 < -0.1 and ct <= 0.95:
             out.append(("🟡", "現貨 vs 合約", "下跌主要由合約推動，容易急跌後反彈"))
+        elif p1 < -0.1 and sp >= 1.05:
+            out.append(("🟢", "現貨 vs 合約", "下跌時現貨有人在買，下方有承接"))
+        elif p1 > 0.1 and sp <= 0.95:
+            out.append(("🔴", "現貨 vs 合約", "上漲時現貨在出貨，漲勢可能不持久"))
         else:
             out.append(("⚪", "現貨 vs 合約", "現貨和合約都沒有明顯帶動"))
 
@@ -389,12 +393,14 @@ def lights(d):
 
     ll, ls = d.get("liq_long"), d.get("liq_short")
     if ll is not None and ls is not None:
-        if ls > ll * 2 and ls >= 3e5:
+        # 門檻跟合約部位大小掛鉤：爆倉金額要超過 OI 的 0.05% 才算明顯
+        th = (d.get("oi") or 0) * 0.0005 or 5e5
+        if ls > ll * 2 and ls >= th:
             out.append(("🟢", "強制平倉", f"近 1 小時空單被強制平倉較多（{usd(ls)}），空方吃虧"))
-        elif ll > ls * 2 and ll >= 3e5:
+        elif ll > ls * 2 and ll >= th:
             out.append(("🔴", "強制平倉", f"近 1 小時多單被強制平倉較多（{usd(ll)}），多方吃虧"))
         else:
-            out.append(("⚪", "強制平倉", "近 1 小時多空爆倉差不多"))
+            out.append(("⚪", "強制平倉", "近 1 小時沒有明顯的強制平倉潮"))
     return out
 
 
@@ -593,5 +599,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
