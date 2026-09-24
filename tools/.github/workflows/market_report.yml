@@ -1,0 +1,36 @@
+name: 比特聯盟整點快報
+
+on:
+  schedule:
+    - cron: '55 * * * *'   # 每小時第 55 分啟動，程式會等到整點再抓資料
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: '版本'
+        type: choice
+        options: [full, short, auto]
+        default: full
+      dry_run:
+        description: '只印出內容，不發到 Discord'
+        type: boolean
+        default: true
+
+concurrency: market-report
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install requests
+      - run: python tools/market_report.py
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
+          MODE: ${{ github.event.inputs.mode || 'auto' }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          WAIT: ${{ github.event_name == 'schedule' && '1' || '0' }}
