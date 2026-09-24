@@ -4,7 +4,7 @@
 
 台灣時間 00/04/08/12/16/20 點推「H4 完整版」，其他整點推「簡短版」。
 資料來源：
-  - OKX 公開 API（日內資料，5 分鐘～4 小時）：價格、K 棒、OI、資金費率、
+  - 公開 API（日內資料，5 分鐘～4 小時）：價格、K 棒、OI、資金費率、
     多空比、合約/現貨主動買賣、爆倉
   - Coinbase 公開 API：計算 Coinbase 溢價
   - CoinGecko：總市值、BTC 市佔、板塊輪動（只在完整版抓）
@@ -581,7 +581,7 @@ def main():
     print(f"台灣時間 {now_tw:%Y-%m-%d %H:%M}，模式：{'H4 完整版' if full else '整點簡短版'}")
 
     datas = [(c, coin_data(c)) for c in COINS]
-    footer = {"text": "比特聯盟 BitoAlliance｜籌碼：OKX｜僅供參考，非投資建議"}
+    footer = {"text": "比特聯盟 BitoAlliance｜僅供參考，非投資建議"}
 
     if full:
         m = market_data()
