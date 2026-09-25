@@ -250,6 +250,8 @@ def coin_data(c, full=False):
             d["p15"] = (last / f(k5[2][1]) - 1) * 100
         if len(k5) > 12:
             d["p1"] = (last / f(k5[11][1]) - 1) * 100
+        if len(k5) >= 48:
+            d["open4h"] = f(k5[47][1])
         rng = d["hi1"] - d["lo1"]
         d["range1"] = rng
         d["pos1"] = (last - d["lo1"]) / rng * 100 if rng > 0 else 50.0
@@ -435,20 +437,43 @@ def funding_note(fr, fm):
     return t + "：費率接近零，結算影響不大"
 
 
+def regime(d):
+    """
+    行情型態：波動放大 / 正常 / 低波動（箱型整理、緩慢盤漲、緩慢盤跌）
+    低波動不是壞事：盤整期區間上下緣常出現反轉，適合抓反轉的做法
+    """
+    vx = d.get("volx")
+    if vx is None:
+        return None
+    if vx >= 1.8:
+        return {"type": "急動", "light": ("🟡", "波動度", f"波動明顯放大，是平常的 {vx:.1f} 倍，行情正在急動")}
+    if vx >= 1.2:
+        return {"type": "偏高", "light": ("⚪", "波動度", f"波動略高於平常（{vx:.1f} 倍）")}
+    if vx >= 0.8 or d.get("open4h") is None or "hi4" not in d:
+        return {"type": "正常", "light": ("⚪", "波動度", f"波動正常（{vx:.1f} 倍）")}
+    last, hi, lo = d["last"], d["hi4"], d["lo4"]
+    rng = hi - lo
+    if rng <= 0:
+        return {"type": "正常", "light": ("⚪", "波動度", f"波動正常（{vx:.1f} 倍）")}
+    net = (last - d["open4h"]) / rng
+    width = rng / last * 100
+    if abs(net) <= 0.35:
+        return {"type": "箱型", "hi": hi, "lo": lo,
+                "light": ("🔵", "波動度", f"低波動箱型整理，區間約 {pnum(lo)}～{pnum(hi)}（寬 {width:.1f}%），上下緣容易出現反轉")}
+    if net > 0:
+        return {"type": "緩漲",
+                "light": ("🔵", "波動度", "低波動緩慢盤漲，方向偏多但節奏慢，進場點不易掌握")}
+    return {"type": "緩跌",
+            "light": ("🔵", "波動度", "低波動緩慢盤跌，方向偏空但節奏慢，進場點不易掌握")}
+
+
 def lights(d):
-    """燈號：(燈, 名稱, 白話)。🟢 利多 🔴 利空 🟡 留意（不分方向） ⚪ 中性"""
+    """燈號：(燈, 名稱, 白話)。🟢 利多 🔴 利空 🟡 波動放大 🔵 盤整型態 ⚪ 中性"""
     out = []
 
-    vx = d.get("volx")
-    if vx is not None:
-        if vx >= 1.8:
-            out.append(("🟡", "波動度", f"波動明顯放大，是平常的 {vx:.1f} 倍，行情正在動"))
-        elif vx >= 1.2:
-            out.append(("⚪", "波動度", f"波動略高於平常（{vx:.1f} 倍）"))
-        elif vx < 0.6:
-            out.append(("⚪", "波動度", f"波動收斂，只有平常的 {vx:.1f} 倍，行情清淡"))
-        else:
-            out.append(("⚪", "波動度", f"波動正常（{vx:.1f} 倍）"))
+    rg = regime(d)
+    if rg:
+        out.append(rg["light"])
 
     t15, t1 = d.get("tk15"), d.get("tk1h")
     if t15 is not None and t1 is not None:
@@ -714,7 +739,9 @@ def full_coin_embed(c, d, premium, stamp, h4):
     tl = trend_lines(d)
     if tl:
         L += tl + [""]
-    L += [f"**🧭 短線局勢（15m／1h）：{icon} {st}**", desc + pos_sentence(d), "", "**🚦 短線燈號**"]
+    rg = regime(d)
+    box = f"目前是箱型整理，區間 {pnum(rg['lo'])}～{pnum(rg['hi'])}。" if rg and rg["type"] == "箱型" and st in ("整理", "膠著") else ""
+    L += [f"**🧭 短線局勢（15m／1h）：{icon} {st}**", desc + pos_sentence(d) + box, "", "**🚦 短線燈號**"]
     for light, name, text in lt:
         L.append(f"{light} **{name}**：{text}")
     fn = funding_note(d.get("funding"), d.get("fund_min"))
@@ -832,4 +859,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
