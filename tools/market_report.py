@@ -354,6 +354,20 @@ def hm(minutes):
     return f"{h} 小時 {m_} 分" if h else f"{m_} 分鐘"
 
 
+def funding_note(fr, fm):
+    """資金費率結算倒數 + 對短線的影響（倒數本身不分多空，要看費率正負）"""
+    if fm is None:
+        return None
+    t = f"距離資金費率結算 {hm(fm)}"
+    if fr is None or fm > 60:
+        return t
+    if fr >= 0.01:
+        return t + "：費率偏正，結算前做多者常先平倉避費，短線偏賣壓"
+    if fr <= -0.01:
+        return t + "：費率偏負，結算前做空者常先回補，短線偏買盤"
+    return t + "：費率接近零，結算影響不大"
+
+
 def lights(d):
     """燈號：(燈, 名稱, 白話)。🟢 利多 🔴 利空 🟡 留意（不分方向） ⚪ 中性"""
     out = []
@@ -431,7 +445,7 @@ def lights(d):
     fr = d.get("funding")
     if fr is not None:
         fm = d.get("fund_min")
-        tail = f"（距離結算 {hm(fm)}{'，結算前後常有波動' if fm is not None and fm <= 30 else ''}）" if fm else ""
+        tail = f"（距離結算 {hm(fm)}）" if fm and fm > 60 else ""
         if fr >= 0.03:
             out.append(("🔴", "多空費用", "做多的合約交易者太擁擠，容易被洗盤" + tail))
         elif fr <= -0.01:
@@ -609,6 +623,9 @@ def full_coin_embed(c, d, premium, stamp, h4):
     L += [f"**🧭 短線局勢（15m／1h）：{icon} {st}**", desc + pos_sentence(d), "", "**🚦 短線燈號**"]
     for light, name, text in lt:
         L.append(f"{light} **{name}**：{text}")
+    fn = funding_note(d.get("funding"), d.get("fund_min"))
+    if fn and d.get("fund_min", 999) <= 60:
+        L.append(f"⏳ {fn}")
     L += ["", "**📍 關鍵價位**"] + (multi_levels(d) if (d.get("h4") or d.get("day")) else level_lines(d))
     rl = raw_line(d)
     if rl:
@@ -654,7 +671,7 @@ def short_embed(datas, title, stamp):
             L.append(f"{light} {name}：{text}")
         fm = d.get("fund_min")
         if fm is not None and fm <= 60:
-            L.append(f"⏳ 距離資金費率結算 {hm(fm)}")
+            L.append(f"⏳ {funding_note(d.get('funding'), fm)}")
         L.append(f"📍 壓力 {pnum(d['hi1'])}｜支撐 {pnum(d['lo1'])}（近 1 小時）")
         L.append("")
     return {"title": title, "description": "\n".join(L).strip(), "color": COLOR_NEUTRAL,
@@ -716,3 +733,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
