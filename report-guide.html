@@ -135,7 +135,7 @@
     .term dd { margin-bottom: 8px; }
   }
 
-  .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 14px 0; }
+  .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 14px 0; }
   .legend div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
   .legend strong { display: block; font-size: 18px; }
   .legend span { color: var(--muted); font-size: 14.5px; }
@@ -245,7 +245,7 @@
     <ol class="flow">
       <li><b>看日內大方向</b>：今天日線和 H4 往哪邊。兩者同向，代表今天順著這個方向比較有利。</li>
       <li><b>看短線局勢</b>：現在這 15 分鐘到 1 小時，多空誰比較強。跟大方向同向時，行情比較容易延續；相反時，常是回檔或反彈。</li>
-      <li><b>掃一眼燈號顏色</b>：綠燈多還是紅燈多？有沒有黃燈提醒波動放大？</li>
+      <li><b>掃一眼燈號顏色</b>：綠燈多還是紅燈多？波動度是黃燈（行情急動）還是藍燈（盤整）？兩種行情的做法不一樣。</li>
       <li><b>記下最近的壓力和支撐</b>：價格靠近這些位置時，常出現突破或反轉，是日內交易者最常用來找進出場的地方。</li>
     </ol>
   </section>
@@ -277,7 +277,8 @@
     <div class="legend">
       <div><strong>🟢 綠燈</strong><span>這項資料對多方有利</span></div>
       <div><strong>🔴 紅燈</strong><span>這項資料對空方有利</span></div>
-      <div><strong>🟡 黃燈</strong><span>需要留意，通常是波動可能放大，不代表方向</span></div>
+      <div><strong>🟡 黃燈</strong><span>波動放大、行情急動，不代表方向</span></div>
+      <div><strong>🔵 藍燈</strong><span>低波動的盤整型態，區間上下緣常出現反轉</span></div>
       <div><strong>⚪ 白燈</strong><span>中性，沒有明顯訊號</span></div>
     </div>
     <p>快報卡片左邊的色條也有意思：綠色是局勢偏多或短多，紅色是偏空或短空，琥珀色是膠著或整理。</p>
@@ -309,11 +310,11 @@
           <tr><td>📉 偏空</td><td>短線空方明顯占優勢</td><td>紅燈比綠燈多 3 個以上</td></tr>
           <tr><td>↘️ 短空</td><td>短線空方稍強</td><td>紅燈比綠燈多 2 個</td></tr>
           <tr><td>⚖️ 膠著</td><td>多空都有訊號，互相抵銷</td><td>有綠燈也有紅燈，差距在 1 個以內</td></tr>
-          <tr><td>↔️ 整理</td><td>多空都沒有明顯訊號</td><td>幾乎都是白燈或黃燈</td></tr>
+          <tr><td>↔️ 整理</td><td>多空都沒有明顯訊號，常是盤整期</td><td>沒有綠燈和紅燈，只有白燈、黃燈或藍燈</td></tr>
         </tbody>
       </table>
     </div>
-    <p><b>日內用法：</b>短線局勢和日內大方向同向時，行情比較容易延續；兩者相反時，常是大趨勢中的回檔或反彈，持倉時間通常要縮短。膠著時，很多日內交易者會等價格突破關鍵價位，確認方向後再進場。</p>
+    <p><b>日內用法：</b>短線局勢和日內大方向同向時，行情比較容易延續；兩者相反時，常是大趨勢中的回檔或反彈，持倉時間通常要縮短。膠著時，很多日內交易者會等價格突破關鍵價位，確認方向後再進場。整理時如果波動度顯示箱型整理，快報會標出區間，區間上下緣就是反轉指標最好發揮的位置。</p>
   </section>
 
   <section id="lights">
@@ -321,11 +322,17 @@
     <p class="lead">每個燈號看一種資料。整點簡短版只顯示波動度和最重要的兩個。</p>
 
     <div class="term" id="l-vol">
-      <h3>波動度</h3>
+      <h3>波動度（行情型態）</h3>
       <dl>
-        <dt>看什麼</dt><dd>近 1 小時的振幅（最高減最低），是過去 24 小時平均每小時振幅的幾倍。</dd>
-        <dt>怎麼讀</dt><dd>1.8 倍以上亮 <span class="y">🟡 黃燈</span>，代表行情正在動；低於 0.6 倍代表波動收斂、行情清淡。這個燈號不分多空。</dd>
-        <dt>日內用法</dt><dd>用槓桿做短線，需要的是波動。波動放大時，價格在短時間內走得比較遠，止盈止損都要跟著放寬；波動收斂時，行情容易在小區間來回。</dd>
+        <dt>看什麼</dt><dd>近 1 小時的振幅（最高減最低），是過去 24 小時平均每小時振幅的幾倍。低波動時，再用近 4 小時的走勢分辨是哪一種盤整。</dd>
+        <dt>怎麼讀</dt><dd>
+          <span class="y">🟡</span> 波動放大（1.8 倍以上）：行情正在急動，趨勢在跑。<br>
+          <span class="w">⚪</span> 波動正常或略高：一般行情。<br>
+          <span style="color:#3b82f6">🔵</span> 箱型整理（低於 0.8 倍）：價格在固定區間來回，快報會寫出區間上下緣。<br>
+          <span style="color:#3b82f6">🔵</span> 緩慢盤漲／盤跌：波動低，但穩定往同一個方向走。</dd>
+        <dt>日內用法</dt><dd>波動放大時，價格短時間走得遠，順勢單容易跑出利潤，止盈止損都要跟著放寬。<br>
+          低波動不代表沒機會。箱型整理最適合多空來回操作：在區間下緣找做多、上緣找做空，比特聯盟的貓咪隧道和 PHL 指標就是抓這種反轉的利器，比起追波動，盤整期反而常常更簡單好做。<br>
+          緩慢盤漲或盤跌也可以做，方向比較明確，只是節奏慢、回檔淺，進場點比較不容易找。</dd>
       </dl>
     </div>
 
@@ -474,4 +481,5 @@
 
 </body>
 </html>
+
 
