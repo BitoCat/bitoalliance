@@ -715,7 +715,7 @@ def main():
     print(f"台灣時間 {now_tw:%Y-%m-%d %H:%M}，模式：{'H4 完整版' if full else '整點簡短版'}")
 
     datas = [(c, coin_data(c, full)) for c in COINS]
-    footer = {"text": "比特聯盟 BitoAlliance｜籌碼：OKX｜僅供參考，非投資建議"}
+    footer = {"text": "比特聯盟 BitoAlliance｜僅供參考，非投資建議"}
 
     if full:
         m = market_data()
