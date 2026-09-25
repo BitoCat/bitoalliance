@@ -4,7 +4,7 @@
 
 台灣時間 00/04/08/12/16/20 點推「H4 完整版」，其他整點推「簡短版」。
 資料來源：
-  - 公開 API（日內資料，5 分鐘～4 小時）：價格、K 棒、OI、資金費率、
+  - OKX 公開 API（日內資料，5 分鐘～4 小時）：價格、K 棒、OI、資金費率、
     多空比、合約/現貨主動買賣、爆倉
   - Coinbase 公開 API：計算 Coinbase 溢價
   - CoinGecko：總市值、BTC 市佔、板塊輪動（只在完整版抓）
@@ -176,7 +176,55 @@ def taker_ratio(ccy, inst_type, now_ms):
     return ratio(3), ratio(12)
 
 
-def coin_data(c):
+def ema(vals, n=20):
+    k = 2 / (n + 1)
+    e, out = vals[0], []
+    for v in vals:
+        e = v * k + e * (1 - k)
+        out.append(e)
+    return out
+
+
+def trend_info(rows, last):
+    """用已收盤 K 棒判斷趨勢：價格 vs EMA20、EMA20 斜率、最近兩根高低點"""
+    if not rows:
+        return None
+    rows = sorted(rows, key=lambda k: int(k[0]))
+    done = [r for r in rows if r[8] == "1"]
+    cur = [r for r in rows if r[8] != "1"]
+    if len(done) < 22:
+        return None
+    e = ema([f(r[4]) for r in done], 20)
+    slope = (e[-1] / e[-4] - 1) * 100
+    score, facts = 0, []
+    if last > e[-1]:
+        score += 1
+        facts.append("價格在均線之上")
+    else:
+        score -= 1
+        facts.append("價格在均線之下")
+    if slope > 0.05:
+        score += 1
+        facts.append("均線向上")
+    elif slope < -0.05:
+        score -= 1
+        facts.append("均線向下")
+    else:
+        facts.append("均線走平")
+    a, b = done[-1], done[-2]
+    if f(a[2]) > f(b[2]) and f(a[3]) > f(b[3]):
+        score += 1
+        facts.append("高低點墊高")
+    elif f(a[2]) < f(b[2]) and f(a[3]) < f(b[3]):
+        score -= 1
+        facts.append("高低點下移")
+    state = "偏多" if score >= 2 else "偏空" if score <= -2 else "震盪"
+    return {"state": state, "facts": facts, "prev_hi": f(a[2]), "prev_lo": f(a[3]),
+            "open": f(cur[-1][1]) if cur else None,
+            "chg_bar": (f(a[4]) / f(a[1]) - 1) * 100}
+
+
+def coin_data(c, full=False):
     d = {}
     now_ms = time.time() * 1000
     t = okx("/market/ticker", instId=c["swap"])
@@ -212,12 +260,12 @@ def coin_data(c):
         if rs and sum(rs) > 0:
             d["volx"] = d["range1"] / (sum(rs) / len(rs))
 
-    # 上一根 4H（H4 報告用）
-    k4 = okx("/market/candles", instId=c["swap"], bar="4H", limit="3")
-    if k4:
-        done4 = sorted([k for k in k4 if k[8] == "1"], key=lambda k: int(k[0]), reverse=True)
-        if done4:
-            d["p4bar"] = (f(done4[0][4]) / f(done4[0][1]) - 1) * 100
+    # 日內大方向：H4 與日線（日線以 UTC 0 點 = 台灣 08:00 換日，與 TradingView 一致）
+    if full:
+        d["h4"] = trend_info(okx("/market/candles", instId=c["swap"], bar="4H", limit="40"), last)
+        d["day"] = trend_info(okx("/market/candles", instId=c["swap"], bar="1Dutc", limit="40"), last)
+        if d["h4"]:
+            d["p4bar"] = d["h4"]["chg_bar"]
 
     # 合約持倉（OKX 該幣所有合約加總，5 分鐘資料）
     oi = okx("/rubik/stat/contracts/open-interest-volume", ccy=c["name"], period="5m")
@@ -456,6 +504,71 @@ def level_lines(d):
     ]
 
 
+TREND_ICON = {"偏多": "📈", "偏空": "📉", "震盪": "↔️"}
+
+
+def big_picture(day, h4):
+    if not day or not h4:
+        return None
+    D, H = day["state"], h4["state"]
+    if D == H == "偏多":
+        return "日線和 H4 同步偏多，日內大方向偏多"
+    if D == H == "偏空":
+        return "日線和 H4 同步偏空，日內大方向偏空"
+    if D == "偏多" and H == "偏空":
+        return "日線偏多，但 H4 正在回檔"
+    if D == "偏空" and H == "偏多":
+        return "日線偏空，但 H4 正在反彈"
+    if D == H == "震盪":
+        return "日線和 H4 都在震盪，沒有明確大方向"
+    if D == "震盪":
+        return f"日線震盪，H4 {H}，日內方向以 H4 為主"
+    return f"日線{D}，H4 在整理"
+
+
+def trend_lines(d):
+    day, h4 = d.get("day"), d.get("h4")
+    if not day and not h4:
+        return []
+    L = ["**🗺 日內大方向（日線／H4）**"]
+    for name, t in (("日線", day), ("H4", h4)):
+        if t:
+            L.append(f"{TREND_ICON[t['state']]} {name} **{t['state']}**：{'、'.join(t['facts'])}")
+    bp = big_picture(day, h4)
+    if bp:
+        L.append(f"➡️ {bp}")
+    return L
+
+
+def multi_levels(d):
+    """把 1h、前根 4H、今日開盤、昨日高低合併，依距離現價排成壓力與支撐"""
+    last = d["last"]
+    cand = [(d["hi1"], "1h 高"), (d["lo1"], "1h 低")]
+    h4, day = d.get("h4"), d.get("day")
+    if h4:
+        cand += [(h4["prev_hi"], "前根 4H 高"), (h4["prev_lo"], "前根 4H 低")]
+    if day:
+        if day.get("open"):
+            cand.append((day["open"], "今日開盤"))
+        cand += [(day["prev_hi"], "昨日高"), (day["prev_lo"], "昨日低")]
+    cand.sort()
+    merged = []
+    for p, lab in cand:
+        if merged and abs(p - merged[-1][0]) / p < 0.0005:
+            merged[-1] = (merged[-1][0], merged[-1][1] + "／" + lab)
+        else:
+            merged.append((p, lab))
+    res = [x for x in merged if x[0] > last][:3]
+    sup = [x for x in merged if x[0] < last][::-1][:3]
+    L = []
+    if res:
+        L.append("⬆️ 壓力：" + "、".join(f"{pnum(p)}（{lab}）" for p, lab in res))
+    if sup:
+        L.append("⬇️ 支撐：" + "、".join(f"{pnum(p)}（{lab}）" for p, lab in sup))
+    L.append("-# 由近到遠排列；站上壓力轉強、跌破支撐轉弱")
+    return L
+
+
 def raw_line(d):
     parts = []
     if d.get("oi") is not None:
@@ -481,7 +594,7 @@ def price_head(d, h4):
     s = f"**{price_fmt(d['last'])}**　15m {arrow_pct(d.get('p15'), 2)}｜1h {arrow_pct(d.get('p1'), 2)}"
     if h4 and d.get("p4bar") is not None:
         s += f"｜上一根 4H {arrow_pct(d['p4bar'], 1)}"
-    return s + f"｜今天 {arrow_pct(d['chg24'], 1)}"
+    return s + f"｜24h {arrow_pct(d['chg24'], 1)}"
 
 
 def full_coin_embed(c, d, premium, stamp, h4):
@@ -489,10 +602,14 @@ def full_coin_embed(c, d, premium, stamp, h4):
         return {"title": f"{c['icon']} {c['name']}", "description": "資料暫缺", "color": COLOR_NEUTRAL}
     st, lt = situation(d, premium if c["name"] == "BTC" else None)
     icon, color, desc = STATES[st]
-    L = [price_head(d, h4), "", f"**🧭 短線局勢：{icon} {st}**", desc + pos_sentence(d), "", "**🚦 燈號**"]
+    L = [price_head(d, h4), ""]
+    tl = trend_lines(d)
+    if tl:
+        L += tl + [""]
+    L += [f"**🧭 短線局勢（15m／1h）：{icon} {st}**", desc + pos_sentence(d), "", "**🚦 短線燈號**"]
     for light, name, text in lt:
         L.append(f"{light} **{name}**：{text}")
-    L += ["", "**📍 關鍵價位**"] + level_lines(d)
+    L += ["", "**📍 關鍵價位**"] + (multi_levels(d) if (d.get("h4") or d.get("day")) else level_lines(d))
     rl = raw_line(d)
     if rl:
         L += ["", rl]
@@ -580,8 +697,8 @@ def main():
     hh = f"{hour:02d}:00"
     print(f"台灣時間 {now_tw:%Y-%m-%d %H:%M}，模式：{'H4 完整版' if full else '整點簡短版'}")
 
-    datas = [(c, coin_data(c)) for c in COINS]
-    footer = {"text": "比特聯盟 BitoAlliance｜僅供參考，非投資建議"}
+    datas = [(c, coin_data(c, full)) for c in COINS]
+    footer = {"text": "比特聯盟 BitoAlliance｜籌碼：OKX｜僅供參考，非投資建議"}
 
     if full:
         m = market_data()
@@ -599,4 +716,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
