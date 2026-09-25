@@ -26,6 +26,8 @@ import requests
 OKX = "https://www.okx.com/api/v5"
 CG = "https://api.coingecko.com/api/v3"
 TW = dt.timezone(dt.timedelta(hours=8))
+GUIDE_URL = os.getenv("GUIDE_URL", "https://bitocat.github.io/bitoalliance/report-guide.html")
+GUIDE_LINK = f"-# 📖 看不懂名詞？[快報讀法]({GUIDE_URL})"
 
 S = requests.Session()
 S.headers["User-Agent"] = "BitoAlliance-MarketReport/1.0"
@@ -266,6 +268,7 @@ def coin_data(c, full=False):
         d["day"] = trend_info(okx("/market/candles", instId=c["swap"], bar="1Dutc", limit="40"), last)
         if d["h4"]:
             d["p4bar"] = d["h4"]["chg_bar"]
+        d["liq_map"] = liq_clusters(c, last)
 
     # 合約持倉（OKX 該幣所有合約加總，5 分鐘資料）
     oi = okx("/rubik/stat/contracts/open-interest-volume", ccy=c["name"], period="5m")
@@ -312,6 +315,70 @@ def coin_data(c, full=False):
     # 近 1 小時爆倉
     d["liq_long"], d["liq_short"] = liquidations(c, hours=1)
     return d
+
+
+# 常見槓桿分布（估算清算價用）
+LEVERAGE_MIX = [(10, 0.30), (25, 0.30), (50, 0.25), (100, 0.15)]
+
+
+def liq_clusters(c, last, hours=48, max_dist=8.0):
+    """
+    估算清算密集區：用近 48 小時每小時新增的合約部位 × 當時價格，
+    依主動買賣量分多空，套用常見槓桿算出清算價；之後已被價格掃過的剔除。
+    回傳 (上方空單清算區, 下方多單清算區)，各為 [(價格, 強度 0~1)]
+    """
+    oi = okx("/rubik/stat/contracts/open-interest-volume", ccy=c["name"], period="1H")
+    k1 = okx("/market/candles", instId=c["swap"], bar="1H", limit=str(hours + 1))
+    tv = okx("/rubik/stat/taker-volume", ccy=c["name"], instType="CONTRACTS", period="1H")
+    if not oi or not k1:
+        return None
+    candles = {int(k[0]): k for k in k1}
+    ts_all = sorted(candles)
+    taker = {int(r[0]): (f(r[1]) or 0, f(r[2]) or 0) for r in (tv or [])}
+    step = last * 0.004  # 每 0.4% 一格
+    longs, shorts = {}, {}
+    prev = None
+    for r in sorted(oi, key=lambda r: int(r[0])):
+        ts = int(r[0])
+        k = candles.get(ts)
+        if not k or not f(r[1]):
+            prev = None
+            continue
+        coin = f(r[1]) / f(k[1])
+        if prev is not None and coin > prev:
+            px = (f(k[2]) + f(k[3]) + f(k[4])) / 3
+            notional = (coin - prev) * px
+            sell, buy = taker.get(ts, (1, 1))
+            long_share = buy / (sell + buy) if sell + buy > 0 else 0.5
+            later = [candles[t] for t in ts_all if t >= ts]
+            hi_after = max(f(x[2]) for x in later)
+            lo_after = min(f(x[3]) for x in later)
+            for lev, w in LEVERAGE_MIX:
+                lp = px * (1 - 1 / lev + 0.005)   # 多單清算價（含維持保證金的近似）
+                sp = px * (1 + 1 / lev - 0.005)   # 空單清算價
+                if lo_after > lp:
+                    key = round(lp / step)
+                    longs[key] = longs.get(key, 0) + notional * long_share * w
+                if hi_after < sp:
+                    key = round(sp / step)
+                    shorts[key] = shorts.get(key, 0) + notional * (1 - long_share) * w
+        prev = coin
+
+    def pick(book, above):
+        rows = [(k * step, v) for k, v in book.items()
+                if (k * step > last if above else k * step < last)
+                and abs(k * step / last - 1) * 100 <= max_dist]
+        return rows
+    up, down = pick(shorts, True), pick(longs, False)
+    peak = max([v for _, v in up + down], default=0)
+    if peak <= 0:
+        return None
+
+    def top(rows):
+        rows = [(p, v / peak) for p, v in rows if v / peak >= 0.25]
+        rows = sorted(rows, key=lambda x: x[1], reverse=True)[:2]
+        return sorted(rows, key=lambda x: abs(x[0] - last))
+    return top(up), top(down)
 
 
 def coinbase_premium():
@@ -583,6 +650,33 @@ def multi_levels(d):
     return L
 
 
+def round_price(p):
+    if p >= 10000:
+        return round(p / 100) * 100
+    if p >= 1000:
+        return round(p / 10) * 10
+    return round(p, 2)
+
+
+def liq_lines(d):
+    lm = d.get("liq_map")
+    if not lm or not (lm[0] or lm[1]):
+        return []
+    last = d["last"]
+
+    def fmt(rows):
+        return "、".join(f"{pnum(round_price(p))}（{(p / last - 1) * 100:+.1f}%）"
+                        f"{'■' * max(1, round(v * 3))}" for p, v in rows)
+    L = ["**💥 清算密集區（估算）**"]
+    if lm[0]:
+        L.append(f"⬆️ 上方空單清算：{fmt(lm[0])}")
+    if lm[1]:
+        L.append(f"⬇️ 下方多單清算：{fmt(lm[1])}")
+    L.append("-# 價格靠近時容易觸發連環強制平倉、行情被加速；■ 越多代表越密集。"
+             "依 OKX 近 48 小時新增合約部位與常見槓桿估算，非交易所實際清算單")
+    return L
+
+
 def raw_line(d):
     parts = []
     if d.get("oi") is not None:
@@ -627,6 +721,9 @@ def full_coin_embed(c, d, premium, stamp, h4):
     if fn and d.get("fund_min", 999) <= 60:
         L.append(f"⏳ {fn}")
     L += ["", "**📍 關鍵價位**"] + (multi_levels(d) if (d.get("h4") or d.get("day")) else level_lines(d))
+    ll = liq_lines(d)
+    if ll:
+        L += [""] + ll
     rl = raw_line(d)
     if rl:
         L += ["", rl]
@@ -651,6 +748,7 @@ def market_embed(m, stamp):
         else:
             L.append("⚪ 美國現貨買盤正常")
     L.append("\n-# 市場資料由 [CoinGecko](https://www.coingecko.com/en/api) 提供")
+    L.append(GUIDE_LINK)
     return {"title": "🌐 大方向參考", "description": "\n".join(L), "color": COLOR_NEUTRAL,
             "timestamp": stamp}
 
@@ -674,6 +772,7 @@ def short_embed(datas, title, stamp):
             L.append(f"⏳ {funding_note(d.get('funding'), fm)}")
         L.append(f"📍 壓力 {pnum(d['hi1'])}｜支撐 {pnum(d['lo1'])}（近 1 小時）")
         L.append("")
+    L.append(GUIDE_LINK)
     return {"title": title, "description": "\n".join(L).strip(), "color": COLOR_NEUTRAL,
             "timestamp": stamp}
 
