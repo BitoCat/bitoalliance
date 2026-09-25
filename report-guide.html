@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>比特聯盟快報讀法</title>
+<meta name="description" content="比特聯盟整點快報與 H4 完整快報的名詞說明與日內用法">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f2f3f5;
+    --surface: #ffffff;
+    --card: #f7f8f9;
+    --ink: #1f2124;
+    --muted: #5c6068;
+    --line: #dfe1e5;
+    --amber: #c98300;
+    --amber-soft: #fff3dc;
+    --green: #1f9d55;
+    --red: #d63a2f;
+    --yellow: #c9a100;
+    --gray: #8a8f98;
+    --code: #eceef1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1e1f22;
+      --surface: #2b2d31;
+      --card: #313338;
+      --ink: #eceef1;
+      --muted: #a7abb3;
+      --line: #3f4147;
+      --amber: #f5a623;
+      --amber-soft: #3a2f1a;
+      --green: #3fcf7f;
+      --red: #f0645a;
+      --yellow: #e8c547;
+      --gray: #9aa0a8;
+      --code: #232428;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1e1f22; --surface: #2b2d31; --card: #313338; --ink: #eceef1; --muted: #a7abb3;
+    --line: #3f4147; --amber: #f5a623; --amber-soft: #3a2f1a; --green: #3fcf7f; --red: #f0645a;
+    --yellow: #e8c547; --gray: #9aa0a8; --code: #232428;
+  }
+
+  :root {
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  html { scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 64px); scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  *, *::before, *::after { box-sizing: inherit; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    font-size: 17px;
+    line-height: 1.8;
+    font-variant-numeric: tabular-nums;
+    -webkit-text-size-adjust: 100%;
+  }
+  a { color: var(--amber); }
+  a:focus-visible, button:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; border-radius: 4px; }
+
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+
+  header.top { padding: 48px 0 24px; }
+  header.top h1 {
+    font-size: clamp(34px, 8vw, 52px);
+    font-weight: 900;
+    line-height: 1.15;
+    margin: 0 0 12px;
+    letter-spacing: 0.02em;
+  }
+  header.top h1 span { display: block; font-size: 0.42em; font-weight: 700; color: var(--amber); letter-spacing: 0.08em; margin-bottom: 6px; }
+  header.top p { margin: 0; color: var(--muted); max-width: 36em; }
+
+  nav.jump {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    padding: 10px 0;
+  }
+  nav.jump .rail { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+  nav.jump .rail::-webkit-scrollbar { display: none; }
+  nav.jump a {
+    flex: none; text-decoration: none; color: var(--ink);
+    background: var(--surface); border: 1px solid var(--line);
+    padding: 4px 12px; border-radius: 999px; font-size: 14px; white-space: nowrap;
+  }
+
+  /* 標註過的快報：外觀仿 Discord 卡片 */
+  .specimen { margin: 28px 0 8px; }
+  .specimen-note { color: var(--muted); font-size: 15px; margin: 0 0 10px; }
+  .embed {
+    background: var(--card);
+    border-left: 4px solid var(--amber);
+    border-radius: 4px;
+    padding: 14px 16px 14px 14px;
+    font-size: 15px;
+    line-height: 1.65;
+    overflow-x: auto;
+  }
+  .embed .blk { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: start; padding: 8px 0; border-bottom: 1px dashed var(--line); }
+  .embed .blk:last-child { border-bottom: 0; }
+  .embed b { font-weight: 700; }
+  .embed .sub { color: var(--muted); font-size: 12.5px; }
+  .pin {
+    display: inline-grid; place-items: center;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--amber); color: #1e1f22; font-weight: 900; font-size: 15px;
+    text-decoration: none; flex: none;
+  }
+
+  main section { padding: 36px 0 8px; border-top: 1px solid var(--line); }
+  main section:first-of-type { border-top: 0; }
+  h2 { font-size: 26px; font-weight: 900; margin: 0 0 6px; line-height: 1.35; display: flex; gap: 12px; align-items: center; }
+  h2 .pin { width: 34px; height: 34px; font-size: 17px; }
+  h2 + .lead { color: var(--muted); margin: 0 0 18px; }
+  h3 { font-size: 19px; font-weight: 700; margin: 26px 0 6px; }
+
+  .term { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin: 14px 0; }
+  .term h3 { margin-top: 0; }
+  .term dl { margin: 0; display: grid; grid-template-columns: 5.5em 1fr; gap: 6px 12px; }
+  .term dt { color: var(--amber); font-weight: 700; font-size: 15px; padding-top: 2px; }
+  .term dd { margin: 0; }
+  @media (max-width: 480px) {
+    .term dl { grid-template-columns: 1fr; gap: 0; }
+    .term dd { margin-bottom: 8px; }
+  }
+
+  .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 14px 0; }
+  .legend div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .legend strong { display: block; font-size: 18px; }
+  .legend span { color: var(--muted); font-size: 14.5px; }
+
+  .states { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 16px; }
+  .states-wrap { overflow-x: auto; }
+  .states th, .states td { text-align: left; padding: 10px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .states th { color: var(--muted); font-weight: 500; font-size: 14px; }
+  .states td:first-child { white-space: nowrap; font-weight: 700; }
+
+  .flow { counter-reset: s; list-style: none; padding: 0; margin: 14px 0; }
+  .flow li { counter-increment: s; position: relative; padding: 4px 0 14px 46px; }
+  .flow li::before {
+    content: counter(s); position: absolute; left: 0; top: 4px;
+    width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--amber);
+    color: var(--amber); font-weight: 900; display: grid; place-items: center; font-size: 15px;
+  }
+
+  .note { background: var(--amber-soft); border-radius: 10px; padding: 14px 16px; margin: 16px 0; font-size: 15.5px; }
+  code { background: var(--code); padding: 1px 6px; border-radius: 4px; font-size: 0.92em; }
+  .g { color: var(--green); } .r { color: var(--red); } .y { color: var(--yellow); } .w { color: var(--gray); }
+
+  footer { padding: 40px 0 56px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); margin-top: 32px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <h1><span>比特聯盟 BitoAlliance</span>快報讀法</h1>
+    <p>Discord 快報裡每個名詞是什麼意思、怎麼判讀、日內交易怎麼用。看到不懂的地方，點下方快報上的編號，直接跳到說明。</p>
+  </header>
+</div>
+
+<nav class="jump" aria-label="章節">
+  <div class="wrap rail">
+    <a href="#how">10 秒讀法</a>
+    <a href="#types">兩種快報</a>
+    <a href="#colors">燈號顏色</a>
+    <a href="#trend">日內大方向</a>
+    <a href="#state">短線局勢</a>
+    <a href="#lights">七個燈號</a>
+    <a href="#funding">費率結算</a>
+    <a href="#levels">關鍵價位</a>
+    <a href="#liq">清算密集區</a>
+    <a href="#macro">大方向參考</a>
+    <a href="#data">底部數據</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <div class="specimen">
+    <p class="specimen-note">這是一份真實的 H4 完整快報（BTC）。點右邊的編號看說明。</p>
+    <div class="embed" role="group" aria-label="快報範例">
+      <div class="blk">
+        <div><b>₿ BTC</b><br><b>$84,169</b>　15m ▲0.22%｜1h ▼0.67%｜上一根 4H ▼1.2%｜24h ▼0.3%</div>
+        <a class="pin" href="#types" aria-label="價格列說明">0</a>
+      </div>
+      <div class="blk">
+        <div><b>🗺 日內大方向（日線／H4）</b><br>
+          📈 日線 <b>偏多</b>：價格在均線之上、均線向上<br>
+          ↔️ H4 <b>震盪</b>：價格在均線之下、均線走平<br>
+          ➡️ 日線偏多，H4 在整理</div>
+        <a class="pin" href="#trend" aria-label="日內大方向說明">1</a>
+      </div>
+      <div class="blk">
+        <div><b>🧭 短線局勢（15m／1h）：⚖️ 膠著</b><br>多空訊號互相抵銷，行情膠著。價格在 1 小時區間中間。</div>
+        <a class="pin" href="#state" aria-label="短線局勢說明">2</a>
+      </div>
+      <div class="blk">
+        <div><b>🚦 短線燈號</b><br>
+          🟡 <b>波動度</b>：波動明顯放大，是平常的 2.5 倍，行情正在動<br>
+          🟢 <b>買賣力道</b>：近 15 分鐘買方轉強<br>
+          🟢 <b>現貨 vs 合約</b>：下跌時現貨有人在買，下方有承接<br>
+          ⚪ <b>合約持倉</b>：下跌時多單在停損出場，賣壓正在消化<br>
+          ⚪ <b>散戶 vs 大戶</b>：散戶與大戶看法沒有明顯分歧<br>
+          ⚪ <b>多空費用</b>：做多做空都沒有過熱<br>
+          ⚪ <b>強制平倉</b>：近 1 小時沒有明顯的強制平倉潮<br>
+          ⏳ 距離資金費率結算 26 分鐘：費率接近零，結算影響不大</div>
+        <a class="pin" href="#lights" aria-label="燈號說明">3</a>
+      </div>
+      <div class="blk">
+        <div><b>📍 關鍵價位</b><br>
+          ⬆️ 壓力：84,739（1h 高）、84,931（前根 4H 高）、85,880（昨日高）<br>
+          ⬇️ 支撐：83,333（1h 低）、83,296（前根 4H 低）、82,810（昨日低）</div>
+        <a class="pin" href="#levels" aria-label="關鍵價位說明">4</a>
+      </div>
+      <div class="blk">
+        <div><b>💥 清算密集區（估算）</b><br>
+          ⬆️ 上方空單清算：85,600（+1.7%）■■■、86,900（+3.2%）■■<br>
+          ⬇️ 下方多單清算：82,100（-2.5%）■■■</div>
+        <a class="pin" href="#liq" aria-label="清算密集區說明">5</a>
+      </div>
+      <div class="blk">
+        <div class="sub">數據：OI $3.17B 15m ▲0.1% 1h ▼0.7%｜費率 -0.0002%｜合約買賣比 15m 1.55/1h 1.03｜現貨買賣比 1h 1.12｜散戶 1.27｜大戶 0.97｜1h 爆倉 多 $1.2M/空 $191K</div>
+        <a class="pin" href="#data" aria-label="底部數據說明">6</a>
+      </div>
+    </div>
+  </div>
+
+<main>
+
+  <section id="how">
+    <h2>10 秒讀法</h2>
+    <p class="lead">不用每一行都看。照這個順序，十秒內抓到重點。</p>
+    <ol class="flow">
+      <li><b>看日內大方向</b>：今天日線和 H4 往哪邊。兩者同向，代表今天順著這個方向比較有利。</li>
+      <li><b>看短線局勢</b>：現在這 15 分鐘到 1 小時，多空誰比較強。跟大方向同向時，行情比較容易延續；相反時，常是回檔或反彈。</li>
+      <li><b>掃一眼燈號顏色</b>：綠燈多還是紅燈多？有沒有黃燈提醒波動放大？</li>
+      <li><b>記下最近的壓力和支撐</b>：價格靠近這些位置時，常出現突破或反轉，是日內交易者最常用來找進出場的地方。</li>
+    </ol>
+  </section>
+
+  <section id="types">
+    <h2><span class="pin" aria-hidden="true">0</span>兩種快報</h2>
+    <p class="lead">每個整點都會發一份，依時間分成兩種。</p>
+    <div class="term">
+      <h3>整點簡短版</h3>
+      <dl>
+        <dt>何時發</dt><dd>台灣時間 0、4、8、12、16、20 點以外的每個整點。</dd>
+        <dt>看什麼</dt><dd>只看 15 分鐘和 1 小時的短線：價格、短線局勢、波動度、最重要的兩個燈號、近 1 小時壓力支撐。</dd>
+      </dl>
+    </div>
+    <div class="term">
+      <h3>H4 完整版</h3>
+      <dl>
+        <dt>何時發</dt><dd>台灣時間 0、4、8、12、16、20 點，剛好是 4 小時 K 棒收盤的時間。</dd>
+        <dt>看什麼</dt><dd>在短線之上，多了日線和 H4 的日內大方向、七個完整燈號、多層關鍵價位、清算密集區，以及整個加密市場的大方向參考。</dd>
+      </dl>
+    </div>
+    <h3>價格列怎麼讀</h3>
+    <p><code>15m</code> 是近 15 分鐘漲跌、<code>1h</code> 是近 1 小時、<code>上一根 4H</code> 是剛收盤那根 4 小時 K 棒、<code>24h</code> 是近 24 小時。▲ 是漲、▼ 是跌。</p>
+  </section>
+
+  <section id="colors">
+    <h2>燈號顏色</h2>
+    <p class="lead">所有燈號的顏色意思都固定，記住這四種就好。</p>
+    <div class="legend">
+      <div><strong>🟢 綠燈</strong><span>這項資料對多方有利</span></div>
+      <div><strong>🔴 紅燈</strong><span>這項資料對空方有利</span></div>
+      <div><strong>🟡 黃燈</strong><span>需要留意，通常是波動可能放大，不代表方向</span></div>
+      <div><strong>⚪ 白燈</strong><span>中性，沒有明顯訊號</span></div>
+    </div>
+    <p>快報卡片左邊的色條也有意思：綠色是局勢偏多或短多，紅色是偏空或短空，琥珀色是膠著或整理。</p>
+  </section>
+
+  <section id="trend">
+    <h2><span class="pin" aria-hidden="true">1</span>日內大方向（日線／H4）</h2>
+    <p class="lead">只出現在 H4 完整版。告訴你今天順著哪個方向做比較有利。</p>
+    <div class="term">
+      <h3>日線、H4 的三種狀態</h3>
+      <dl>
+        <dt>看什麼</dt><dd>用三件事判斷：價格在 20 均線（EMA20）之上還是之下、均線是往上還是往下、最近一根 K 棒的高低點是比前一根高（墊高）還是低（下移）。</dd>
+        <dt>怎麼讀</dt><dd>三件事有兩件以上偏多，就是 📈 <b>偏多</b>；兩件以上偏空，就是 📉 <b>偏空</b>；其他是 ↔️ <b>震盪</b>。</dd>
+        <dt>日內用法</dt><dd>日線和 H4 同向時，大方向最清楚，順著這個方向的單子通常比較好拿。日線偏多、H4 偏空，代表大趨勢向上但正在回檔，逆勢做空的單子常要更快出場。</dd>
+      </dl>
+    </div>
+    <div class="note">日線以台灣時間早上 8 點換日，和 TradingView 及多數交易所的日 K 一致，你對照圖表時數字會對得上。</div>
+  </section>
+
+  <section id="state">
+    <h2><span class="pin" aria-hidden="true">2</span>短線局勢（15m／1h）</h2>
+    <p class="lead">把七個燈號綜合起來，說明現在這段時間多空誰比較強。</p>
+    <div class="states-wrap">
+      <table class="states">
+        <thead><tr><th>局勢</th><th>意思</th><th>怎麼算出來的</th></tr></thead>
+        <tbody>
+          <tr><td>📈 偏多</td><td>短線多方明顯占優勢</td><td>綠燈比紅燈多 3 個以上</td></tr>
+          <tr><td>↗️ 短多</td><td>短線多方稍強</td><td>綠燈比紅燈多 2 個</td></tr>
+          <tr><td>📉 偏空</td><td>短線空方明顯占優勢</td><td>紅燈比綠燈多 3 個以上</td></tr>
+          <tr><td>↘️ 短空</td><td>短線空方稍強</td><td>紅燈比綠燈多 2 個</td></tr>
+          <tr><td>⚖️ 膠著</td><td>多空都有訊號，互相抵銷</td><td>有綠燈也有紅燈，差距在 1 個以內</td></tr>
+          <tr><td>↔️ 整理</td><td>多空都沒有明顯訊號</td><td>幾乎都是白燈或黃燈</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><b>日內用法：</b>短線局勢和日內大方向同向時，行情比較容易延續；兩者相反時，常是大趨勢中的回檔或反彈，持倉時間通常要縮短。膠著時，很多日內交易者會等價格突破關鍵價位，確認方向後再進場。</p>
+  </section>
+
+  <section id="lights">
+    <h2><span class="pin" aria-hidden="true">3</span>七個燈號</h2>
+    <p class="lead">每個燈號看一種資料。整點簡短版只顯示波動度和最重要的兩個。</p>
+
+    <div class="term" id="l-vol">
+      <h3>波動度</h3>
+      <dl>
+        <dt>看什麼</dt><dd>近 1 小時的振幅（最高減最低），是過去 24 小時平均每小時振幅的幾倍。</dd>
+        <dt>怎麼讀</dt><dd>1.8 倍以上亮 <span class="y">🟡 黃燈</span>，代表行情正在動；低於 0.6 倍代表波動收斂、行情清淡。這個燈號不分多空。</dd>
+        <dt>日內用法</dt><dd>用槓桿做短線，需要的是波動。波動放大時，價格在短時間內走得比較遠，止盈止損都要跟著放寬；波動收斂時，行情容易在小區間來回。</dd>
+      </dl>
+    </div>
+
+    <div class="term" id="l-taker">
+      <h3>買賣力道</h3>
+      <dl>
+        <dt>看什麼</dt><dd>合約市場的「主動買賣比」：用市價單主動買進的金額 ÷ 主動賣出的金額。大於 1 代表買方比較急。</dd>
+        <dt>怎麼讀</dt><dd>近 15 分鐘和 1 小時都是買方積極，亮 <span class="g">🟢</span>；都是賣方積極，亮 <span class="r">🔴</span>。只有 15 分鐘明顯轉向時，也會亮燈並寫「近 15 分鐘買方轉強」。</dd>
+        <dt>日內用法</dt><dd>這是最貼近當下的燈號。價格在支撐附近、買賣力道轉綠，代表有人在承接；價格在壓力附近、買賣力道轉紅，代表有人在賣。</dd>
+      </dl>
+    </div>
+
+    <div class="term" id="l-spot">
+      <h3>現貨 vs 合約</h3>
+      <dl>
+        <dt>看什麼</dt><dd>比較近 1 小時現貨和合約的主動買賣比，看這段漲跌是誰在推動。</dd>
+        <dt>怎麼讀</dt><dd>
+          上漲有現貨買盤 → <span class="g">🟢</span> 走勢較扎實。<br>
+          上漲只有合約在推 → <span class="y">🟡</span> 容易急漲後拉回。<br>
+          下跌有現貨賣壓 → <span class="r">🔴</span> 走勢較扎實。<br>
+          下跌只有合約在推 → <span class="y">🟡</span> 容易急跌後反彈。<br>
+          下跌時現貨有人在買 → <span class="g">🟢</span> 下方有承接。<br>
+          上漲時現貨在出貨 → <span class="r">🔴</span> 漲勢可能不持久。</dd>
+        <dt>日內用法</dt><dd>現貨是真金白銀，合約可以用槓桿放大。只有合約在推的行情，常在清算完一批人之後就回頭，追價時要留意。</dd>
+      </dl>
+    </div>
+
+    <div class="term" id="l-oi">
+      <h3>合約持倉</h3>
+      <dl>
+        <dt>看什麼</dt><dd>OI（未平倉量）近 1 小時的變化，搭配價格漲跌。OI 增加代表有新的合約部位進場，減少代表有人平倉出場。</dd>
+        <dt>怎麼讀</dt><dd>
+          價漲 + OI 增 → <span class="g">🟢</span> 有新資金做多推動。<br>
+          價漲 + OI 減 → <span class="w">⚪</span> 主要是空單回補，力道待確認。<br>
+          價跌 + OI 增 → <span class="r">🔴</span> 有新資金做空，賣壓可能延續。<br>
+          價跌 + OI 減 → <span class="w">⚪</span> 多單在停損出場，賣壓正在消化。<br>
+          15 分鐘內 OI 急增或急減超過 1%，會另外標出，通常是大資金進出。</dd>
+        <dt>日內用法</dt><dd>新資金推動的行情比較有延續性。OI 在短時間急增時，代表有大量新部位進場，接下來常出現較大的波動。</dd>
+      </dl>
+    </div>
+
+    <div class="term" id="l-whale">
+      <h3>散戶 vs 大戶</h3>
+      <dl>
+        <dt>看什麼</dt><dd>「散戶多空比」是所有帳戶中做多人數 ÷ 做空人數；「大戶持倉比」是大戶做多的部位 ÷ 做空的部位。</dd>
+        <dt>怎麼讀</dt><dd>散戶在加碼做多、大戶卻偏空，亮 <span class="r">🔴</span>；散戶在減碼、大戶偏多，亮 <span class="g">🟢</span>。大戶持倉比高於 1.05 算偏多，低於 0.95 算偏空。</dd>
+        <dt>日內用法</dt><dd>兩邊看法相反時，市場通常比較常往大戶的方向走，因為散戶越擠在同一邊，那一邊被清算的燃料就越多。</dd>
+      </dl>
+    </div>
+
+    <div class="term" id="l-fund">
+      <h3>多空費用（資金費率）</h3>
+      <dl>
+        <dt>看什麼</dt><dd>永續合約每 8 小時結算一次的費用。費率為正，做多的人付錢給做空的人；為負則相反。</dd>
+        <dt>怎麼讀</dt><dd>高於 0.03% 代表做多的人太擁擠，亮 <span class="r">🔴</span>；低於 -0.01% 代表做空的人太擁擠，亮 <span class="g">🟢</span>。</dd>
+        <dt>日內用法</dt><dd>一邊太擁擠時，只要行情往反方向動一點，就容易引發連環平倉。所以費率很高時，反而要留意突然下殺；費率很負時，要留意突然軋空。</dd>
+      </dl>
+    </div>
+
+    <div class="term" id="l-liq">
+      <h3>強制平倉</h3>
+      <dl>
+        <dt>看什麼</dt><dd>近 1 小時被交易所強制平倉（爆倉）的多單和空單金額。</dd>
+        <dt>怎麼讀</dt><dd>只有爆倉金額夠大（超過合約總部位的 0.05%），而且一邊是另一邊的 2 倍以上才亮燈。空單爆得多 <span class="g">🟢</span>，多單爆得多 <span class="r">🔴</span>。</dd>
+        <dt>日內用法</dt><dd>一大波爆倉之後，被迫平倉的賣壓（或買盤）已經出清，常是短線反轉的起點。</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section id="funding">
+    <h2>資金費率結算倒數</h2>
+    <p class="lead">結算前 1 小時內才會出現 ⏳ 這一行。</p>
+    <p>倒數本身不分多空，要搭配費率一起看：</p>
+    <div class="term">
+      <dl>
+        <dt>費率偏正</dt><dd>結算前做多的人常先平倉避開費用，短線偏賣壓。</dd>
+        <dt>費率偏負</dt><dd>結算前做空的人常先回補，短線偏買盤。</dd>
+        <dt>接近零</dt><dd>結算影響不大。</dd>
+      </dl>
+    </div>
+    <p>OKX 的結算時間是台灣時間 0、8、16 點。</p>
+  </section>
+
+  <section id="levels">
+    <h2><span class="pin" aria-hidden="true">4</span>關鍵價位</h2>
+    <p class="lead">把幾種日內交易者最常用的價位放在一起，依距離現價由近到遠排列。</p>
+    <div class="term">
+      <dl>
+        <dt>1h 高 / 低</dt><dd>近 1 小時的最高價和最低價，最近的短線壓力和支撐。</dd>
+        <dt>前根 4H 高 / 低</dt><dd>剛收盤那根 4 小時 K 棒的高低點。</dd>
+        <dt>今日開盤</dt><dd>今天日 K 的開盤價（台灣早上 8 點）。價格在它之上，今天算紅 K；之下算黑 K。</dd>
+        <dt>昨日高 / 低</dt><dd>昨天日 K 的最高價和最低價，日內最重要的大關卡之一。</dd>
+      </dl>
+    </div>
+    <p><b>日內用法：</b>站上壓力代表轉強，跌破支撐代表轉弱。價格第一次碰到這些位置時，常出現反應；兩個價位很接近時會合併顯示（例如「前根 4H 高／昨日高」），重疊越多的位置越重要。</p>
+  </section>
+
+  <section id="liq">
+    <h2><span class="pin" aria-hidden="true">5</span>清算密集區（估算）</h2>
+    <p class="lead">只出現在 H4 完整版。估算上下方哪些價位累積了最多會被強制平倉的部位。</p>
+    <div class="term">
+      <dl>
+        <dt>看什麼</dt><dd>上方是空單的清算價，下方是多單的清算價。■ 越多代表越密集，括號裡是距離現價的百分比。</dd>
+        <dt>怎麼算</dt><dd>用 OKX 近 48 小時新增的合約部位和成交價位，假設常見的 10 到 100 倍槓桿，推算這些部位的清算價；已經被價格掃過的會剔除。這是模型估算，不是交易所實際的清算單。</dd>
+        <dt>日內用法</dt><dd>價格靠近清算密集區時，一旦觸發第一批強制平倉，被迫平倉的單子又會推動價格，引發下一批，行情常被加速，這就是所謂的「磁吸效應」。掃過密集區之後，燃料用完，常出現反轉。</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section id="macro">
+    <h2>大方向參考</h2>
+    <p class="lead">H4 完整版最後一張卡片，看整個加密市場的背景。</p>
+    <div class="term">
+      <dl>
+        <dt>BTC 市佔</dt><dd>比特幣占整個加密市場總市值的比例。高於 55% 代表資金集中在比特幣，山寨幣相對弱勢。</dd>
+        <dt>資金流入 / 流出</dt><dd>今天漲最多和跌最多的三個板塊，例如 AI、Meme、Layer 2。可以看出今天市場在炒什麼題材。</dd>
+        <dt>美國現貨買盤</dt><dd>比較 Coinbase（美國主要交易所）和其他交易所的比特幣價格。Coinbase 比較貴，代表美國買盤積極，常和機構資金進場有關。</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section id="data">
+    <h2><span class="pin" aria-hidden="true">6</span>底部數據</h2>
+    <p class="lead">每張卡片最下面的灰色小字，是燈號背後的原始數字，給想自己判斷的人看。</p>
+    <div class="term">
+      <dl>
+        <dt>OI</dt><dd>未平倉量，OKX 上這個幣所有合約的部位總額，後面是 15 分鐘和 1 小時變化（以幣的數量計算，排除價格漲跌的影響）。</dd>
+        <dt>費率</dt><dd>目前的資金費率。</dd>
+        <dt>合約買賣比</dt><dd>合約主動買賣比，15 分鐘 / 1 小時。大於 1 買方較急。</dd>
+        <dt>現貨買賣比</dt><dd>現貨主動買賣比，1 小時。</dd>
+        <dt>散戶</dt><dd>散戶多空比，大於 1 代表做多的人比較多。</dd>
+        <dt>大戶</dt><dd>大戶持倉比，大於 1 代表大戶的多單部位比較大。</dd>
+        <dt>1h 爆倉</dt><dd>近 1 小時多單、空單被強制平倉的金額。</dd>
+      </dl>
+    </div>
+    <div class="note">籌碼資料都來自 OKX，代表 OKX 上的合約交易者，不是全市場加總。OKX 是全球前幾大的合約交易所，方向通常和整體市場一致。</div>
+  </section>
+
+</main>
+
+<footer>
+  快報內容為市場資訊整理，僅供參考，不構成投資建議。交易決策與風險由使用者自行判斷與承擔。<br>
+  市場資料由 <a href="https://www.coingecko.com/en/api">CoinGecko</a> 提供；籌碼資料來自 OKX 公開資料。
+</footer>
+</div>
+
+</body>
+</html>
+
+
