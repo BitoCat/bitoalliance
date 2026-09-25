@@ -100,7 +100,7 @@
   .specimen-note { color: var(--muted); font-size: 15px; margin: 0 0 10px; }
   .embed {
     background: var(--card);
-    border-left: 4px solid var(--amber);
+    border-left: 4px solid var(--green);
     border-radius: 4px;
     padding: 14px 16px 14px 14px;
     font-size: 15px;
@@ -154,6 +154,7 @@
     color: var(--amber); font-weight: 900; display: grid; place-items: center; font-size: 15px;
   }
 
+  .example { display: block; margin-top: 10px; background: var(--card); border-left: 4px solid var(--amber); border-radius: 4px; padding: 8px 12px; font-size: 15px; }
   .note { background: var(--amber-soft); border-radius: 10px; padding: 14px 16px; margin: 16px 0; font-size: 15.5px; }
   code { background: var(--code); padding: 1px 6px; border-radius: 4px; font-size: 0.92em; }
   .g { color: var(--green); } .r { color: var(--red); } .y { color: var(--yellow); } .w { color: var(--gray); }
@@ -189,7 +190,7 @@
 <div class="wrap">
 
   <div class="specimen">
-    <p class="specimen-note">這是一份真實的 H4 完整快報（BTC）。點右邊的編號看說明。</p>
+    <p class="specimen-note">這是一份 H4 完整快報（BTC）的範例。點右邊的編號看說明。</p>
     <div class="embed" role="group" aria-label="快報範例">
       <div class="blk">
         <div><b>₿ BTC</b><br><b>$84,169</b>　15m ▲0.22%｜1h ▼0.67%｜上一根 4H ▼1.2%｜24h ▼0.3%</div>
@@ -203,7 +204,7 @@
         <a class="pin" href="#trend" aria-label="日內大方向說明">1</a>
       </div>
       <div class="blk">
-        <div><b>🧭 短線局勢（15m／1h）：⚖️ 膠著</b><br>多空訊號互相抵銷，行情膠著。價格在 1 小時區間中間。</div>
+        <div><b>🧭 短線局勢（15m／1h）：↗️ 短多</b><br>短線多方稍強，偏向短多。價格在 1 小時區間中間。</div>
         <a class="pin" href="#state" aria-label="短線局勢說明">2</a>
       </div>
       <div class="blk">
@@ -221,7 +222,7 @@
       <div class="blk">
         <div><b>📍 關鍵價位</b><br>
           ⬆️ 壓力：84,739（1h 高）、84,931（前根 4H 高）、85,880（昨日高）<br>
-          ⬇️ 支撐：83,333（1h 低）、83,296（前根 4H 低）、82,810（昨日低）</div>
+          ⬇️ 支撐：83,333（1h 低）、83,020（前根 4H 低）、82,810（昨日低）</div>
         <a class="pin" href="#levels" aria-label="關鍵價位說明">4</a>
       </div>
       <div class="blk">
@@ -329,7 +330,8 @@
           <span class="y">🟡</span> 波動放大（1.8 倍以上）：行情正在急動，趨勢在跑。<br>
           <span class="w">⚪</span> 波動正常或略高：一般行情。<br>
           <span style="color:#3b82f6">🔵</span> 箱型整理（低於 0.8 倍）：價格在固定區間來回，快報會寫出區間上下緣。<br>
-          <span style="color:#3b82f6">🔵</span> 緩慢盤漲／盤跌：波動低，但穩定往同一個方向走。</dd>
+          <span style="color:#3b82f6">🔵</span> 緩慢盤漲／盤跌：波動低，但穩定往同一個方向走。
+          <span class="example">🔵 <b>波動度</b>：低波動箱型整理，區間約 83,300～84,900（寬 1.9%），上下緣容易出現反轉</span></dd>
         <dt>日內用法</dt><dd>波動放大時，價格短時間走得遠，順勢單容易跑出利潤，止盈止損都要跟著放寬。<br>
           低波動不代表沒機會。箱型整理最適合多空來回操作：在區間下緣找做多、上緣找做空，比特聯盟的貓咪隧道和 PHL 指標就是抓這種反轉的利器，比起追波動，盤整期反而常常更簡單好做。<br>
           緩慢盤漲或盤跌也可以做，方向比較明確，只是節奏慢、回檔淺，進場點比較不容易找。</dd>
@@ -481,5 +483,4 @@
 
 </body>
 </html>
-
 
