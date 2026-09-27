@@ -267,13 +267,13 @@ def coin_data(c, full=False):
     # 成交量分布：每整點算 1h（1 分 K）；完整版再算 4h、24h（5 分 K）
     k1m = okx("/market/candles", instId=c["swap"], bar="1m", limit="60")
     if k1m:
-        d["vp1"] = vol_profile(k1m, bins=40)
+        d["vp1"] = vol_profile(k1m, bins=40, min_gap_pct=0.1)
     if full:
         k5d = okx("/market/candles", instId=c["swap"], bar="5m", limit="288")
         if k5d:
             k5d = sorted(k5d, key=lambda k: int(k[0]), reverse=True)
-            d["vp4"] = vol_profile(k5d[:48], bins=50)
-            d["vp24"] = vol_profile(k5d, bins=80)
+            d["vp4"] = vol_profile(k5d[:48], bins=50, min_gap_pct=0.2)
+            d["vp24"] = vol_profile(k5d, bins=80, min_gap_pct=0.2)
 
     # 日內大方向：H4 與日線（日線以 UTC 0 點 = 台灣 08:00 換日，與 TradingView 一致）
     if full:
@@ -332,7 +332,7 @@ def coin_data(c, full=False):
 
 # ───────────────────────── 成交量分布（Volume Profile） ─────────────────────────
 
-def vol_profile(candles, bins=60):
+def vol_profile(candles, bins=60, min_gap_pct=0.2):
     """
     成交量分布：把每根 K 的成交額（USDT）平均攤到它的高低價之間，累加成各價位成交量。
     回傳 {poc 成交最密集價, vah/val 主要成交區（七成成交量）上下緣, gaps 成交真空區 [(低, 高)]}
@@ -400,8 +400,9 @@ def vol_profile(candles, bins=60):
                 e = k
                 while e + 1 <= s1 and vol[e + 1] < th:
                     e += 1
-                if e - k + 1 >= min_run:
-                    gaps.append((lo + k * step, lo + (e + 1) * step))
+                g0, g1 = lo + k * step, lo + (e + 1) * step
+                if e - k + 1 >= min_run and (g1 - g0) / g0 * 100 >= min_gap_pct:   # 太窄的空檔是雜訊，不列
+                    gaps.append((g0, g1))
                 k = e + 1
             else:
                 k += 1
@@ -461,7 +462,8 @@ def vp_full_lines(d):
     else:
         L.append(f"價格在 24h 主要成交區內（{pnum(val)}～{pnum(vah)}），低於成交最密集價 {pnum(poc)}；"
                  f"反彈到 {pnum(poc)} 附近容易遇到賣壓")
-    if v4 and abs(v4["poc"] - poc) / last * 100 <= 0.3:
+    # 共振：相差 0.3% 以內，且不超過 24h 主要成交區寬度的 15%（波動小的日子自動收緊）
+    if v4 and abs(v4["poc"] - poc) <= min(last * 0.003, (vah - val) * 0.15):
         L.append(f"🎯 4h 與 24h 成交最密集價接近（{pnum(v4['poc'])}／{pnum(poc)}）"
                  f"→ 這一帶是日內重要的多空平衡區")
     up, dn, inside = near_gaps(v24, last, 5.0)
@@ -1026,4 +1028,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
