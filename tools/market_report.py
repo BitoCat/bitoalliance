@@ -5,7 +5,7 @@
 台灣時間 00/04/08/12/16/20 點推「H4 完整版」，其他整點推「簡短版」。
 資料來源：
   - OKX 公開 API（日內資料，5 分鐘～4 小時）：價格、K 棒、OI、資金費率、
-    多空比、合約/現貨主動買賣、爆倉
+    多空比、合約/現貨主動買賣、爆倉、成交量分布（1h／4h／24h）
   - Coinbase 公開 API：計算 Coinbase 溢價
   - CoinGecko：總市值、BTC 市佔、板塊輪動（只在完整版抓）
 
@@ -264,6 +264,17 @@ def coin_data(c, full=False):
         if rs and sum(rs) > 0:
             d["volx"] = d["range1"] / (sum(rs) / len(rs))
 
+    # 成交量分布：每整點算 1h（1 分 K）；完整版再算 4h、24h（5 分 K）
+    k1m = okx("/market/candles", instId=c["swap"], bar="1m", limit="60")
+    if k1m:
+        d["vp1"] = vol_profile(k1m, bins=40)
+    if full:
+        k5d = okx("/market/candles", instId=c["swap"], bar="5m", limit="288")
+        if k5d:
+            k5d = sorted(k5d, key=lambda k: int(k[0]), reverse=True)
+            d["vp4"] = vol_profile(k5d[:48], bins=50)
+            d["vp24"] = vol_profile(k5d, bins=80)
+
     # 日內大方向：H4 與日線（日線以 UTC 0 點 = 台灣 08:00 換日，與 TradingView 一致）
     if full:
         d["h4"] = trend_info(okx("/market/candles", instId=c["swap"], bar="4H", limit="40"), last)
@@ -317,6 +328,151 @@ def coin_data(c, full=False):
     # 近 1 小時爆倉
     d["liq_long"], d["liq_short"] = liquidations(c, hours=1)
     return d
+
+
+# ───────────────────────── 成交量分布（Volume Profile） ─────────────────────────
+
+def vol_profile(candles, bins=60):
+    """
+    成交量分布：把每根 K 的成交額（USDT）平均攤到它的高低價之間，累加成各價位成交量。
+    回傳 {poc 成交最密集價, vah/val 主要成交區（七成成交量）上下緣, gaps 成交真空區 [(低, 高)]}
+    """
+    rows = []
+    for k in candles or []:
+        h, l = f(k[2]), f(k[3])
+        v = f(k[7]) if len(k) > 7 else None
+        if v is None:
+            v = f(k[6]) if len(k) > 6 else None
+        if h and l and v and h >= l:
+            rows.append((h, l, v))
+    if len(rows) < 10:
+        return None
+    lo = min(r[1] for r in rows)
+    hi = max(r[0] for r in rows)
+    if hi <= lo:
+        return None
+    step = (hi - lo) / bins
+    vol = [0.0] * bins
+    for h, l, v in rows:
+        a = min(int((l - lo) / step), bins - 1)
+        b = min(int((h - lo) / step), bins - 1)
+        share = v / (b - a + 1)
+        for i in range(a, b + 1):
+            vol[i] += share
+    total = sum(vol)
+    if total <= 0:
+        return None
+    mid = lambda i: lo + (i + 0.5) * step
+
+    # 成交最密集價
+    pi = max(range(bins), key=lambda i: vol[i])
+
+    # 主要成交區：從最密集價往成交量較大的一側擴張，直到涵蓋七成
+    i = j = pi
+    acc = vol[pi]
+    while acc < total * 0.7 and (i > 0 or j < bins - 1):
+        up = vol[j + 1] if j < bins - 1 else -1
+        dn = vol[i - 1] if i > 0 else -1
+        if up >= dn:
+            j += 1; acc += up
+        else:
+            i -= 1; acc += dn
+
+    # 成交真空區：去掉頭尾各 5% 的邊緣後，連續偏低（< 平均 25%）的價位
+    cum, s0, s1 = 0.0, 0, bins - 1
+    for k in range(bins):
+        cum += vol[k]
+        if cum >= total * 0.05:
+            s0 = k; break
+    cum = 0.0
+    for k in range(bins - 1, -1, -1):
+        cum += vol[k]
+        if cum >= total * 0.05:
+            s1 = k; break
+    inner = vol[s0:s1 + 1]
+    gaps = []
+    if len(inner) > 4:
+        th = sum(inner) / len(inner) * 0.25
+        min_run = max(2, bins // 30)
+        k = s0
+        while k <= s1:
+            if vol[k] < th:
+                e = k
+                while e + 1 <= s1 and vol[e + 1] < th:
+                    e += 1
+                if e - k + 1 >= min_run:
+                    gaps.append((lo + k * step, lo + (e + 1) * step))
+                k = e + 1
+            else:
+                k += 1
+    return {"poc": mid(pi), "val": lo + i * step, "vah": lo + (j + 1) * step, "gaps": gaps}
+
+
+def near_gaps(vp, last, max_pct):
+    """回傳（上方最近真空區, 下方最近真空區, 價格所在真空區），只取距現價 max_pct% 以內"""
+    up = dn = inside = None
+    for a, b in (vp or {}).get("gaps", []):
+        if a <= last <= b:
+            inside = (a, b)
+        elif a > last and (a / last - 1) * 100 <= max_pct and (up is None or a < up[0]):
+            up = (a, b)
+        elif b < last and (1 - b / last) * 100 <= max_pct and (dn is None or b > dn[1]):
+            dn = (a, b)
+    return up, dn, inside
+
+
+def rng_txt(g):
+    return f"{pnum(g[0])}～{pnum(g[1])}"
+
+
+def vp_short_line(d):
+    """簡短版：1 小時成交密集價 + 貼近現價的真空區"""
+    vp = d.get("vp1")
+    if not vp:
+        return None
+    last = d["last"]
+    pct = (vp["poc"] / last - 1) * 100
+    side = "現價上方" if pct > 0 else "現價下方"
+    s = f"📊 1h 成交密集 {pnum(vp['poc'])}（{side} {pct:+.2f}%）"
+    up, dn, inside = near_gaps(vp, last, 1.0)
+    if inside:
+        s += f"｜價格正在成交稀少區 {rng_txt(inside)}，容易快速移動"
+    elif up or dn:
+        parts = ([f"上方 {rng_txt(up)}"] if up else []) + ([f"下方 {rng_txt(dn)}"] if dn else [])
+        s += "｜成交稀少：" + "、".join(parts) + "，易快速穿越"
+    return s
+
+
+def vp_full_lines(d):
+    """完整版：24h 主要成交區位置判讀、4h/24h 共振、成交真空區"""
+    v24, v4 = d.get("vp24"), d.get("vp4")
+    if not v24:
+        return []
+    last = d["last"]
+    L = ["**📊 成交分布（4h／24h）**"]
+    poc, vah, val = v24["poc"], v24["vah"], v24["val"]
+    if last > vah:
+        L.append(f"價格在 24h 主要成交區上方，已脫離密集區往上；回測上緣 {pnum(vah)} 是第一道支撐")
+    elif last < val:
+        L.append(f"價格在 24h 主要成交區下方，已跌出密集區；反彈到下緣 {pnum(val)} 是第一道壓力")
+    elif last >= poc:
+        L.append(f"價格在 24h 主要成交區內（{pnum(val)}～{pnum(vah)}），高於成交最密集價 {pnum(poc)}；"
+                 f"回落到 {pnum(poc)} 附近容易有買盤承接")
+    else:
+        L.append(f"價格在 24h 主要成交區內（{pnum(val)}～{pnum(vah)}），低於成交最密集價 {pnum(poc)}；"
+                 f"反彈到 {pnum(poc)} 附近容易遇到賣壓")
+    if v4 and abs(v4["poc"] - poc) / last * 100 <= 0.3:
+        L.append(f"🎯 4h 與 24h 成交最密集價接近（{pnum(v4['poc'])}／{pnum(poc)}）"
+                 f"→ 這一帶是日內重要的多空平衡區")
+    up, dn, inside = near_gaps(v24, last, 5.0)
+    if inside:
+        L.append(f"🕳 價格正處於成交真空區 {rng_txt(inside)}，容易快速移動")
+    if up or dn:
+        parts = ([f"上方 {rng_txt(up)}"] if up else []) + ([f"下方 {rng_txt(dn)}"] if dn else [])
+        L.append("🕳 成交真空：" + "、".join(parts) + " → 價格進入後容易快速穿越")
+    L.append("-# 成交密集＝該時段成交最多的價位，常成為支撐或壓力；主要成交區＝七成成交量所在區間；"
+             "成交真空＝成交稀少的價位，價格通常快速通過")
+    return L
 
 
 # 常見槓桿分布（估算清算價用）
@@ -657,6 +813,11 @@ def multi_levels(d):
         if day.get("open"):
             cand.append((day["open"], "今日開盤"))
         cand += [(day["prev_hi"], "昨日高"), (day["prev_lo"], "昨日低")]
+    for key, lab in (("vp1", "1h 成交密集"), ("vp4", "4h 成交密集"), ("vp24", "24h 成交密集")):
+        if d.get(key):
+            cand.append((d[key]["poc"], lab))
+    if d.get("vp24"):
+        cand += [(d["vp24"]["vah"], "24h 主要成交區上緣"), (d["vp24"]["val"], "24h 主要成交區下緣")]
     cand.sort()
     merged = []
     for p, lab in cand:
@@ -748,6 +909,9 @@ def full_coin_embed(c, d, premium, stamp, h4):
     if fn and d.get("fund_min", 999) <= 60:
         L.append(f"⏳ {fn}")
     L += ["", "**📍 關鍵價位**"] + (multi_levels(d) if (d.get("h4") or d.get("day")) else level_lines(d))
+    vl = vp_full_lines(d)
+    if vl:
+        L += [""] + vl
     ll = liq_lines(d)
     if ll:
         L += [""] + ll
@@ -798,6 +962,9 @@ def short_embed(datas, title, stamp):
         if fm is not None and fm <= 60:
             L.append(f"⏳ {funding_note(d.get('funding'), fm)}")
         L.append(f"📍 壓力 {pnum(d['hi1'])}｜支撐 {pnum(d['lo1'])}（近 1 小時）")
+        vs = vp_short_line(d)
+        if vs:
+            L.append(vs)
         L.append("")
     L.append(GUIDE_LINK)
     return {"title": title, "description": "\n".join(L).strip(), "color": COLOR_NEUTRAL,
@@ -859,5 +1026,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
