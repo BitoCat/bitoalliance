@@ -165,8 +165,8 @@
 <style>
   body { font-size: 16px; line-height: 1.6; }
   .wrap { max-width: 1080px; }
-  #gate { display:none; text-align:center; padding:80px 20px; }
-  #gate a.btn { display:inline-block; margin-top:14px; padding:10px 22px; border-radius:999px; background:var(--amber); color:#1e1f22; font-weight:700; text-decoration:none; }
+  #gate, #gatePending { display:none; text-align:center; padding:80px 20px; }
+  #gate a.btn, #gatePending a.btn { display:inline-block; margin-top:14px; padding:10px 22px; border-radius:999px; background:var(--amber); color:#1e1f22; font-weight:700; text-decoration:none; }
   #page { display:none; }
 
   .bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; padding:18px 0 10px; }
@@ -225,6 +225,12 @@
   <h2 style="justify-content:center">🔒 比特聯盟會員專屬</h2>
   <p>即時盤口面板只開放給比特聯盟會員。請先登入；還不是會員的話，透過盟主的 Bitunix 邀請碼加入即可免費開通。</p>
   <a class="btn" href="login.html?next=panel.html">登入</a>
+</div>
+<div id="gatePending" class="wrap" style="display:none">
+  <h2 style="justify-content:center">⏳ 帳號審核中</h2>
+  <p>你已經登入了（<b id="gpEmail"></b>），但帳號還沒開通會員。</p>
+  <p>請到「我的帳號」填好你的 <b>Bitunix UID</b>，盟主確認是透過邀請碼加入後，就會幫你開通。開通後重新整理這一頁就能使用。</p>
+  <a class="btn" href="profile.html">前往我的帳號</a>
 </div>
 
 <div id="page" class="wrap">
@@ -852,7 +858,8 @@ function bindSeg(id, key) {
     if (!session) { document.getElementById('gate').style.display = 'block'; return; }
     const { data: p } = await sb.from('profiles').select('plan, is_direct_client').eq('id', session.user.id).single();
     const plan = (p && p.plan) || 'free';
-    if (plan !== 'free' || (p && p.is_direct_client)) show(); else document.getElementById('gate').style.display = 'block';
+    if (plan !== 'free' || (p && p.is_direct_client)) show();
+    else { document.getElementById('gpEmail').textContent = session.user.email || ''; document.getElementById('gatePending').style.display = 'block'; }
   } catch (e) { document.getElementById('gate').style.display = 'block'; }
 })();
 </script>
