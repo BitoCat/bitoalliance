@@ -363,9 +363,15 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 
-// 已登入直接跳首頁
+// 登入後要回去的頁面（只接受本站頁面檔名，防止被導到外站）
+const NEXT = (function () {
+  const n = new URLSearchParams(location.search).get('next') || '';
+  return /^[a-z0-9_-]+\.html$/i.test(n) ? n : 'index.html';
+})();
+
+// 已登入直接跳走
 sb.auth.getSession().then(({ data }) => {
-  if (data.session) window.location.href = 'index.html';
+  if (data.session) window.location.href = NEXT;
 });
 
 // ── Tab 切換 ──
@@ -423,7 +429,7 @@ async function signIn() {
     showMsg('loginMsg', errText(error), 'error');
     btn.disabled = false; btn.textContent = '登入';
   } else {
-    window.location.href = 'index.html';
+    window.location.href = NEXT;
   }
 }
 
@@ -431,7 +437,7 @@ async function signIn() {
 async function signInGoogle() {
   const { error } = await sb.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: 'https://bitocat.github.io/bitoalliance/index.html' }
+    options: { redirectTo: 'https://bitocat.github.io/bitoalliance/' + NEXT }
   });
   if (error) showMsg('loginMsg', errText(error), 'error');
 }
@@ -492,3 +498,5 @@ document.addEventListener('keydown', e => {
 </script>
 </body>
 </html>
+
+
