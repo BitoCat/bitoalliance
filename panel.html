@@ -176,6 +176,9 @@
   .seg { display:inline-flex; background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:3px; }
   .seg button { border:0; background:transparent; color:var(--ink); font:inherit; font-size:14px; padding:5px 12px; border-radius:999px; cursor:pointer; min-height:32px; }
   .seg button[aria-pressed="true"] { background:var(--amber); color:#1e1f22; font-weight:700; }
+  .search input { font:inherit; font-size:15px; padding:6px 14px; border-radius:999px; border:1px solid var(--line); background:var(--surface); color:var(--ink); width:190px; min-height:38px; }
+  .search input:focus { outline:3px solid var(--amber); outline-offset:1px; }
+  .search input.active { border-color:var(--amber); background:var(--amber-soft); font-weight:700; }
 
   .hero { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px 18px; display:grid; grid-template-columns: 1fr auto; gap:12px 20px; align-items:center; }
   .price { font-size:32px; font-weight:900; font-variant-numeric: tabular-nums; }
@@ -201,7 +204,7 @@
   .dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:4px; vertical-align:middle; }
   .ok { background:var(--green); } .bad { background:var(--red); } .wait { background:var(--gray); }
   .guide { margin:10px 0 0; }
-  #err { display:none; background:var(--amber-soft); border-radius:10px; padding:12px 14px; margin:10px 0; font-size:14.5px; }
+  .serr, #err { display:none; background:var(--amber-soft); border-radius:10px; padding:12px 14px; margin:10px 0; font-size:14.5px; }
 
   .panel { width:100%; border-collapse:collapse; font-size:14.5px; margin:14px 0; }
   .panel th, .panel td { border:1px solid var(--line); padding:7px 9px; text-align:left; vertical-align:top; }
@@ -231,6 +234,10 @@
       <div class="seg" id="symSeg" role="group" aria-label="幣種">
         <button data-v="BTC" aria-pressed="true">BTC</button><button data-v="ETH" aria-pressed="false">ETH</button><button data-v="SOL" aria-pressed="false">SOL</button>
       </div>
+      <form class="search" id="symForm" autocomplete="off">
+        <input id="symIn" list="symList" placeholder="🔍 搜尋其他幣，例 DOGE" aria-label="搜尋幣種" maxlength="20">
+        <datalist id="symList"></datalist>
+      </form>
       <div class="seg" id="itvSeg" role="group" aria-label="判讀週期">
         <button data-v="1m" aria-pressed="false">1m</button><button data-v="3m" aria-pressed="false">3m</button><button data-v="5m" aria-pressed="true">5m</button><button data-v="15m" aria-pressed="false">15m</button>
       </div>
@@ -238,9 +245,11 @@
   </div>
 
   <div id="err"></div>
+  <div id="serr" class="serr"></div>
 
   <div class="hero">
     <div>
+      <div class="lvl" id="symLbl" style="font-weight:700;color:var(--amber)"></div>
       <div class="price"><span id="px">—</span><span class="chg" id="pxChg"></span></div>
       <div class="lvl" id="lvlLine">連線中…</div>
       <div class="lvl" id="tunLine"></div>
@@ -269,6 +278,7 @@
   <section id="how">
     <h2>怎麼看這個面板</h2>
     <p class="lead">從上往下看，最後看「綜合」。</p>
+    <p>預設可以切換 BTC、ETH、SOL；其他幣在搜尋框輸入代號（例如 DOGE、1000PEPE）再按 Enter。冷門幣成交量小，有些資料（現貨、美國現貨）可能沒有，底部燈號會顯示「此幣沒有」，判讀參考性也比較低。</p>
     <div class="states-wrap"><table class="panel">
       <tr><th>觀察點</th><th>狀態</th><th>判斷</th></tr>
       <tr><td>關卡</td><td>H1 中線 83,580（+0.1%）</td><td>價格往上碰壓力</td></tr>
@@ -384,6 +394,23 @@ const SYMS = {
   ETH: { p: 'ETHUSDT', cb: 'ETH-USD', wall: 700000,  liqBig: 500000 },
   SOL: { p: 'SOLUSDT', cb: 'SOL-USD', wall: 300000,  liqBig: 200000 },
 };
+let PERP_LIST = null;                    // 可交易的 USDT 永續合約（搜尋用）
+function symCfg(name) {
+  if (SYMS[name]) return { ...SYMS[name], s: SYMS[name].p, mult: 1 };
+  // 1000PEPE 這類合約，現貨是 PEPEUSDT、價格差 1000 倍
+  const m = name.match(/^(1000+|1M)(.+)$/);
+  const base = m ? m[2] : name, mult = m ? (m[1] === '1M' ? 1e6 : +m[1]) : 1;
+  return { p: name + 'USDT', s: base + 'USDT', cb: mult === 1 ? base + '-USD' : null, mult, wall: null, liqBig: null };
+}
+async function loadPerpList() {
+  if (PERP_LIST) return PERP_LIST;
+  try {
+    const d = await getJ(`${FAPI}/fapi/v1/exchangeInfo`);
+    PERP_LIST = d.symbols.filter(x => x.contractType === 'PERPETUAL' && x.quoteAsset === 'USDT' && x.status === 'TRADING').map(x => x.symbol.replace(/USDT$/, '')).sort();
+    document.getElementById('symList').innerHTML = PERP_LIST.map(x => `<option value="${x}">`).join('');
+  } catch (e) { PERP_LIST = []; }
+  return PERP_LIST;
+}
 const ITV_MIN = { '1m': 1, '3m': 3, '5m': 5, '15m': 15 };
 const HTFS = ['15m', '1h', '4h', '1d'];
 const HTF_NAME = { '15m': '15m', '1h': 'H1', '4h': 'H4', '1d': 'Day' };
@@ -399,7 +426,7 @@ const P = {
 let S = null;
 function freshState(sym, itv) {
   return {
-    sym, itv,
+    sym, itv, cfg: symCfg(sym),
     perp: [], spot: [],                 // {t,o,h,l,c,v,tb}
     htf: { '15m': [], '1h': [], '4h': [], '1d': [] },
     oiHist: [], oiNow: null,
@@ -446,10 +473,16 @@ function upsertBar(arr, b, max = 600) {
 }
 
 async function loadHistory() {
-  const sym = SYMS[S.sym].p, itv = S.itv;
+  const sym = S.cfg.p, itv = S.itv;
+  // 不是預設三個幣：用 24 小時成交額決定「大單」「大量爆倉」的門檻
+  if (S.cfg.wall === null) {
+    try { const t = await getJ(`${FAPI}/fapi/v1/ticker/24hr?symbol=${sym}`); const qv = +t.quoteVolume;
+      S.cfg.wall = Math.min(1500000, Math.max(50000, qv * 0.00008)); S.cfg.liqBig = Math.min(1000000, Math.max(20000, qv * 0.00005));
+    } catch (e) { S.cfg.wall = 100000; S.cfg.liqBig = 50000; }
+  }
   const tasks = [
     getJ(`${FAPI}/fapi/v1/klines?symbol=${sym}&interval=${itv}&limit=300`).then(d => { S.perp = d.map(toBar); S.conn.perp = 'ok'; }).catch(() => S.conn.perp = 'bad'),
-    getJ(`${SAPI}/api/v3/klines?symbol=${sym}&interval=${itv}&limit=300`).then(d => { S.spot = d.map(toBar); S.conn.spot = 'ok'; }).catch(() => S.conn.spot = 'bad'),
+    getJ(`${SAPI}/api/v3/klines?symbol=${S.cfg.s}&interval=${itv}&limit=300`).then(d => { S.spot = d.map(toBar); S.conn.spot = 'ok'; }).catch(() => S.conn.spot = 'na'),
     getJ(`${FAPI}/futures/data/openInterestHist?symbol=${sym}&period=5m&limit=60`).then(d => { S.oiHist = d.map(x => ({ t: +x.timestamp, oi: +x.sumOpenInterest })); S.conn.oi = 'ok'; }).catch(() => S.conn.oi = 'bad'),
     ...HTFS.map(tf => getJ(`${FAPI}/fapi/v1/klines?symbol=${sym}&interval=${tf}&limit=500`).then(d => { S.htf[tf] = d.map(toBar); }).catch(() => {})),
   ];
@@ -457,7 +490,7 @@ async function loadHistory() {
 }
 
 function pollMark() {
-  const sym = SYMS[S.sym].p;
+  const sym = S.cfg.p;
   getJ(`${FAPI}/fapi/v1/premiumIndex?symbol=${sym}`).then(d => {
     if (!S.markWsT || Date.now() - S.markWsT > 5000) S.mark = { p: +d.markPrice, i: +d.indexPrice, r: +d.lastFundingRate };
     S.conn.mark = 'ok';
@@ -466,19 +499,19 @@ function pollMark() {
 
 // 掛單簿：每 3 秒抓前 1000 檔（約現價上下 1%），才看得到真正的大單
 function pollBook() {
-  const sym = SYMS[S.sym].p;
+  const sym = S.cfg.p;
   getJ(`${FAPI}/fapi/v1/depth?symbol=${sym}&limit=1000`).then(d => {
     onBook(d.bids.map(x => [+x[0], +x[1]]), d.asks.map(x => [+x[0], +x[1]])); S.conn.book = 'ok';
   }).catch(() => { if (S.conn.book !== 'ok') S.conn.book = 'bad'; });
 }
 
 function pollOI() {
-  const sym = SYMS[S.sym].p;
+  const sym = S.cfg.p;
   getJ(`${FAPI}/fapi/v1/openInterest?symbol=${sym}`).then(d => { S.oiNow = { t: Date.now(), oi: +d.openInterest }; S.conn.oi = 'ok'; }).catch(() => { if (!S.oiHist.length) S.conn.oi = 'bad'; });
 }
 
 function openSockets() {
-  const s = SYMS[S.sym].p.toLowerCase(), itv = S.itv;
+  const s = S.cfg.p.toLowerCase(), ss = S.cfg.s.toLowerCase(), itv = S.itv;
   const fstreams = [`${s}@kline_${itv}`, `${s}@markPrice@1s`, `${s}@forceOrder`, ...HTFS.map(tf => `${s}@kline_${tf}`)];
   const fw = new WebSocket(FWS + fstreams.join('/'));
   fw.onmessage = e => {
@@ -497,13 +530,15 @@ function openSockets() {
   };
   fw.onopen = () => { if (S.conn.liq === 'wait') S.conn.liq = 'ok'; };
   fw.onclose = () => { if (S && S.sockets.includes(fw)) setTimeout(() => restart(), 3000); };
-  const sw = new WebSocket(SWS + `${s}@kline_${itv}`);
+  const sw = new WebSocket(SWS + `${ss}@kline_${itv}`);
   sw.onmessage = e => { const k = JSON.parse(e.data).data.k; upsertBar(S.spot, { t: k.t, o: +k.o, h: +k.h, l: +k.l, c: +k.c, v: +k.v, tb: +k.V }); S.conn.spot = 'ok'; };
+  S.sockets.push(fw, sw);
+  if (!S.cfg.cb) { S.conn.cb = 'na'; return; }
   const cw = new WebSocket(CBWS);
-  cw.onopen = () => cw.send(JSON.stringify({ type: 'subscribe', product_ids: [SYMS[S.sym].cb], channels: ['ticker'] }));
-  cw.onmessage = e => { const d = JSON.parse(e.data); if (d.type === 'ticker') { S.cb = +d.price; S.cbT = Date.now(); S.conn.cb = 'ok'; } };
-  cw.onerror = () => S.conn.cb = 'bad';
-  S.sockets.push(fw, sw, cw);
+  cw.onopen = () => cw.send(JSON.stringify({ type: 'subscribe', product_ids: [S.cfg.cb], channels: ['ticker'] }));
+  cw.onmessage = e => { const d = JSON.parse(e.data); if (d.type === 'ticker') { S.cb = +d.price; S.cbT = Date.now(); S.conn.cb = 'ok'; } else if (d.type === 'error') S.conn.cb = 'na'; };
+  cw.onerror = () => { if (S.conn.cb !== 'ok') S.conn.cb = 'na'; };
+  S.sockets.push(cw);
 }
 
 // ---- 掛單牆追蹤：大單被吃掉（真）還是被撤掉（假）----
@@ -511,7 +546,7 @@ function onBook(bids, asks) {
   S.book = { bids, asks };
   const px = S.lastPx || (bids[0] && bids[0][0]);
   if (!px) return;
-  const minUsd = SYMS[S.sym].wall, now = Date.now();
+  const minUsd = S.cfg.wall || 100000, now = Date.now();
   const all = [...bids.map(x => ['bid', ...x]), ...asks.map(x => ['ask', ...x])];
   const med = (() => { const q = all.map(x => x[2]).sort((a, b) => a - b); return q[Math.floor(q.length / 2)] || 0; })();
   const seen = new Set();
@@ -611,7 +646,7 @@ function compute() {
   const liqWin = S.liqs.filter(x => now - x.t < Math.max(windowMs, 5 * 60e3));
   const liqLong = sum(liqWin.filter(x => x.side === 'long').map(x => x.usd));
   const liqShort = sum(liqWin.filter(x => x.side === 'short').map(x => x.usd));
-  const spotPx = sp[I] ? sp[I].c : null;
+  const spotPx = sp[I] ? sp[I].c * S.cfg.mult : null;
   const cbPrem = S.cb && spotPx && now - S.cbT < 60e3 ? (S.cb - spotPx) / spotPx * 100 : null;
   const nyH = (() => { const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })); return d.getHours() + d.getMinutes() / 60; })();
   const usOpen = nyH >= 9.5 && nyH < 16;
@@ -647,7 +682,7 @@ function compute() {
   else if (pxDn && oiChgK >= P.oiThr) { m3 = -1; m3j = '下跌時新空單進場 → 空方有新力道'; }
   else if (pxDn && oiChgK <= -P.oiThr) m3j = '🔥 下跌主要是多單停損 → 殺完容易止跌';
   else if (pxUp || pxDn) m3j = '價格有動，但槓桿部位沒什麼變';
-  const big = SYMS[S.sym].liqBig;
+  const big = S.cfg.liqBig || 50000;
   if (liqLong >= big && liqLong > liqShort * 2) { m3 += 1; m3j += '｜💥 剛有一波多單爆倉 → 殺完常會拉回'; }
   else if (liqShort >= big && liqShort > liqLong * 2) { m3 -= 1; m3j += '｜💥 剛有一波空單爆倉 → 衝完常會回落'; }
   R.m3 = { sc: m3, j: m3j, st: `OI <b>${fmt(oiChgK, '%', 2)}</b>｜資金費率 <b>${fund === null ? '—' : fund.toFixed(4) + '%'}</b>｜爆倉 多 <b>${fmtUsd(liqLong)}</b>・空 <b>${fmtUsd(liqShort)}</b>` };
@@ -729,7 +764,7 @@ function render() {
   const conn = S.conn;
   const r = compute();
   const foot = [['合約K線', conn.perp], ['現貨K線', conn.spot], ['OI', conn.oi], ['資金費率', conn.mark], ['爆倉', conn.liq], ['掛單簿', conn.book], ['美國現貨', conn.cb]];
-  document.getElementById('foot').innerHTML = foot.map(([n, s]) => `<span><span class="dot ${s}"></span>${n}</span>`).join('') + `<span>更新 ${new Date().toLocaleTimeString('zh-TW', { hour12: false })}</span>`;
+  document.getElementById('foot').innerHTML = foot.map(([n, s]) => `<span><span class="dot ${s === 'na' ? 'wait' : s}"></span>${n}${s === 'na' ? '（此幣沒有）' : ''}</span>`).join('') + `<span>更新 ${new Date().toLocaleTimeString('zh-TW', { hour12: false })}</span>`;
   const err = document.getElementById('err');
   if (conn.perp === 'bad') { err.style.display = 'block'; err.textContent = '⚠️ 連不上行情資料。可能是網路或所在地區限制，請換個網路（例如關掉 VPN 或改用手機網路）後重新整理。'; }
   else err.style.display = 'none';
@@ -759,14 +794,44 @@ function stop() { if (!S) return; const socks = S.sockets; S.sockets = []; socks
 async function start(sym, itv) {
   stop(); S = freshState(sym, itv); buildGrid();
   document.getElementById('px').textContent = '—';
+  document.getElementById('symLbl').textContent = sym + ' / USDT 永續合約';
   if (window.MOCK) { MOCK.fill(S); } else { await loadHistory(); openSockets(); pollOI(); pollMark(); pollBook(); S.timers.push(setInterval(pollOI, 10000), setInterval(pollMark, 5000), setInterval(pollBook, 3000)); }
   S.timers.push(setInterval(render, 1000)); render();
 }
 function restart() { if (S) start(S.sym, S.itv); }
+function markSym(sym) {
+  document.querySelectorAll('#symSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === sym ? 'true' : 'false'));
+  const inp = document.getElementById('symIn');
+  if (SYMS[sym]) { inp.value = ''; inp.classList.remove('active'); } else { inp.value = sym; inp.classList.add('active'); }
+}
+function bindSearch() {
+  const inp = document.getElementById('symIn');
+  inp.addEventListener('focus', loadPerpList, { once: true });
+  document.getElementById('symForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const q = inp.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/USDTP?$|PERP$/, '');
+    if (!q) return;
+    const list = await loadPerpList();
+    const err = document.getElementById('serr');
+    if (list.length && !list.includes(q)) {
+      const near = list.filter(x => x.includes(q)).slice(0, 6);
+      err.style.display = 'block';
+      err.innerHTML = `找不到「${q}」的永續合約。` + (near.length ? `是不是：${near.map(x => `<a href="#" data-s="${x}">${x}</a>`).join('、')}` : '');
+      err.querySelectorAll('a[data-s]').forEach(a => a.onclick = ev => { ev.preventDefault(); inp.value = a.dataset.s; document.getElementById('symForm').requestSubmit(); });
+      return;
+    }
+    err.style.display = 'none';
+    inp.blur(); markSym(q);
+    try { localStorage.setItem('bp_sym', q); } catch (x) {}
+    start(q, S.itv);
+  });
+  inp.addEventListener('change', () => { if (PERP_LIST && PERP_LIST.includes(inp.value.trim().toUpperCase())) document.getElementById('symForm').requestSubmit(); });
+}
 function bindSeg(id, key) {
   document.getElementById(id).addEventListener('click', e => {
     const btn = e.target.closest('button'); if (!btn) return;
     document.querySelectorAll('#' + id + ' button').forEach(b => b.setAttribute('aria-pressed', b === btn ? 'true' : 'false'));
+    if (key === 'sym') markSym(btn.dataset.v);
     const sym = key === 'sym' ? btn.dataset.v : S.sym, itv = key === 'itv' ? btn.dataset.v : S.itv;
     try { localStorage.setItem('bp_' + key, btn.dataset.v); } catch (err) {}
     start(sym, itv);
@@ -777,10 +842,9 @@ function bindSeg(id, key) {
 (async function gate() {
   let sym = 'BTC', itv = '5m';
   try { sym = localStorage.getItem('bp_sym') || sym; itv = localStorage.getItem('bp_itv') || itv; } catch (e) {}
-  if (!SYMS[sym]) sym = 'BTC'; if (!ITV_MIN[itv]) itv = '5m';
-  document.querySelectorAll('#symSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === sym ? 'true' : 'false'));
+  if (!/^[A-Z0-9]{2,20}$/.test(sym)) sym = 'BTC'; if (!ITV_MIN[itv]) itv = '5m';
   document.querySelectorAll('#itvSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === itv ? 'true' : 'false'));
-  const show = () => { document.getElementById('page').style.display = 'block'; bindSeg('symSeg', 'sym'); bindSeg('itvSeg', 'itv'); start(sym, itv); };
+  const show = () => { document.getElementById('page').style.display = 'block'; markSym(sym); bindSeg('symSeg', 'sym'); bindSeg('itvSeg', 'itv'); bindSearch(); start(sym, itv); };
   if (location.protocol === 'file:' && window.MOCK) { show(); return; }       // 本機測試用
   try {
     const sb = supabase.createClient(SB_URL, SB_ANON);
