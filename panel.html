@@ -184,7 +184,7 @@
   .lvl b { color:var(--ink); }
   .verdict { text-align:right; }
   .verdict .big { display:inline-block; padding:8px 16px; border-radius:10px; color:#fff; font-weight:900; font-size:20px; }
-  .verdict .why { color:var(--muted); font-size:13.5px; margin-top:6px; max-width:320px; margin-left:auto; }
+  .verdict .why { color:var(--muted); font-size:14px; margin-top:8px; max-width:360px; margin-left:auto; text-align:left; line-height:1.7; }
   @media (max-width: 640px) { .hero { grid-template-columns: 1fr; } .verdict { text-align:left; } .verdict .why { margin-left:0; } }
 
   .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:12px; margin:14px 0; }
@@ -212,6 +212,8 @@
 
   .card h3 a.help { text-decoration:none; font-size:13px; border:1px solid var(--line); border-radius:50%; width:22px; height:22px; display:inline-grid; place-items:center; color:var(--muted); margin-left:6px; }
   nav.jump { position: sticky; top: 0; }
+  .card h3 > span:first-child { white-space:nowrap; }
+  .card h3 .q { text-align:right; }
 </style>
 </head>
 <body>
@@ -333,9 +335,16 @@
   </section>
 
   <section id="total">
-    <h2>綜合分數</h2>
-    <p class="lead">把上面各項加起來。</p>
-    <p>每一項偏多會加分、偏空會扣分（④ 不計分）。總分 <b>+3 以上＝整體偏多</b>、<b>−3 以下＝整體偏空</b>，中間是<b>多空拉扯中</b>。拉扯的時候，代表各項說法不一致，盤面還沒有給出清楚的方向。</p>
+    <h2>最上面的大字（綜合判斷）</h2>
+    <p class="lead">面板右上角那一塊，是把七項加起來的總結。</p>
+    <div class="states-wrap"><table class="states"><thead><tr><th>大字寫</th><th>白話意思</th></tr></thead><tbody>
+      <tr><td><span class="chip g">📈 目前多方比較強</span></td><td>多數觀察點都偏向上漲（綜合分數 +3 以上）。</td></tr>
+      <tr><td><span class="chip r">📉 目前空方比較強</span></td><td>多數觀察點都偏向下跌（綜合分數 −3 以下）。</td></tr>
+      <tr><td><span class="chip y">⚖️ 多空拉扯，方向還不明</span></td><td>有的看漲、有的看跌，互相抵銷；或是七項都沒訊號。這時候最容易來回洗。</td></tr>
+    </tbody></table></div>
+    <p>大字下面會列出<b>「看漲的」</b>和<b>「看跌的」</b>是哪幾項，想知道原因，就去看那幾張卡片的判斷。</p>
+    <h3>綜合分數怎麼算</h3>
+    <p>每一項看漲會加分（+1 或 +2）、看跌會扣分（−1 或 −2），分數大小代表那一項訊號的強度。總分 <b>+3 以上＝整體偏多</b>、<b>−3 以下＝整體偏空</b>，中間是<b>多空拉扯中</b>。拉扯的時候，代表各項說法不一致，盤面還沒有給出清楚的方向。</p>
     <div class="note">分數是幫你快速掃一眼的工具，不要只看分數。重點是看哪幾項在打架：例如「價格衝上去」但「只有合約在拉」＋「價格創新高但力道沒跟上」，那就是典型的假突破組合。</div>
   </section>
 
@@ -732,9 +741,11 @@ function render() {
   document.getElementById('tunLine').textContent = `生效隧道 ${HTF_NAME[r.act]}（自動）・雜訊 15m ${r.n15 === null ? '—' : r.n15.toFixed(2)} / H1 ${r.n60 === null ? '—' : r.n60.toFixed(2)}`;
   const big = document.getElementById('totBig');
   big.className = 'big ' + (r.tot >= 3 ? 'bg-g' : r.tot <= -3 ? 'bg-r' : 'bg-y');
-  big.textContent = r.tot >= 3 ? `整體偏多（${r.tot} 分）` : r.tot <= -3 ? `整體偏空（${r.tot} 分）` : `多空拉扯中（${r.tot} 分）`;
-  const pos = CARDS.filter(([id]) => r.R[id].sc > 0).map(c => c[1].slice(0, 1)), neg = CARDS.filter(([id]) => r.R[id].sc < 0).map(c => c[1].slice(0, 1));
-  document.getElementById('totWhy').textContent = `偏多：${pos.join(' ') || '無'}　偏空：${neg.join(' ') || '無'}`;
+  big.textContent = r.tot >= 3 ? '📈 目前多方比較強' : r.tot <= -3 ? '📉 目前空方比較強' : '⚖️ 多空拉扯，方向還不明';
+  const short = t => t.replace(/^[①-⑦]\s*/, '');
+  const pos = CARDS.filter(([id]) => r.R[id].sc > 0).map(c => short(c[1])), neg = CARDS.filter(([id]) => r.R[id].sc < 0).map(c => short(c[1]));
+  const sentence = r.tot >= 3 ? '多數觀察點偏向上漲，多方證據比較多。' : r.tot <= -3 ? '多數觀察點偏向下跌，空方證據比較多。' : (pos.length || neg.length) ? '有的看漲、有的看跌，互相抵銷，還沒有明確方向。' : '七項都沒有明顯訊號，盤面平靜。';
+  document.getElementById('totWhy').innerHTML = `${sentence}<br>🟢 看漲的：${pos.join('、') || '沒有'}<br>🔴 看跌的：${neg.join('、') || '沒有'}<br>綜合分數 <b>${r.tot > 0 ? '+' : ''}${r.tot}</b>（+3 以上偏多、−3 以下偏空）・<a href="#total">怎麼算？</a>`;
   for (const [id] of CARDS) {
     const c = document.getElementById('c_' + id), m = r.R[id];
     const j = c.querySelector('.j'); j.className = 'j ' + cls(m.sc, m.j); j.textContent = m.j;
