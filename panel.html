@@ -202,6 +202,16 @@
   .ok { background:var(--green); } .bad { background:var(--red); } .wait { background:var(--gray); }
   .guide { margin:10px 0 0; }
   #err { display:none; background:var(--amber-soft); border-radius:10px; padding:12px 14px; margin:10px 0; font-size:14.5px; }
+
+  .panel { width:100%; border-collapse:collapse; font-size:14.5px; margin:14px 0; }
+  .panel th, .panel td { border:1px solid var(--line); padding:7px 9px; text-align:left; vertical-align:top; }
+  .panel th { background:var(--card); color:var(--muted); font-weight:500; }
+  .chip { display:inline-block; padding:1px 8px; border-radius:6px; color:#fff; font-size:13.5px; font-weight:700; }
+  .chip.g { background:var(--green); color:#fff; } .chip.r { background:var(--red); color:#fff; }
+  .chip.y { background:#e67e00; color:#fff; } .chip.w { background:var(--gray); color:#fff; }
+
+  .card h3 a.help { text-decoration:none; font-size:13px; border:1px solid var(--line); border-radius:50%; width:22px; height:22px; display:inline-grid; place-items:center; color:var(--muted); margin-left:6px; }
+  nav.jump { position: sticky; top: 0; }
 </style>
 </head>
 <body>
@@ -242,7 +252,105 @@
   <div class="grid" id="grid"></div>
 
   <div class="foot" id="foot"></div>
-  <p class="guide">📖 看不懂？<a href="panel-guide.html">盤口觀察面板白話說明</a>　·　每秒更新，判讀窗口為最近 6 根 K（可切換週期）</p>
+  <p class="guide">📖 看不懂？<a href="#guide">往下看白話說明</a>　·　每秒自動更新，不用重新整理　·　判讀窗口為最近 6 根 K（可切換週期）</p>
+
+  <section id="guide" style="margin-top:28px;border-top:2px solid var(--line);padding-top:8px">
+    <h2 style="font-size:28px">📖 白話說明</h2>
+    <p class="lead">面板上每一項在看什麼、每種判斷是什麼意思。點上方卡片右上角的「？」可以直接跳到對應說明。</p>
+  </section>
+  <nav class="jump" aria-label="章節">
+  <div class="rail">
+    <a href="#how">怎麼看</a><a href="#absorb">① 吸收</a><a href="#spot">② 現貨 vs 合約</a><a href="#oi">③ OI × 費率 × 爆倉</a><a href="#wall">④ 掛單牆</a><a href="#approach">⑤ 接近方式</a><a href="#div">⑥ 動能背離</a><a href="#accept">⑦ 價量／接受度</a><a href="#total">綜合分數</a><a href="#limits">資料限制</a>
+  </div>
+</nav>
+  <main>
+  <section id="how">
+    <h2>怎麼看這個面板</h2>
+    <p class="lead">從上往下看，最後看「綜合」。</p>
+    <div class="states-wrap"><table class="panel">
+      <tr><th>觀察點</th><th>狀態</th><th>判斷</th></tr>
+      <tr><td>關卡</td><td>H1 中線 83,580（+0.1%）</td><td>價格往上碰壓力</td></tr>
+      <tr><td>① 吸收</td><td>Delta +22%｜價格 +0.1ATR</td><td><span class="chip r">買的人很多卻漲不上去 → 容易回落</span></td></tr>
+      <tr><td>② 現貨 vs 合約</td><td>合約 +25%｜現貨 −3%</td><td><span class="chip y">只有合約在追漲，現貨沒跟</span></td></tr>
+      <tr><td>綜合</td><td>最新訊號…</td><td><span class="chip r">整體偏空（−4 分）</span></td></tr>
+    </table></div>
+    <ol class="flow">
+      <li><b>關卡</b>：價格現在靠近哪一條線（隧道上下軌或中線），是往上碰壓力，還是往下碰支撐。</li>
+      <li><b>狀態</b>：實際的數字，想自己判斷的人看這欄。</li>
+      <li><b>判斷</b>：把數字翻成一句白話。顏色：<span class="chip g">綠＝偏多</span> <span class="chip r">紅＝偏空</span> <span class="chip y">橘＝要小心</span> <span class="chip w">灰＝沒訊號</span></li>
+    </ol>
+    <div class="note">面板上的「偏多、偏空」是在描述<b>現在盤面的狀況</b>，不是買賣指令。進場、出場、停損由你自己決定。</div>
+  </section>
+
+  <section id="absorb">
+    <h2><span class="pin" aria-hidden="true">1</span>吸收</h2>
+    <p class="lead">有沒有人在默默接貨／壓貨</p>
+    <p>一直有人用市價單猛砸（或猛買），價格卻不太動，代表另一邊有大量掛單在接。這是最快、最準的反轉訊號之一。</p>
+    <div class="states-wrap"><table class="states"><thead><tr><th>面板上寫</th><th>白話意思</th></tr></thead><tbody><tr><td><span class="chip g">賣的人很多卻跌不下去</span></td><td>下方有大買家在接，跌勢可能到頭，準備止跌。</td></tr><tr><td><span class="chip r">買的人很多卻漲不上去</span></td><td>上方有大賣家在壓，漲勢可能到頭，準備回落。</td></tr><tr><td><span class="chip w">沒有特別情況</span></td><td>買賣兩邊都正常，沒有人在特別接或壓。</td></tr></tbody></table></div>
+    <div class="note">狀態欄的「Delta」是主動買減主動賣：負很多＝一直有人賣。「價格」是這段時間實際漲跌多少。下影線多＝每次砸下去都被拉回來。</div>
+  </section>
+  <section id="spot">
+    <h2><span class="pin" aria-hidden="true">2</span>現貨 vs 合約</h2>
+    <p class="lead">漲跌是誰推出來的</p>
+    <p>現貨是真的用錢買幣；合約可以借錢（槓桿）。現貨帶頭的漲跌比較扎實；只有合約在推，很可能是槓桿在拉，容易漲完又跌回來。</p>
+    <div class="states-wrap"><table class="states"><thead><tr><th>面板上寫</th><th>白話意思</th></tr></thead><tbody><tr><td><span class="chip g">現貨和合約一起買</span></td><td>真的有人拿錢買，買盤是真的。</td></tr><tr><td><span class="chip g">真的有人在買幣（現貨先買）</span></td><td>買盤扎實，合約之後跟上的話力道會更強。</td></tr><tr><td><span class="chip y">只有合約在追漲，現貨沒跟</span></td><td>漲勢靠槓桿撐，容易出現假突破。</td></tr><tr><td><span class="chip y">現貨和合約方向相反</span></td><td>兩邊意見不同，以現貨的方向為準。</td></tr><tr><td><span class="chip r">現貨和合約一起賣</span></td><td>賣壓是真的。</td></tr></tbody></table></div>
+    <div class="note">美股開盤時段（台灣晚上）會多看一項「美國現貨溢價」：Coinbase（美國主要交易所）比其他地方貴，代表美國買盤積極，面板會加註「美國買家在買」或「美國買家在賣」。</div>
+  </section>
+  <section id="oi">
+    <h2><span class="pin" aria-hidden="true">3</span>OI × 費率 × 爆倉</h2>
+    <p class="lead">新錢進場，還是被迫出場</p>
+    <p>OI（未平倉量）是市場上還沒平倉的合約總量。價格漲的時候，要看是新多單進場，還是空單被迫買回；兩者看起來一樣在漲，後續完全不同。</p>
+    <div class="states-wrap"><table class="states"><thead><tr><th>面板上寫</th><th>白話意思</th></tr></thead><tbody><tr><td><span class="chip g">上漲時新多單穩定進場</span></td><td>價漲、OI 溫和增加，漲勢健康。</td></tr><tr><td><span class="chip y">上漲時大量槓桿多單擠進來</span></td><td>價漲、OI 暴增或合約溢價很高，多單太擠，容易被反向洗掉。</td></tr><tr><td><span class="chip y">上漲主要是空單認賠買回</span></td><td>價漲、OI 下降，是空單停損推上去的，力道有限，常衝一段就停。</td></tr><tr><td><span class="chip y">下跌主要是多單停損</span></td><td>價跌、OI 下降，殺完常會止跌。</td></tr><tr><td><span class="chip r">下跌時新空單進場</span></td><td>價跌、OI 增加，跌勢有人加碼。</td></tr><tr><td><span class="chip y">疑似一次大量爆倉</span></td><td>短時間大量強制平倉，常是掃停損，之後容易收回原本區間。</td></tr></tbody></table></div>
+    <div class="note">指標裡看不到資金費率和爆倉數據，所以用替代方法：合約價比現貨價高很多 ≈ 資金費率高；OI 在一根 K 裡突然大減＋爆量＋大 K 棒 ≈ 爆倉。面板上會標「溢價」和「疑似」。</div>
+  </section>
+  <section id="wall">
+    <h2><span class="pin" aria-hidden="true">4</span>掛單牆</h2>
+    <p class="lead">大單是真的還是假的</p>
+    <p>價格靠近時，大掛單被「吃掉」代表真的有人在交易；被「撤掉」代表是假單嚇人。這項需要交易所的即時掛單簿資料：TradingView 指標讀不到，固定顯示「看不到」；這個網頁讀得到，會即時判讀。</p>
+    <div class="states-wrap"><table class="states"><thead><tr><th>面板上寫</th><th>白話意思</th></tr></thead><tbody><tr><td><span class="chip w">TradingView 看不到掛單</span></td><td>指標無法判讀；請改看即時盤口網頁。</td></tr><tr><td><span class="chip g">上方大賣單被買光</span></td><td>（網頁版）真的有人在買，買盤是真的。</td></tr><tr><td><span class="chip y">下方大買單在價格靠近時撤掉</span></td><td>（網頁版）假支撐，小心往下破。</td></tr><tr><td><span class="chip y">上方大賣單在價格靠近時撤掉</span></td><td>（網頁版）假壓力，容易突破。</td></tr></tbody></table></div>
+    
+  </section>
+  <section id="approach">
+    <h2><span class="pin" aria-hidden="true">5</span>接近方式</h2>
+    <p class="lead">價格是怎麼走到關卡的</p>
+    <p>同樣走到壓力位，慢慢磨上去和一口氣衝上去，結果常常相反。另外，同一個位置被測試越多次，防守的掛單被消耗得越多，越容易被突破。</p>
+    <div class="states-wrap"><table class="states"><thead><tr><th>面板上寫</th><th>白話意思</th></tr></thead><tbody><tr><td><span class="chip g">慢慢靠近、低點越墊越高</span></td><td>賣壓一點一點被吃掉，容易突破。</td></tr><tr><td><span class="chip r">慢慢靠近、高點越來越低</span></td><td>買盤一點一點撐不住，容易跌破。</td></tr><tr><td><span class="chip y">急漲又爆大量</span></td><td>常是最後一衝（高潮量），小心反轉。</td></tr><tr><td><span class="chip y">急跌又爆大量</span></td><td>常是最後一殺，小心反彈。</td></tr><tr><td><span class="chip w">已經第 3 次以上碰這裡</span></td><td>防守越來越弱，這次比較容易破。</td></tr></tbody></table></div>
+    <div class="note">狀態欄的「波動比」小於 0.75 代表波動在收斂（壓縮）。</div>
+  </section>
+  <section id="div">
+    <h2><span class="pin" aria-hidden="true">6</span>動能背離</h2>
+    <p class="lead">價格在衝，力道有沒有跟上</p>
+    <p>價格創新高，但推動它的力道（CVD、RSI、MACD、PHL）沒有跟著創新高，就像車子還在往前滑、油門已經放開。背離的指標越多，訊號越強。</p>
+    <div class="states-wrap"><table class="states"><thead><tr><th>面板上寫</th><th>白話意思</th></tr></thead><tbody><tr><td><span class="chip y">價格創新高但力道變弱（N 項）</span></td><td>上漲快沒力了，小心回落。</td></tr><tr><td><span class="chip y">價格創新低但賣壓變弱（N 項）</span></td><td>下跌快沒力了，小心反彈。</td></tr><tr><td><span class="chip w">力道正常，沒有背離</span></td><td>沒有背離，趨勢還有力。</td></tr></tbody></table></div>
+    <div class="note">CVD 是主動買賣量的累積；現貨 CVD 背離比合約 CVD 背離更有參考價值。PHL 就是你熟悉的 BitoCat PHL 震盪指標。</div>
+  </section>
+  <section id="accept">
+    <h2><span class="pin" aria-hidden="true">7</span>價量／接受度</h2>
+    <p class="lead">突破之後，市場認不認帳</p>
+    <p>衝出軌道只是第一步，之後幾根 K 能不能站穩、量有沒有跟上，才決定突破是真是假。這是最後一道確認。</p>
+    <div class="states-wrap"><table class="states"><thead><tr><th>面板上寫</th><th>白話意思</th></tr></thead><tbody><tr><td><span class="chip g">突破後站穩 N 根，量也有跟</span></td><td>突破被市場接受。</td></tr><tr><td><span class="chip y">站上了但沒量</span></td><td>突破不太可靠。</td></tr><tr><td><span class="chip r">突破後又跌回來</span></td><td>假突破。</td></tr><tr><td><span class="chip w">還在隧道裡</span></td><td>還沒有突破，繼續觀察。</td></tr></tbody></table></div>
+    <div class="note">價量關係：價漲量增＝健康；價漲量縮＝追價的人變少；價跌量增＝賣壓重；價跌量縮＝賣壓在減輕。</div>
+  </section>
+
+  <section id="total">
+    <h2>綜合分數</h2>
+    <p class="lead">把上面各項加起來。</p>
+    <p>每一項偏多會加分、偏空會扣分（④ 不計分）。總分 <b>+3 以上＝整體偏多</b>、<b>−3 以下＝整體偏空</b>，中間是<b>多空拉扯中</b>。拉扯的時候，代表各項說法不一致，盤面還沒有給出清楚的方向。</p>
+    <div class="note">分數是幫你快速掃一眼的工具，不要只看分數。重點是看哪幾項在打架：例如「價格衝上去」但「只有合約在拉」＋「價格創新高但力道沒跟上」，那就是典型的假突破組合。</div>
+  </section>
+
+  <section id="limits">
+    <h2>資料從哪裡來、有什麼限制</h2>
+    <div class="term"><dl>
+      <dt>主動買賣</dt><dd>Premium 版用 TradingView 的成交量足跡（真實主動買賣量）；會員版用 1 分 K 細算，是推算值。面板最下方「資料來源」會寫目前用哪一種。</dd>
+      <dt>資金費率</dt><dd>指標讀不到，用「合約價比現貨價高多少」代替；即時盤口網頁用的是真實資金費率。</dd>
+      <dt>爆倉</dt><dd>指標讀不到，用「OI 突然大減＋爆量＋大 K 棒」推測，所以寫「疑似」；即時盤口網頁用的是真實爆倉數據。</dd>
+      <dt>掛單牆</dt><dd>指標讀不到交易所掛單簿，這項固定不判讀；即時盤口網頁可以判讀。</dd>
+      <dt>建議週期</dt><dd>開 3 分鐘到 15 分鐘的圖效果最好。</dd>
+    </dl></div>
+  </section>
+</main>
+
   <footer>
     面板內容為市場資訊整理，僅供參考，不構成投資建議。交易決策與風險由使用者自行判斷與承擔。
   </footer>
@@ -339,6 +447,22 @@ async function loadHistory() {
   await Promise.all(tasks);
 }
 
+function pollMark() {
+  const sym = SYMS[S.sym].p;
+  getJ(`${FAPI}/fapi/v1/premiumIndex?symbol=${sym}`).then(d => {
+    if (!S.markWsT || Date.now() - S.markWsT > 5000) S.mark = { p: +d.markPrice, i: +d.indexPrice, r: +d.lastFundingRate };
+    S.conn.mark = 'ok';
+  }).catch(() => { if (!S.mark) S.conn.mark = 'bad'; });
+}
+
+// 掛單簿：每 3 秒抓前 1000 檔（約現價上下 1%），才看得到真正的大單
+function pollBook() {
+  const sym = SYMS[S.sym].p;
+  getJ(`${FAPI}/fapi/v1/depth?symbol=${sym}&limit=1000`).then(d => {
+    onBook(d.bids.map(x => [+x[0], +x[1]]), d.asks.map(x => [+x[0], +x[1]])); S.conn.book = 'ok';
+  }).catch(() => { if (S.conn.book !== 'ok') S.conn.book = 'bad'; });
+}
+
 function pollOI() {
   const sym = SYMS[S.sym].p;
   getJ(`${FAPI}/fapi/v1/openInterest?symbol=${sym}`).then(d => { S.oiNow = { t: Date.now(), oi: +d.openInterest }; S.conn.oi = 'ok'; }).catch(() => { if (!S.oiHist.length) S.conn.oi = 'bad'; });
@@ -346,7 +470,7 @@ function pollOI() {
 
 function openSockets() {
   const s = SYMS[S.sym].p.toLowerCase(), itv = S.itv;
-  const fstreams = [`${s}@kline_${itv}`, `${s}@markPrice@1s`, `${s}@forceOrder`, `${s}@depth20@500ms`, ...HTFS.map(tf => `${s}@kline_${tf}`)];
+  const fstreams = [`${s}@kline_${itv}`, `${s}@markPrice@1s`, `${s}@forceOrder`, ...HTFS.map(tf => `${s}@kline_${tf}`)];
   const fw = new WebSocket(FWS + fstreams.join('/'));
   fw.onmessage = e => {
     const m = JSON.parse(e.data), d = m.data, st = m.stream || '';
@@ -355,13 +479,11 @@ function openSockets() {
       if (k.i === S.itv) { upsertBar(S.perp, b); S.lastPx = b.c; }
       if (S.htf[k.i]) upsertBar(S.htf[k.i], b, 500);
     } else if (st.includes('@markPrice')) {
-      S.mark = { p: +d.p, i: +d.i, r: +d.r }; S.conn.mark = 'ok';
+      S.mark = { p: +d.p, i: +d.i, r: +d.r }; S.markWsT = Date.now(); S.conn.mark = 'ok';
     } else if (st.includes('@forceOrder')) {
       const o = d.o; // SELL = 多單被強平；BUY = 空單被強平
       S.liqs.push({ t: o.T, side: o.S === 'SELL' ? 'long' : 'short', usd: (+o.ap || +o.p) * (+o.z || +o.q) });
       S.conn.liq = 'ok';
-    } else if (st.includes('@depth')) {
-      onBook(d.b.map(x => [+x[0], +x[1]]), d.a.map(x => [+x[0], +x[1]])); S.conn.book = 'ok';
     }
   };
   fw.onopen = () => { if (S.conn.liq === 'wait') S.conn.liq = 'ok'; };
@@ -580,18 +702,18 @@ function compute() {
 
 // ================= 畫面 =================
 const CARDS = [
-  ['m1', '① 吸收', '有沒有人在默默接貨／壓貨'],
-  ['m2', '② 現貨 vs 合約', '漲跌是誰推出來的'],
-  ['m3', '③ OI × 費率 × 爆倉', '新錢進場，還是被迫出場'],
-  ['m4', '④ 掛單牆', '大單是真的還是假的'],
-  ['m5', '⑤ 接近方式', '價格怎麼走到關卡的'],
-  ['m6', '⑥ 動能背離', '價格在衝，力道有沒有跟上'],
-  ['m7', '⑦ 價量／接受度', '突破後市場認不認帳'],
+  ['m1', '① 吸收', '有沒有人在默默接貨／壓貨', 'absorb'],
+  ['m2', '② 現貨 vs 合約', '漲跌是誰推出來的', 'spot'],
+  ['m3', '③ OI × 費率 × 爆倉', '新錢進場，還是被迫出場', 'oi'],
+  ['m4', '④ 掛單牆', '大單是真的還是假的', 'wall'],
+  ['m5', '⑤ 接近方式', '價格怎麼走到關卡的', 'approach'],
+  ['m6', '⑥ 動能背離', '價格在衝，力道有沒有跟上', 'div'],
+  ['m7', '⑦ 價量／接受度', '突破後市場認不認帳', 'accept'],
 ];
 const cls = (sc, j) => sc > 0 ? 'bg-g' : sc < 0 ? 'bg-r' : /⚠️|🔥|💥/.test(j) ? 'bg-y' : 'bg-w';
 function buildGrid() {
-  document.getElementById('grid').innerHTML = CARDS.map(([id, t, q]) =>
-    `<div class="card" id="c_${id}"><h3>${t}<span class="q">${q}</span></h3><div class="j bg-w">計算中…</div><div class="st"></div><div class="ev" style="display:none"></div></div>`).join('');
+  document.getElementById('grid').innerHTML = CARDS.map(([id, t, q, sec]) =>
+    `<div class="card" id="c_${id}"><h3><span>${t}<a class="help" href="#${sec}" aria-label="${t} 說明">?</a></span><span class="q">${q}</span></h3><div class="j bg-w">計算中…</div><div class="st"></div><div class="ev" style="display:none"></div></div>`).join('');
 }
 function render() {
   const pxEl = document.getElementById('px');
@@ -626,7 +748,7 @@ function stop() { if (!S) return; const socks = S.sockets; S.sockets = []; socks
 async function start(sym, itv) {
   stop(); S = freshState(sym, itv); buildGrid();
   document.getElementById('px').textContent = '—';
-  if (window.MOCK) { MOCK.fill(S); } else { await loadHistory(); openSockets(); pollOI(); S.timers.push(setInterval(pollOI, 10000)); }
+  if (window.MOCK) { MOCK.fill(S); } else { await loadHistory(); openSockets(); pollOI(); pollMark(); pollBook(); S.timers.push(setInterval(pollOI, 10000), setInterval(pollMark, 5000), setInterval(pollBook, 3000)); }
   S.timers.push(setInterval(render, 1000)); render();
 }
 function restart() { if (S) start(S.sym, S.itv); }
