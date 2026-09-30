@@ -188,7 +188,7 @@
 <div class="wrap">
   <header class="top">
     <h1><span>貓咪隧道 crypto</span>盤口觀察面板讀法</h1>
-    <p>價格走到支撐壓力時，面板把「看不到的盤口」拆成七項告訴你：誰在推、力道是真是假、有沒有人在接。每一項都有<b>狀態</b>（實際數字）和<b>判斷</b>（白話結論）。</p>
+    <p>價格走到支撐壓力時，面板把「看不到的盤口」拆成七項告訴你（TradingView 指標和 <a href="panel.html">即時盤口網頁</a> 都有）：誰在推、力道是真是假、有沒有人在接。每一項都有<b>狀態</b>（實際數字）和<b>判斷</b>（白話結論）。</p>
   </header>
 </div>
 
@@ -242,8 +242,8 @@
   <section id="wall">
     <h2><span class="pin" aria-hidden="true">4</span>掛單牆</h2>
     <p class="lead">大單是真的還是假的</p>
-    <p>價格靠近時，大掛單被「吃掉」代表真的有人在交易；被「撤掉」代表是假單嚇人。這項需要交易所的即時掛單簿資料，TradingView 指標讀不到，所以面板上固定顯示「看不到」。</p>
-    <div class="states-wrap"><table class="states"><thead><tr><th>面板上寫</th><th>白話意思</th></tr></thead><tbody><tr><td><span class="chip w">TradingView 看不到掛單</span></td><td>指標無法判讀，請參考其他項目。</td></tr></tbody></table></div>
+    <p>價格靠近時，大掛單被「吃掉」代表真的有人在交易；被「撤掉」代表是假單嚇人。這項需要交易所的即時掛單簿資料：TradingView 指標讀不到，固定顯示「看不到」；<a href="panel.html">即時盤口網頁</a>讀得到，會即時判讀。</p>
+    <div class="states-wrap"><table class="states"><thead><tr><th>面板上寫</th><th>白話意思</th></tr></thead><tbody><tr><td><span class="chip w">TradingView 看不到掛單</span></td><td>指標無法判讀；請改看即時盤口網頁。</td></tr><tr><td><span class="chip g">上方大賣單被買光</span></td><td>（網頁版）真的有人在買，買盤是真的。</td></tr><tr><td><span class="chip y">下方大買單在價格靠近時撤掉</span></td><td>（網頁版）假支撐，小心往下破。</td></tr><tr><td><span class="chip y">上方大賣單在價格靠近時撤掉</span></td><td>（網頁版）假壓力，容易突破。</td></tr></tbody></table></div>
     
   </section>
   <section id="approach">
@@ -279,9 +279,9 @@
     <h2>資料從哪裡來、有什麼限制</h2>
     <div class="term"><dl>
       <dt>主動買賣</dt><dd>Premium 版用 TradingView 的成交量足跡（真實主動買賣量）；會員版用 1 分 K 細算，是推算值。面板最下方「資料來源」會寫目前用哪一種。</dd>
-      <dt>資金費率</dt><dd>指標讀不到，用「合約價比現貨價高多少」代替。</dd>
-      <dt>爆倉</dt><dd>指標讀不到，用「OI 突然大減＋爆量＋大 K 棒」推測，所以寫「疑似」。</dd>
-      <dt>掛單牆</dt><dd>指標讀不到交易所掛單簿，這項固定不判讀。</dd>
+      <dt>資金費率</dt><dd>指標讀不到，用「合約價比現貨價高多少」代替；即時盤口網頁用的是真實資金費率。</dd>
+      <dt>爆倉</dt><dd>指標讀不到，用「OI 突然大減＋爆量＋大 K 棒」推測，所以寫「疑似」；即時盤口網頁用的是真實爆倉數據。</dd>
+      <dt>掛單牆</dt><dd>指標讀不到交易所掛單簿，這項固定不判讀；即時盤口網頁可以判讀。</dd>
       <dt>建議週期</dt><dd>開 3 分鐘到 15 分鐘的圖效果最好。</dd>
     </dl></div>
   </section>

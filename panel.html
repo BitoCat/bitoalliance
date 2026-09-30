@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>即時盤口面板</title>
+<meta name="description" content="比特聯盟即時盤口面板：吸收、現貨 vs 合約、OI 費率爆倉、掛單牆、接近方式、動能背離、價量接受度">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
+<style>
+  :root {
+    --bg: #f2f3f5;
+    --surface: #ffffff;
+    --card: #f7f8f9;
+    --ink: #1f2124;
+    --muted: #5c6068;
+    --line: #dfe1e5;
+    --amber: #c98300;
+    --amber-soft: #fff3dc;
+    --green: #1f9d55;
+    --red: #d63a2f;
+    --yellow: #c9a100;
+    --gray: #8a8f98;
+    --code: #eceef1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1e1f22;
+      --surface: #2b2d31;
+      --card: #313338;
+      --ink: #eceef1;
+      --muted: #a7abb3;
+      --line: #3f4147;
+      --amber: #f5a623;
+      --amber-soft: #3a2f1a;
+      --green: #3fcf7f;
+      --red: #f0645a;
+      --yellow: #e8c547;
+      --gray: #9aa0a8;
+      --code: #232428;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1e1f22; --surface: #2b2d31; --card: #313338; --ink: #eceef1; --muted: #a7abb3;
+    --line: #3f4147; --amber: #f5a623; --amber-soft: #3a2f1a; --green: #3fcf7f; --red: #f0645a;
+    --yellow: #e8c547; --gray: #9aa0a8; --code: #232428;
+  }
+
+  :root {
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  html { scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 64px); scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  *, *::before, *::after { box-sizing: inherit; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    font-size: 17px;
+    line-height: 1.8;
+    font-variant-numeric: tabular-nums;
+    -webkit-text-size-adjust: 100%;
+  }
+  a { color: var(--amber); }
+  a:focus-visible, button:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; border-radius: 4px; }
+
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+
+  header.top { padding: 48px 0 24px; }
+  header.top h1 {
+    font-size: clamp(34px, 8vw, 52px);
+    font-weight: 900;
+    line-height: 1.15;
+    margin: 0 0 12px;
+    letter-spacing: 0.02em;
+  }
+  header.top h1 span { display: block; font-size: 0.42em; font-weight: 700; color: var(--amber); letter-spacing: 0.08em; margin-bottom: 6px; }
+  header.top p { margin: 0; color: var(--muted); max-width: 36em; }
+
+  nav.jump {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    padding: 10px 0;
+  }
+  nav.jump .rail { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+  nav.jump .rail::-webkit-scrollbar { display: none; }
+  nav.jump a {
+    flex: none; text-decoration: none; color: var(--ink);
+    background: var(--surface); border: 1px solid var(--line);
+    padding: 4px 12px; border-radius: 999px; font-size: 14px; white-space: nowrap;
+  }
+
+  /* 標註過的快報：外觀仿 Discord 卡片 */
+  .specimen { margin: 28px 0 8px; }
+  .specimen-note { color: var(--muted); font-size: 15px; margin: 0 0 10px; }
+  .embed {
+    background: var(--card);
+    border-left: 4px solid var(--green);
+    border-radius: 4px;
+    padding: 14px 16px 14px 14px;
+    font-size: 15px;
+    line-height: 1.65;
+    overflow-x: auto;
+  }
+  .embed .blk { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: start; padding: 8px 0; border-bottom: 1px dashed var(--line); }
+  .embed .blk:last-child { border-bottom: 0; }
+  .embed b { font-weight: 700; }
+  .embed .sub { color: var(--muted); font-size: 12.5px; }
+  .pin {
+    display: inline-grid; place-items: center;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--amber); color: #1e1f22; font-weight: 900; font-size: 15px;
+    text-decoration: none; flex: none;
+  }
+
+  main section { padding: 36px 0 8px; border-top: 1px solid var(--line); }
+  main section:first-of-type { border-top: 0; }
+  h2 { font-size: 26px; font-weight: 900; margin: 0 0 6px; line-height: 1.35; display: flex; gap: 12px; align-items: center; }
+  h2 .pin { width: 34px; height: 34px; font-size: 17px; }
+  h2 + .lead { color: var(--muted); margin: 0 0 18px; }
+  h3 { font-size: 19px; font-weight: 700; margin: 26px 0 6px; }
+
+  .term { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin: 14px 0; }
+  .term h3 { margin-top: 0; }
+  .term dl { margin: 0; display: grid; grid-template-columns: 5.5em 1fr; gap: 6px 12px; }
+  .term dt { color: var(--amber); font-weight: 700; font-size: 15px; padding-top: 2px; }
+  .term dd { margin: 0; }
+  @media (max-width: 480px) {
+    .term dl { grid-template-columns: 1fr; gap: 0; }
+    .term dd { margin-bottom: 8px; }
+  }
+
+  .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 14px 0; }
+  .legend div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .legend strong { display: block; font-size: 18px; }
+  .legend span { color: var(--muted); font-size: 14.5px; }
+
+  .states { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 16px; }
+  .states-wrap { overflow-x: auto; }
+  .states th, .states td { text-align: left; padding: 10px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .states th { color: var(--muted); font-weight: 500; font-size: 14px; }
+  .states td:first-child { white-space: nowrap; font-weight: 700; }
+
+  .flow { counter-reset: s; list-style: none; padding: 0; margin: 14px 0; }
+  .flow li { counter-increment: s; position: relative; padding: 4px 0 14px 46px; }
+  .flow li::before {
+    content: counter(s); position: absolute; left: 0; top: 4px;
+    width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--amber);
+    color: var(--amber); font-weight: 900; display: grid; place-items: center; font-size: 15px;
+  }
+
+  .example { display: block; margin-top: 10px; background: var(--card); border-left: 4px solid var(--amber); border-radius: 4px; padding: 8px 12px; font-size: 15px; }
+  .note { background: var(--amber-soft); border-radius: 10px; padding: 14px 16px; margin: 16px 0; font-size: 15.5px; }
+  code { background: var(--code); padding: 1px 6px; border-radius: 4px; font-size: 0.92em; }
+  .g { color: var(--green); } .r { color: var(--red); } .y { color: var(--yellow); } .w { color: var(--gray); }
+
+  footer { padding: 40px 0 56px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); margin-top: 32px; }
+</style>
+<style>
+  body { font-size: 16px; line-height: 1.6; }
+  .wrap { max-width: 1080px; }
+  #gate { display:none; text-align:center; padding:80px 20px; }
+  #gate a.btn { display:inline-block; margin-top:14px; padding:10px 22px; border-radius:999px; background:var(--amber); color:#1e1f22; font-weight:700; text-decoration:none; }
+  #page { display:none; }
+
+  .bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; padding:18px 0 10px; }
+  .brand { font-weight:900; font-size:22px; }
+  .brand small { display:block; color:var(--amber); font-size:13px; font-weight:700; letter-spacing:.06em; }
+  .ctrls { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .seg { display:inline-flex; background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:3px; }
+  .seg button { border:0; background:transparent; color:var(--ink); font:inherit; font-size:14px; padding:5px 12px; border-radius:999px; cursor:pointer; min-height:32px; }
+  .seg button[aria-pressed="true"] { background:var(--amber); color:#1e1f22; font-weight:700; }
+
+  .hero { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px 18px; display:grid; grid-template-columns: 1fr auto; gap:12px 20px; align-items:center; }
+  .price { font-size:32px; font-weight:900; font-variant-numeric: tabular-nums; }
+  .price .chg { font-size:15px; font-weight:700; margin-left:8px; }
+  .lvl { color:var(--muted); font-size:15px; }
+  .lvl b { color:var(--ink); }
+  .verdict { text-align:right; }
+  .verdict .big { display:inline-block; padding:8px 16px; border-radius:10px; color:#fff; font-weight:900; font-size:20px; }
+  .verdict .why { color:var(--muted); font-size:13.5px; margin-top:6px; max-width:320px; margin-left:auto; }
+  @media (max-width: 640px) { .hero { grid-template-columns: 1fr; } .verdict { text-align:left; } .verdict .why { margin-left:0; } }
+
+  .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:12px; margin:14px 0; }
+  .card { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px 16px; display:flex; flex-direction:column; gap:8px; }
+  .card h3 { margin:0; font-size:16px; display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+  .card h3 .q { color:var(--muted); font-weight:500; font-size:13px; }
+  .card .j { padding:8px 10px; border-radius:8px; color:#fff; font-weight:700; font-size:15px; line-height:1.45; }
+  .card .st { color:var(--muted); font-size:13.5px; font-variant-numeric: tabular-nums; }
+  .card .st b { color:var(--ink); font-weight:600; }
+  .card .ev { font-size:13px; color:var(--muted); border-top:1px dashed var(--line); padding-top:6px; }
+  .bg-g { background:#1b8a4b; } .bg-r { background:#c8372c; } .bg-y { background:#c77700; } .bg-w { background:#6f757e; }   /* 固定深色，白字在淺色/深色模式都清楚 */
+
+  .foot { display:flex; flex-wrap:wrap; gap:6px 16px; color:var(--muted); font-size:13px; padding:8px 0 4px; }
+  .dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:4px; vertical-align:middle; }
+  .ok { background:var(--green); } .bad { background:var(--red); } .wait { background:var(--gray); }
+  .guide { margin:10px 0 0; }
+  #err { display:none; background:var(--amber-soft); border-radius:10px; padding:12px 14px; margin:10px 0; font-size:14.5px; }
+</style>
+</head>
+<body>
+
+<div id="gate" class="wrap">
+  <h2 style="justify-content:center">🔒 比特聯盟會員專屬</h2>
+  <p>即時盤口面板只開放給比特聯盟會員。請先登入；還不是會員的話，透過盟主的 Bitunix 邀請碼加入即可免費開通。</p>
+  <a class="btn" href="login.html?next=panel.html">登入</a>
+</div>
+
+<div id="page" class="wrap">
+  <div class="bar">
+    <div class="brand"><small>比特聯盟 BitoAlliance</small>即時盤口面板</div>
+    <div class="ctrls">
+      <div class="seg" id="symSeg" role="group" aria-label="幣種">
+        <button data-v="BTC" aria-pressed="true">BTC</button><button data-v="ETH" aria-pressed="false">ETH</button><button data-v="SOL" aria-pressed="false">SOL</button>
+      </div>
+      <div class="seg" id="itvSeg" role="group" aria-label="判讀週期">
+        <button data-v="1m" aria-pressed="false">1m</button><button data-v="3m" aria-pressed="false">3m</button><button data-v="5m" aria-pressed="true">5m</button><button data-v="15m" aria-pressed="false">15m</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="err"></div>
+
+  <div class="hero">
+    <div>
+      <div class="price"><span id="px">—</span><span class="chg" id="pxChg"></span></div>
+      <div class="lvl" id="lvlLine">連線中…</div>
+      <div class="lvl" id="tunLine"></div>
+    </div>
+    <div class="verdict">
+      <div class="big bg-w" id="totBig">計算中</div>
+      <div class="why" id="totWhy"></div>
+    </div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="foot" id="foot"></div>
+  <p class="guide">📖 看不懂？<a href="panel-guide.html">盤口觀察面板白話說明</a>　·　每秒更新，判讀窗口為最近 6 根 K（可切換週期）</p>
+  <footer>
+    面板內容為市場資訊整理，僅供參考，不構成投資建議。交易決策與風險由使用者自行判斷與承擔。
+  </footer>
+</div>
+
+<script>
+// =====================================================================
+//  即時盤口面板：會員瀏覽器直連公開行情（K 線、OI、資金費率、爆倉、掛單簿、美國現貨價）
+//  計算邏輯與「貓咪隧道 crypto」指標的盤口觀察面板一致
+// =====================================================================
+const SB_URL  = 'https://kldumnxdlgovaxtiszyn.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsZHVtbnhkbGdvdmF4dGlzenluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjIyNDgsImV4cCI6MjA5MzY5ODI0OH0.P_anfYpSV2tgCPIQ7uZDVBjUFY3UhfEXk9u3XjlzBHI';
+
+const FAPI = 'https://fapi.binance.com';
+const SAPI = 'https://api.binance.com';
+const FWS  = 'wss://fstream.binance.com/stream?streams=';
+const SWS  = 'wss://stream.binance.com:9443/stream?streams=';
+const CBWS = 'wss://ws-feed.exchange.coinbase.com';
+
+const SYMS = {
+  BTC: { p: 'BTCUSDT', cb: 'BTC-USD', wall: 1500000, liqBig: 1000000 },
+  ETH: { p: 'ETHUSDT', cb: 'ETH-USD', wall: 700000,  liqBig: 500000 },
+  SOL: { p: 'SOLUSDT', cb: 'SOL-USD', wall: 300000,  liqBig: 200000 },
+};
+const ITV_MIN = { '1m': 1, '3m': 3, '5m': 5, '15m': 15 };
+const HTFS = ['15m', '1h', '4h', '1d'];
+const HTF_NAME = { '15m': '15m', '1h': 'H1', '4h': 'H4', '1d': 'Day' };
+
+// ---- 參數（與指標預設一致）----
+const P = {
+  k: 6, L: 30, volLen: 20, tolMult: 0.3, deltaThr: 15, absEffort: 1.8, absResult: 0.3,
+  oiThr: 0.3, oiSpike: 1.5, fundHot: 0.03, cbThr: 0.03, noiseThr: 0.30, confirmN: 2,
+  bw: 14, dev: 1.5, testLook: 100,
+};
+
+// ---- 狀態 ----
+let S = null;
+function freshState(sym, itv) {
+  return {
+    sym, itv,
+    perp: [], spot: [],                 // {t,o,h,l,c,v,tb}
+    htf: { '15m': [], '1h': [], '4h': [], '1d': [] },
+    oiHist: [], oiNow: null,
+    mark: null,                          // {p, i, r}
+    liqs: [],                            // {t, side:'long'|'short', usd}
+    book: { bids: [], asks: [] }, walls: new Map(), wallEvents: [],
+    cb: null, cbT: 0,
+    lastPx: null, conn: { perp: 'wait', spot: 'wait', oi: 'wait', mark: 'wait', liq: 'wait', book: 'wait', cb: 'wait' },
+    sockets: [], timers: [],
+  };
+}
+
+// ================= 數學工具 =================
+const sum = a => a.reduce((x, y) => x + y, 0);
+const last = a => a[a.length - 1];
+function ema(arr, n) { const out = []; const a = 2 / (n + 1); let e = null; for (const v of arr) { e = e === null ? v : v * a + e * (1 - a); out.push(e); } return out; }
+function rma(arr, n) { const out = []; let r = null, s = 0; arr.forEach((v, i) => { if (i < n) { s += v; r = s / (i + 1); } else r = (r * (n - 1) + v) / n; out.push(r); }); return out; }
+function atrArr(b, n) { const tr = b.map((x, i) => i === 0 ? x.h - x.l : Math.max(x.h - x.l, Math.abs(x.h - b[i - 1].c), Math.abs(x.l - b[i - 1].c))); return rma(tr, n); }
+function rsiArr(c, n) { const up = [], dn = []; c.forEach((v, i) => { const d = i ? v - c[i - 1] : 0; up.push(Math.max(d, 0)); dn.push(Math.max(-d, 0)); }); const u = rma(up, n), d = rma(dn, n); return u.map((x, i) => d[i] === 0 ? 100 : 100 - 100 / (1 + x / d[i])); }
+function smiArr(b, lk, ld) {
+  const rel = [], rng = [];
+  b.forEach((x, i) => { const s = b.slice(Math.max(0, i - lk + 1), i + 1); const hh = Math.max(...s.map(y => y.h)), ll = Math.min(...s.map(y => y.l)); rel.push(x.c - (hh + ll) / 2); rng.push(hh - ll); });
+  const n = ema(ema(rel, ld), ld), d = ema(ema(rng, ld), ld);
+  return n.map((v, i) => 200 * v / (d[i] === 0 ? 1 : d[i]));
+}
+const WEIGHTS = (() => { const w = []; for (let j = 0; j < 500; j++) w.push(Math.exp(-((j / P.bw) ** 2) / 2) / Math.sqrt(2 * Math.PI)); return { w, s: sum(w) }; })();
+function bands(closesNewestFirst) {
+  if (closesNewestFirst.length < 2) return null;
+  let s1 = 0, s2 = 0;
+  for (let j = 0; j < Math.min(500, closesNewestFirst.length); j++) { const v = closesNewestFirst[j], w = WEIGHTS.w[j]; s1 += v * w; s2 += v * v * w; }
+  const m = s1 / WEIGHTS.s, sd = Math.sqrt(Math.max(s2 / WEIGHTS.s - m * m, 0));
+  return { u: m + P.dev * sd, d: m - P.dev * sd, m };
+}
+const fmt = (x, suf = '', dp = 1) => (x === null || x === undefined || !isFinite(x)) ? '—' : (x > 0 ? '+' : '') + x.toFixed(dp) + suf;
+function fmtPx(x) { if (!isFinite(x)) return '—'; const dp = x >= 1000 ? 1 : x >= 10 ? 2 : 4; return x.toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp }); }
+function fmtUsd(x) { return x >= 1e6 ? (x / 1e6).toFixed(2) + 'M' : x >= 1e3 ? (x / 1e3).toFixed(0) + 'K' : x.toFixed(0); }
+
+// ================= 資料層 =================
+const toBar = r => ({ t: +r[0], o: +r[1], h: +r[2], l: +r[3], c: +r[4], v: +r[5], tb: +r[9] });
+async function getJ(url) { const r = await fetch(url); if (!r.ok) throw new Error(r.status); return r.json(); }
+function upsertBar(arr, b, max = 600) {
+  const l = last(arr);
+  if (l && l.t === b.t) arr[arr.length - 1] = b; else if (!l || b.t > l.t) { arr.push(b); if (arr.length > max) arr.shift(); }
+}
+
+async function loadHistory() {
+  const sym = SYMS[S.sym].p, itv = S.itv;
+  const tasks = [
+    getJ(`${FAPI}/fapi/v1/klines?symbol=${sym}&interval=${itv}&limit=300`).then(d => { S.perp = d.map(toBar); S.conn.perp = 'ok'; }).catch(() => S.conn.perp = 'bad'),
+    getJ(`${SAPI}/api/v3/klines?symbol=${sym}&interval=${itv}&limit=300`).then(d => { S.spot = d.map(toBar); S.conn.spot = 'ok'; }).catch(() => S.conn.spot = 'bad'),
+    getJ(`${FAPI}/futures/data/openInterestHist?symbol=${sym}&period=5m&limit=60`).then(d => { S.oiHist = d.map(x => ({ t: +x.timestamp, oi: +x.sumOpenInterest })); S.conn.oi = 'ok'; }).catch(() => S.conn.oi = 'bad'),
+    ...HTFS.map(tf => getJ(`${FAPI}/fapi/v1/klines?symbol=${sym}&interval=${tf}&limit=500`).then(d => { S.htf[tf] = d.map(toBar); }).catch(() => {})),
+  ];
+  await Promise.all(tasks);
+}
+
+function pollOI() {
+  const sym = SYMS[S.sym].p;
+  getJ(`${FAPI}/fapi/v1/openInterest?symbol=${sym}`).then(d => { S.oiNow = { t: Date.now(), oi: +d.openInterest }; S.conn.oi = 'ok'; }).catch(() => { if (!S.oiHist.length) S.conn.oi = 'bad'; });
+}
+
+function openSockets() {
+  const s = SYMS[S.sym].p.toLowerCase(), itv = S.itv;
+  const fstreams = [`${s}@kline_${itv}`, `${s}@markPrice@1s`, `${s}@forceOrder`, `${s}@depth20@500ms`, ...HTFS.map(tf => `${s}@kline_${tf}`)];
+  const fw = new WebSocket(FWS + fstreams.join('/'));
+  fw.onmessage = e => {
+    const m = JSON.parse(e.data), d = m.data, st = m.stream || '';
+    if (st.includes('@kline_')) {
+      const k = d.k, b = { t: k.t, o: +k.o, h: +k.h, l: +k.l, c: +k.c, v: +k.v, tb: +k.V };
+      if (k.i === S.itv) { upsertBar(S.perp, b); S.lastPx = b.c; }
+      if (S.htf[k.i]) upsertBar(S.htf[k.i], b, 500);
+    } else if (st.includes('@markPrice')) {
+      S.mark = { p: +d.p, i: +d.i, r: +d.r }; S.conn.mark = 'ok';
+    } else if (st.includes('@forceOrder')) {
+      const o = d.o; // SELL = 多單被強平；BUY = 空單被強平
+      S.liqs.push({ t: o.T, side: o.S === 'SELL' ? 'long' : 'short', usd: (+o.ap || +o.p) * (+o.z || +o.q) });
+      S.conn.liq = 'ok';
+    } else if (st.includes('@depth')) {
+      onBook(d.b.map(x => [+x[0], +x[1]]), d.a.map(x => [+x[0], +x[1]])); S.conn.book = 'ok';
+    }
+  };
+  fw.onopen = () => { if (S.conn.liq === 'wait') S.conn.liq = 'ok'; };
+  fw.onclose = () => { if (S && S.sockets.includes(fw)) setTimeout(() => restart(), 3000); };
+  const sw = new WebSocket(SWS + `${s}@kline_${itv}`);
+  sw.onmessage = e => { const k = JSON.parse(e.data).data.k; upsertBar(S.spot, { t: k.t, o: +k.o, h: +k.h, l: +k.l, c: +k.c, v: +k.v, tb: +k.V }); S.conn.spot = 'ok'; };
+  const cw = new WebSocket(CBWS);
+  cw.onopen = () => cw.send(JSON.stringify({ type: 'subscribe', product_ids: [SYMS[S.sym].cb], channels: ['ticker'] }));
+  cw.onmessage = e => { const d = JSON.parse(e.data); if (d.type === 'ticker') { S.cb = +d.price; S.cbT = Date.now(); S.conn.cb = 'ok'; } };
+  cw.onerror = () => S.conn.cb = 'bad';
+  S.sockets.push(fw, sw, cw);
+}
+
+// ---- 掛單牆追蹤：大單被吃掉（真）還是被撤掉（假）----
+function onBook(bids, asks) {
+  S.book = { bids, asks };
+  const px = S.lastPx || (bids[0] && bids[0][0]);
+  if (!px) return;
+  const minUsd = SYMS[S.sym].wall, now = Date.now();
+  const all = [...bids.map(x => ['bid', ...x]), ...asks.map(x => ['ask', ...x])];
+  const med = (() => { const q = all.map(x => x[2]).sort((a, b) => a - b); return q[Math.floor(q.length / 2)] || 0; })();
+  const seen = new Set();
+  for (const [side, p, q] of all) {
+    const usd = p * q;
+    if (usd >= minUsd && q >= med * 4) {
+      const key = side + p; seen.add(key);
+      const w = S.walls.get(key);
+      if (w) { w.q = q; w.last = now; w.max = Math.max(w.max, q); } else S.walls.set(key, { side, p, q, max: q, first: now, last: now });
+    }
+  }
+  const bidLo = bids.length ? last(bids)[0] : 0, askHi = asks.length ? last(asks)[0] : Infinity;
+  for (const [key, w] of S.walls) {
+    if (seen.has(key)) continue;
+    const inView = w.side === 'bid' ? w.p >= bidLo : w.p <= askHi;
+    if (!inView) { S.walls.delete(key); continue; }                  // 價格跑遠、掉出畫面，不算
+    const touched = w.side === 'bid' ? px <= w.p * 1.0003 : px >= w.p * 0.9997;
+    const near = Math.abs(px - w.p) / px < 0.004;
+    if (now - w.first > 2000) {
+      if (touched) S.wallEvents.push({ t: now, side: w.side, p: w.p, usd: w.max * w.p, kind: 'eaten' });
+      else if (near) S.wallEvents.push({ t: now, side: w.side, p: w.p, usd: w.max * w.p, kind: 'pulled' });
+    }
+    S.walls.delete(key);
+  }
+  S.wallEvents = S.wallEvents.filter(e => now - e.t < 10 * 60e3).slice(-20);
+}
+
+// ================= 計算 =================
+function compute() {
+  const b = S.perp, n = b.length, k = P.k, L = P.L;
+  if (n < k + L + P.volLen + 5) return null;
+  const itvMs = ITV_MIN[S.itv] * 60e3;
+  const spotMap = new Map(S.spot.map(x => [x.t, x]));
+  const sp = b.map(x => spotMap.get(x.t) || null);
+  const spotOk = sp.slice(-k).every(x => x);
+  const dP = b.map(x => 2 * x.tb - x.v);
+  const dS = sp.map(x => x ? 2 * x.tb - x.v : 0);
+  const vS = sp.map(x => x ? x.v : 0);
+  const cumsum = a => { let s = 0; return a.map(v => (s += v)); };
+  const cvdP = cumsum(dP), cvdS = cumsum(dS);
+  const V = b.map(x => x.v), C = b.map(x => x.c);
+  const atr = atrArr(b, 14), atrN = last(atr);
+  const tol = atrN * P.tolMult;
+  const I = n - 1;
+  const winSum = (a, end, len) => sum(a.slice(end - len + 1, end + 1));
+  const vK = winSum(V, I, k);
+  const baseVol = sum(V.slice(I - k - P.volLen + 1, I - k + 1)) / P.volLen;
+  const effortK = baseVol > 0 ? vK / (baseVol * k) : null;
+  const pDelK = vK > 0 ? winSum(dP, I, k) / vK * 100 : null;
+  const sVolK = winSum(vS, I, k);
+  const sDelK = spotOk && sVolK > 0 ? winSum(dS, I, k) / sVolK * 100 : null;
+  const progK = atrN > 0 ? (C[I] - C[I - k]) / atrN : null;
+
+  // 前一段高低點 vs 這一波
+  const pr0 = I - k - L + 1, pr1 = I - k;
+  let hiIdx = pr0, loIdx = pr0;
+  for (let i = pr0; i <= pr1; i++) { if (b[i].h >= b[hiIdx].h) hiIdx = i; if (b[i].l <= b[loIdx].l) loIdx = i; }
+  const recent = b.slice(I - k + 1);
+  const newHi = Math.max(...recent.map(x => x.h)) > b[hiIdx].h;
+  const newLo = Math.min(...recent.map(x => x.l)) < b[loIdx].l;
+  const maxW = (a) => Math.max(...a.slice(I - k + 1)), minW = (a) => Math.min(...a.slice(I - k + 1));
+  const vKat = i => winSum(V, i, k);
+  const rsi = rsiArr(C, 14), macd = (() => { const e1 = ema(C, 12), e2 = ema(C, 26); return e1.map((v, i) => v - e2[i]); })(), phl = smiArr(b, 10, 3);
+  const div = {
+    top: { s: spotOk && newHi && maxW(cvdS) < cvdS[hiIdx], p: newHi && maxW(cvdP) < cvdP[hiIdx], r: newHi && maxW(rsi) < rsi[hiIdx], m: newHi && maxW(macd) < macd[hiIdx], h: newHi && maxW(phl) < phl[hiIdx], v: newHi && vK < vKat(hiIdx) * 0.8 },
+    bot: { s: spotOk && newLo && minW(cvdS) > cvdS[loIdx], p: newLo && minW(cvdP) > cvdP[loIdx], r: newLo && minW(rsi) > rsi[loIdx], m: newLo && minW(macd) > macd[loIdx], h: newLo && minW(phl) > phl[loIdx], v: newLo && vK < vKat(loIdx) * 0.8 },
+  };
+
+  // 隧道與關卡
+  const T = {};
+  for (const tf of HTFS) { const a = S.htf[tf]; if (a.length > 20) T[tf] = { ...bands(a.map(x => x.c).reverse()), atr: last(atrArr(a, tf === '15m' ? 8 : 6)) }; }
+  const noise = tf => T[tf] && (T[tf].u - T[tf].d) > 0 ? T[tf].atr / (T[tf].u - T[tf].d) : null;
+  const n15 = noise('15m'), n60 = noise('1h');
+  const act = n15 !== null && n15 <= P.noiseThr ? '15m' : n60 !== null && n60 <= P.noiseThr ? '1h' : '4h';
+  const px = C[I];
+  const levels = [];
+  if (T[act]) { levels.push({ name: HTF_NAME[act] + ' 上軌', v: T[act].u, band: 'u' }, { name: HTF_NAME[act] + ' 下軌', v: T[act].d, band: 'd' }); }
+  for (const tf of ['1h', '4h', '1d']) if (T[tf]) levels.push({ name: HTF_NAME[tf] + ' 中線', v: T[tf].m });
+  levels.sort((a, b2) => Math.abs(px - a.v) - Math.abs(px - b2.v));
+  const nL = levels[0] || null;
+  const nDir = nL ? (px <= nL.v ? 1 : -1) : 1;
+  const uA = T[act] ? T[act].u : null, dA = T[act] ? T[act].d : null;
+
+  // OI
+  const windowMs = k * itvMs;
+  const oiSeries = [...S.oiHist, ...(S.oiNow ? [S.oiNow] : [])].sort((a, c) => a.t - c.t);
+  let oiChgK = null;
+  if (oiSeries.length >= 2) {
+    const nowOi = last(oiSeries), target = nowOi.t - windowMs;
+    let ref = oiSeries[0]; for (const x of oiSeries) if (x.t <= target) ref = x;
+    if (ref && ref.oi > 0 && ref !== nowOi) oiChgK = (nowOi.oi - ref.oi) / ref.oi * 100;
+  }
+  const fund = S.mark ? S.mark.r * 100 : null;                     // %
+  const basis = S.mark && S.mark.i > 0 ? (S.mark.p - S.mark.i) / S.mark.i * 100 : null;
+  const now = Date.now();
+  S.liqs = S.liqs.filter(x => now - x.t < 60 * 60e3);
+  const liqWin = S.liqs.filter(x => now - x.t < Math.max(windowMs, 5 * 60e3));
+  const liqLong = sum(liqWin.filter(x => x.side === 'long').map(x => x.usd));
+  const liqShort = sum(liqWin.filter(x => x.side === 'short').map(x => x.usd));
+  const spotPx = sp[I] ? sp[I].c : null;
+  const cbPrem = S.cb && spotPx && now - S.cbT < 60e3 ? (S.cb - spotPx) / spotPx * 100 : null;
+  const nyH = (() => { const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })); return d.getHours() + d.getMinutes() / 60; })();
+  const usOpen = nyH >= 9.5 && nyH < 16;
+
+  const R = {};
+  // ① 吸收
+  const wick = (lo) => recent.reduce((s, x) => s + (x.h > x.l ? (lo ? (Math.min(x.o, x.c) - x.l) : (x.h - Math.max(x.o, x.c))) / (x.h - x.l) : 0), 0) / k;
+  const wLo = wick(true), wUp = wick(false);
+  R.m1 = { sc: 0, j: '沒有特別情況', st: `主動買賣差 <b>${fmt(pDelK, '%')}</b>｜價格 <b>${fmt(progK, ' ATR', 2)}</b>｜下影 ${(wLo * 100).toFixed(0)}%・上影 ${(wUp * 100).toFixed(0)}%` };
+  if (pDelK !== null && progK !== null && pDelK <= -P.deltaThr && progK >= -P.absResult) R.m1 = { ...R.m1, sc: 2, j: wLo >= 0.35 ? '🛡️ 賣的人很多卻跌不下去，底下有大戶在接 → 容易反彈' : '🛡️ 賣的人很多卻跌不下去 → 容易反彈' };
+  else if (pDelK !== null && progK !== null && pDelK >= P.deltaThr && progK <= P.absResult) R.m1 = { ...R.m1, sc: -2, j: wUp >= 0.35 ? '🛡️ 買的人很多卻漲不上去，上面有大戶在賣 → 容易回落' : '🛡️ 買的人很多卻漲不上去 → 容易回落' };
+
+  // ② 現貨 vs 合約
+  let m2 = 0, m2j = '買賣力道都不強，沒人主導';
+  const sg = Math.sign;
+  if (pDelK !== null && sDelK !== null) {
+    if (Math.abs(pDelK) >= P.deltaThr && Math.abs(sDelK) >= P.deltaThr && sg(pDelK) === sg(sDelK)) { m2 = pDelK > 0 ? 2 : -2; m2j = pDelK > 0 ? '✅ 現貨和合約一起買 → 買盤是真的，上漲較可信' : '✅ 現貨和合約一起賣 → 賣壓是真的，下跌較可信'; }
+    else if (Math.abs(sDelK) >= P.deltaThr && Math.abs(pDelK) < P.deltaThr * 0.5) { m2 = sDelK > 0 ? 2 : -2; m2j = sDelK > 0 ? '✅ 真的有人在買幣（現貨先買）→ 較可信' : '✅ 真的有人在賣幣（現貨先賣）→ 較可信'; }
+    else if (Math.abs(pDelK) >= P.deltaThr && sDelK * sg(pDelK) < P.deltaThr * 0.3) { m2 = pDelK > 0 ? -1 : 1; m2j = pDelK > 0 ? '⚠️ 只有合約在追漲，現貨沒跟 → 多半是槓桿，小心假突破' : '⚠️ 只有合約在殺，現貨沒跟 → 多半是槓桿，小心假跌破'; }
+    else if (Math.abs(pDelK) >= P.deltaThr * 0.5 && Math.abs(sDelK) >= P.deltaThr * 0.5 && sg(pDelK) !== sg(sDelK)) { m2 = sDelK > 0 ? 1 : -1; m2j = '⚠️ 現貨和合約方向相反 → 以現貨為準'; }
+  } else m2j = '— 抓不到現貨資料';
+  if (usOpen && cbPrem !== null) { if (cbPrem >= P.cbThr) { m2 += 1; m2j += '｜美國買家在買'; } else if (cbPrem <= -P.cbThr) { m2 -= 1; m2j += '｜美國買家在賣'; } }
+  R.m2 = { sc: m2, j: m2j, st: `合約 <b>${fmt(pDelK, '%')}</b>｜現貨 <b>${fmt(sDelK, '%')}</b>｜美國現貨溢價 <b>${cbPrem === null ? '—' : cbPrem.toFixed(3) + '%'}</b>${usOpen ? '' : '（非美股時段，不計分）'}` };
+
+  // ③ OI × 價格 × 資金費率 × 爆倉
+  const pxUp = progK !== null && progK >= 0.3, pxDn = progK !== null && progK <= -0.3;
+  let m3 = 0, m3j = '價格沒什麼動';
+  if (oiChgK === null) m3j = '— 抓不到 OI 資料';
+  else if (pxUp && (oiChgK >= P.oiSpike || (fund !== null && fund >= P.fundHot))) { m3 = -1; m3j = '⚠️ 上漲時大量槓桿多單擠進來 → 容易被反向洗掉'; }
+  else if (pxUp && oiChgK >= P.oiThr) { m3 = 1; m3j = '✅ 上漲時新多單穩定進場 → 健康的上漲'; }
+  else if (pxUp && oiChgK <= -P.oiThr) m3j = '🔥 上漲主要是空單認賠買回 → 漲一段就容易沒力';
+  else if (pxDn && (oiChgK >= P.oiSpike || (fund !== null && fund <= -P.fundHot))) { m3 = 1; m3j = '⚠️ 下跌時大量槓桿空單擠進來 → 容易被急拉軋空'; }
+  else if (pxDn && oiChgK >= P.oiThr) { m3 = -1; m3j = '下跌時新空單進場 → 空方有新力道'; }
+  else if (pxDn && oiChgK <= -P.oiThr) m3j = '🔥 下跌主要是多單停損 → 殺完容易止跌';
+  else if (pxUp || pxDn) m3j = '價格有動，但槓桿部位沒什麼變';
+  const big = SYMS[S.sym].liqBig;
+  if (liqLong >= big && liqLong > liqShort * 2) { m3 += 1; m3j += '｜💥 剛有一波多單爆倉 → 殺完常會拉回'; }
+  else if (liqShort >= big && liqShort > liqLong * 2) { m3 -= 1; m3j += '｜💥 剛有一波空單爆倉 → 衝完常會回落'; }
+  R.m3 = { sc: m3, j: m3j, st: `OI <b>${fmt(oiChgK, '%', 2)}</b>｜資金費率 <b>${fund === null ? '—' : fund.toFixed(4) + '%'}</b>｜爆倉 多 <b>${fmtUsd(liqLong)}</b>・空 <b>${fmtUsd(liqShort)}</b>` };
+
+  // ④ 掛單牆
+  const recentEv = S.wallEvents.filter(e => now - e.t < 3 * 60e3);
+  const lastEv = last(recentEv);
+  let m4 = 0, m4j = '附近沒有特別大的掛單';
+  const walls = [...S.walls.values()];
+  const nearBid = walls.filter(w => w.side === 'bid').sort((a, c) => c.p - a.p)[0];
+  const nearAsk = walls.filter(w => w.side === 'ask').sort((a, c) => a.p - c.p)[0];
+  if (lastEv) {
+    if (lastEv.kind === 'eaten') { m4 = lastEv.side === 'ask' ? 1 : -1; m4j = lastEv.side === 'ask' ? '✅ 上方大賣單被買光 → 買盤是真的' : '✅ 下方大買單被賣光 → 賣壓是真的'; }
+    else { m4 = lastEv.side === 'bid' ? -1 : 1; m4j = lastEv.side === 'bid' ? '⚠️ 下方大買單在價格靠近時撤掉 → 假支撐，小心' : '⚠️ 上方大賣單在價格靠近時撤掉 → 假壓力，容易突破'; }
+  } else if (nearBid || nearAsk) m4j = '有大掛單，但價格還沒碰到';
+  const wallTxt = w => w ? `${fmtPx(w.p)}（${fmtUsd(w.p * w.q)}，${fmt((w.p - px) / px * 100, '%', 2)}）` : '—';
+  R.m4 = { sc: m4, j: m4j, st: `上方大賣單 <b>${wallTxt(nearAsk)}</b>｜下方大買單 <b>${wallTxt(nearBid)}</b>`,
+    ev: recentEv.slice(-3).reverse().map(e => `${new Date(e.t).toLocaleTimeString('zh-TW', { hour12: false })} ${e.side === 'bid' ? '買單' : '賣單'} ${fmtPx(e.p)}（${fmtUsd(e.usd)}）${e.kind === 'eaten' ? '被吃掉' : '被撤掉'}`).join('<br>') };
+
+  // ⑤ 接近方式
+  const atrS2 = last(atrArr(b.slice(-k * 4 - 20), k)), atrL2 = last(atrArr(b.slice(-k * 8 - 40), k * 4));
+  const volRat = atrL2 > 0 ? atrS2 / atrL2 : null;
+  const compress = volRat !== null && volRat < 0.75;
+  let hl = 0, lh = 0; for (let i = I - k + 1; i <= I; i++) { if (b[i].l > b[i - 1].l) hl++; if (b[i].h < b[i - 1].h) lh++; }
+  const climax = effortK >= 2 && progK !== null && Math.abs(progK) >= 1.5;
+  let tests = 0;
+  if (nL) { let prev = false; for (let i = Math.max(0, n - P.testLook); i < n; i++) { const t = b[i].l <= nL.v + tol && b[i].h >= nL.v - tol; if (t && !prev) tests++; prev = t; } }
+  let m5 = 0, m5j = '正常速度靠近';
+  if (climax) { m5 = progK > 0 ? -2 : 2; m5j = progK > 0 ? '⚡ 急漲又爆大量 → 常是最後一衝，小心反轉' : '⚡ 急跌又爆大量 → 常是恐慌殺盤，容易反彈'; }
+  else if (compress && nDir > 0 && hl >= k * 0.5) { m5 = 1; m5j = '🧱 慢慢靠近、低點越墊越高 → 賣壓被吃掉，較容易突破'; }
+  else if (compress && nDir < 0 && lh >= k * 0.5) { m5 = -1; m5j = '🧱 慢慢靠近、高點越來越低 → 買盤被吃掉，較容易跌破'; }
+  else if (compress) m5j = '波動變小，正在醞釀';
+  if (tests >= 3) { m5 += nDir; m5j += `｜已經第 ${tests} 次碰這裡 → 越碰越容易破`; }
+  R.m5 = { sc: m5, j: m5j, st: `波動比 <b>${volRat === null ? '—' : volRat.toFixed(2)}</b>｜${nDir > 0 ? '低點墊高' : '高點下移'} <b>${nDir > 0 ? hl : lh}/${k}</b>｜測試 <b>${tests}</b> 次` };
+
+  // ⑥ 動能背離
+  const cnt = o => ['s', 'p', 'r', 'm', 'h'].filter(x => o[x]).length;
+  const topN = cnt(div.top), botN = cnt(div.bot);
+  const names = o => [o.s && '現貨CVD', o.p && '合約CVD', o.r && 'RSI', o.m && 'MACD', o.h && 'PHL'].filter(Boolean).join('、');
+  R.m6 = { sc: Math.max(-3, Math.min(3, botN - topN)),
+    j: topN >= 2 ? `⚠️ 價格創新高但力道變弱（${topN} 項）→ 上漲快沒力了` : topN === 1 ? '上漲力道有一點變弱' : botN >= 2 ? `⚠️ 價格創新低但賣壓變弱（${botN} 項）→ 下跌快沒力了` : botN === 1 ? '下跌力道有一點變弱' : '力道正常，沒有背離',
+    st: topN ? `頂背離：<b>${names(div.top)}</b>` : botN ? `底背離：<b>${names(div.bot)}</b>` : (newHi ? '創新高，力道有跟上' : newLo ? '創新低，力道有跟上' : '沒有創新高或新低') };
+
+  // ⑦ 價量／接受度
+  const pv = progK === null ? '—' : progK >= 0.3 ? (effortK >= 1.2 ? '價漲量增' : effortK < 0.8 ? '價漲量縮' : '價漲量平') : progK <= -0.3 ? (effortK >= 1.2 ? '價跌量增' : effortK < 0.8 ? '價跌量縮' : '價跌量平') : '價平';
+  let aboveN = 0, belowN = 0;
+  if (uA !== null) { for (let i = I; i >= 0 && C[i] > uA; i--) aboveN++; for (let i = I; i >= 0 && C[i] < dA; i--) belowN++; }
+  const recentOut = side => { for (let i = I - 1; i >= I - k; i--) if (side > 0 ? C[i] > uA : C[i] < dA) return true; return false; };
+  let m7 = pv === '價漲量增' ? 1 : pv === '價跌量增' ? -1 : 0, m7j = '還在隧道裡';
+  if (uA === null) m7j = '— 隧道資料載入中';
+  else if (aboveN >= P.confirmN) { m7 += effortK >= 1 ? 2 : 0; m7j = effortK >= 1 ? `✅ 突破後站穩 ${aboveN} 根，量也有跟 → 突破成立` : '⚠️ 站上了但沒量 → 站不穩的機率高'; }
+  else if (belowN >= P.confirmN) { m7 -= effortK >= 1 ? 2 : 0; m7j = effortK >= 1 ? `✅ 跌破後壓了 ${belowN} 根，量也有跟 → 跌破成立` : '⚠️ 跌破了但沒量 → 容易再站回來'; }
+  else if (C[I] <= uA && recentOut(1)) { m7 -= 2; m7j = '↩️ 突破後又跌回來 → 假突破'; }
+  else if (C[I] >= dA && recentOut(-1)) { m7 += 2; m7j = '↩️ 跌破後又站回來 → 假跌破'; }
+  else if (aboveN > 0 || belowN > 0) m7j = '剛穿出去，還要等確認';
+  R.m7 = { sc: m7, j: m7j, st: `<b>${pv}</b>｜量能 <b>${effortK === null ? '—' : effortK.toFixed(1) + 'x'}</b>｜${HTF_NAME[act]} 軌道外 <b>${Math.max(aboveN, belowN)}</b> 根` };
+
+  const tot = R.m1.sc + R.m2.sc + R.m3.sc + R.m4.sc + R.m5.sc + R.m6.sc + R.m7.sc;
+  return { R, tot, px, nL, nDir, act, n15, n60, T, dayOpen: S.htf['1d'].length ? last(S.htf['1d']).o : null };
+}
+
+// ================= 畫面 =================
+const CARDS = [
+  ['m1', '① 吸收', '有沒有人在默默接貨／壓貨'],
+  ['m2', '② 現貨 vs 合約', '漲跌是誰推出來的'],
+  ['m3', '③ OI × 費率 × 爆倉', '新錢進場，還是被迫出場'],
+  ['m4', '④ 掛單牆', '大單是真的還是假的'],
+  ['m5', '⑤ 接近方式', '價格怎麼走到關卡的'],
+  ['m6', '⑥ 動能背離', '價格在衝，力道有沒有跟上'],
+  ['m7', '⑦ 價量／接受度', '突破後市場認不認帳'],
+];
+const cls = (sc, j) => sc > 0 ? 'bg-g' : sc < 0 ? 'bg-r' : /⚠️|🔥|💥/.test(j) ? 'bg-y' : 'bg-w';
+function buildGrid() {
+  document.getElementById('grid').innerHTML = CARDS.map(([id, t, q]) =>
+    `<div class="card" id="c_${id}"><h3>${t}<span class="q">${q}</span></h3><div class="j bg-w">計算中…</div><div class="st"></div><div class="ev" style="display:none"></div></div>`).join('');
+}
+function render() {
+  const pxEl = document.getElementById('px');
+  const conn = S.conn;
+  const r = compute();
+  const foot = [['合約K線', conn.perp], ['現貨K線', conn.spot], ['OI', conn.oi], ['資金費率', conn.mark], ['爆倉', conn.liq], ['掛單簿', conn.book], ['美國現貨', conn.cb]];
+  document.getElementById('foot').innerHTML = foot.map(([n, s]) => `<span><span class="dot ${s}"></span>${n}</span>`).join('') + `<span>更新 ${new Date().toLocaleTimeString('zh-TW', { hour12: false })}</span>`;
+  const err = document.getElementById('err');
+  if (conn.perp === 'bad') { err.style.display = 'block'; err.textContent = '⚠️ 連不上行情資料。可能是網路或所在地區限制，請換個網路（例如關掉 VPN 或改用手機網路）後重新整理。'; }
+  else err.style.display = 'none';
+  if (!r) return;
+  pxEl.textContent = fmtPx(r.px);
+  const chg = r.dayOpen ? (r.px - r.dayOpen) / r.dayOpen * 100 : null;
+  const ce = document.getElementById('pxChg'); ce.textContent = chg === null ? '' : '今日 ' + fmt(chg, '%', 2); ce.style.color = chg >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('lvlLine').innerHTML = r.nL ? `${r.nDir > 0 ? '價格往上碰壓力' : '價格往下碰支撐'}：<b>${r.nL.name} ${fmtPx(r.nL.v)}</b>（${fmt((r.nL.v - r.px) / r.px * 100, '%', 2)}）` : '隧道資料載入中';
+  document.getElementById('tunLine').textContent = `生效隧道 ${HTF_NAME[r.act]}（自動）・雜訊 15m ${r.n15 === null ? '—' : r.n15.toFixed(2)} / H1 ${r.n60 === null ? '—' : r.n60.toFixed(2)}`;
+  const big = document.getElementById('totBig');
+  big.className = 'big ' + (r.tot >= 3 ? 'bg-g' : r.tot <= -3 ? 'bg-r' : 'bg-y');
+  big.textContent = r.tot >= 3 ? `整體偏多（${r.tot} 分）` : r.tot <= -3 ? `整體偏空（${r.tot} 分）` : `多空拉扯中（${r.tot} 分）`;
+  const pos = CARDS.filter(([id]) => r.R[id].sc > 0).map(c => c[1].slice(0, 1)), neg = CARDS.filter(([id]) => r.R[id].sc < 0).map(c => c[1].slice(0, 1));
+  document.getElementById('totWhy').textContent = `偏多：${pos.join(' ') || '無'}　偏空：${neg.join(' ') || '無'}`;
+  for (const [id] of CARDS) {
+    const c = document.getElementById('c_' + id), m = r.R[id];
+    const j = c.querySelector('.j'); j.className = 'j ' + cls(m.sc, m.j); j.textContent = m.j;
+    c.querySelector('.st').innerHTML = m.st;
+    const ev = c.querySelector('.ev'); ev.style.display = m.ev ? 'block' : 'none'; ev.innerHTML = m.ev ? '最近：<br>' + m.ev : '';
+  }
+}
+
+// ================= 啟動 / 切換 =================
+function stop() { if (!S) return; const socks = S.sockets; S.sockets = []; socks.forEach(w => { try { w.close(); } catch (e) {} }); S.timers.forEach(clearInterval); }
+async function start(sym, itv) {
+  stop(); S = freshState(sym, itv); buildGrid();
+  document.getElementById('px').textContent = '—';
+  if (window.MOCK) { MOCK.fill(S); } else { await loadHistory(); openSockets(); pollOI(); S.timers.push(setInterval(pollOI, 10000)); }
+  S.timers.push(setInterval(render, 1000)); render();
+}
+function restart() { if (S) start(S.sym, S.itv); }
+function bindSeg(id, key) {
+  document.getElementById(id).addEventListener('click', e => {
+    const btn = e.target.closest('button'); if (!btn) return;
+    document.querySelectorAll('#' + id + ' button').forEach(b => b.setAttribute('aria-pressed', b === btn ? 'true' : 'false'));
+    const sym = key === 'sym' ? btn.dataset.v : S.sym, itv = key === 'itv' ? btn.dataset.v : S.itv;
+    try { localStorage.setItem('bp_' + key, btn.dataset.v); } catch (err) {}
+    start(sym, itv);
+  });
+}
+
+// ================= 會員驗證 =================
+(async function gate() {
+  let sym = 'BTC', itv = '5m';
+  try { sym = localStorage.getItem('bp_sym') || sym; itv = localStorage.getItem('bp_itv') || itv; } catch (e) {}
+  if (!SYMS[sym]) sym = 'BTC'; if (!ITV_MIN[itv]) itv = '5m';
+  document.querySelectorAll('#symSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === sym ? 'true' : 'false'));
+  document.querySelectorAll('#itvSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === itv ? 'true' : 'false'));
+  const show = () => { document.getElementById('page').style.display = 'block'; bindSeg('symSeg', 'sym'); bindSeg('itvSeg', 'itv'); start(sym, itv); };
+  if (location.protocol === 'file:' && window.MOCK) { show(); return; }       // 本機測試用
+  try {
+    const sb = supabase.createClient(SB_URL, SB_ANON);
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { document.getElementById('gate').style.display = 'block'; return; }
+    const { data: p } = await sb.from('profiles').select('plan, is_direct_client').eq('id', session.user.id).single();
+    const plan = (p && p.plan) || 'free';
+    if (plan !== 'free' || (p && p.is_direct_client)) show(); else document.getElementById('gate').style.display = 'block';
+  } catch (e) { document.getElementById('gate').style.display = 'block'; }
+})();
+</script>
+</body>
+</html>
