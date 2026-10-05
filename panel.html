@@ -165,8 +165,8 @@
 <style>
   body { font-size: 16px; line-height: 1.6; }
   .wrap { max-width: 1080px; }
-  #gate, #gatePending { display:none; text-align:center; padding:80px 20px; }
-  #gate a.btn, #gatePending a.btn { display:inline-block; margin-top:14px; padding:10px 22px; border-radius:999px; background:var(--amber); color:#1e1f22; font-weight:700; text-decoration:none; }
+  #gate { display:none; text-align:center; padding:80px 20px; }
+  #gate a.btn { display:inline-block; margin-top:14px; padding:10px 22px; border-radius:999px; background:var(--amber); color:#1e1f22; font-weight:700; text-decoration:none; }
   #page { display:none; }
 
   .bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; padding:18px 0 10px; }
@@ -222,15 +222,11 @@
 <body>
 
 <div id="gate" class="wrap">
-  <h2 style="justify-content:center">🔒 比特聯盟會員專屬</h2>
-  <p>即時盤口面板只開放給比特聯盟會員。請先登入；還不是會員的話，透過盟主的 Bitunix 邀請碼加入即可免費開通。</p>
-  <a class="btn" href="login.html?next=panel.html">登入</a>
-</div>
-<div id="gatePending" class="wrap" style="display:none">
-  <h2 style="justify-content:center">⏳ 帳號審核中</h2>
-  <p>你已經登入了（<b id="gpEmail"></b>），但帳號還沒開通會員。</p>
-  <p>請到「我的帳號」填好你的 <b>Bitunix UID</b>，盟主確認是透過邀請碼加入後，就會幫你開通。開通後重新整理這一頁就能使用。</p>
-  <a class="btn" href="profile.html">前往我的帳號</a>
+  <h2 style="justify-content:center">⏳ 面板還沒開通</h2>
+  <p>你已經登入了（<b id="gpEmail"></b>）。即時盤口面板需要管理員開通才能使用。</p>
+  <p id="gpState">按下面的按鈕送出申請，開通後重新整理這一頁就能用。</p>
+  <a class="btn" href="#" id="gpApply">申請開通</a>
+  <p style="margin-top:18px;font-size:13px"><a href="#" id="gpOut" style="color:var(--muted)">不是這個帳號？登出換一個</a></p>
 </div>
 
 <div id="page" class="wrap">
@@ -852,15 +848,29 @@ function bindSeg(id, key) {
   document.querySelectorAll('#itvSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === itv ? 'true' : 'false'));
   const show = () => { document.getElementById('page').style.display = 'block'; markSym(sym); bindSeg('symSeg', 'sym'); bindSeg('itvSeg', 'itv'); bindSearch(); start(sym, itv); };
   if (location.protocol === 'file:' && window.MOCK) { show(); return; }       // 本機測試用
-  try {
-    const sb = supabase.createClient(SB_URL, SB_ANON);
-    const { data: { session } } = await sb.auth.getSession();
-    if (!session) { document.getElementById('gate').style.display = 'block'; return; }
-    const { data: p } = await sb.from('profiles').select('plan, is_direct_client').eq('id', session.user.id).single();
-    const plan = (p && p.plan) || 'free';
-    if (plan !== 'free' || (p && p.is_direct_client)) show();
-    else { document.getElementById('gpEmail').textContent = session.user.email || ''; document.getElementById('gatePending').style.display = 'block'; }
-  } catch (e) { document.getElementById('gate').style.display = 'block'; }
+  const sb = supabase.createClient(SB_URL, SB_ANON);
+  const toLogin = () => location.replace('panel-login.html');
+  let session;
+  try { session = (await sb.auth.getSession()).data.session; } catch (e) {}
+  if (!session) return toLogin();
+  let p = null;
+  try { p = (await sb.from('profiles').select('plan, panel_access, panel_request_at').eq('id', session.user.id).maybeSingle()).data; } catch (e) {}
+  if (p && (p.panel_access || p.plan === 'admin')) return show();
+  // 已登入但還沒開通
+  const g = document.getElementById('gate'), st = document.getElementById('gpState'), ap = document.getElementById('gpApply');
+  document.getElementById('gpEmail').textContent = session.user.email || '';
+  const asked = t => { st.textContent = `已在 ${new Date(t).toLocaleString('zh-TW', { hour12: false })} 送出申請，管理員開通後重新整理這一頁就能用。`; ap.style.display = 'none'; };
+  if (p && p.panel_request_at) asked(p.panel_request_at);
+  ap.addEventListener('click', async e => {
+    e.preventDefault(); ap.textContent = '送出中…';
+    const now = new Date().toISOString(), uid = session.user.id;
+    let r = await sb.from('profiles').update({ panel_request_at: now }).eq('id', uid).select('id');
+    if (!r.error && (!r.data || !r.data.length)) r = await sb.from('profiles').insert({ id: uid, display_name: (session.user.email || '').split('@')[0], plan: 'free', panel_request_at: now });
+    if (r.error) { ap.textContent = '申請開通'; st.textContent = '送出失敗，請稍後再試，或直接聯絡管理員。'; return; }
+    asked(now);
+  });
+  document.getElementById('gpOut').addEventListener('click', async e => { e.preventDefault(); await sb.auth.signOut(); toLogin(); });
+  g.style.display = 'block';
 })();
 </script>
 </body>

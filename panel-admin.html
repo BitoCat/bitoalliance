@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>面板開通管理</title>
+<meta name="description" content="即時盤口面板的會員開通管理（管理員專用）">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
+<style>
+  :root {
+    --bg: #f2f3f5; --surface: #ffffff; --card: #f7f8f9; --ink: #1f2124; --muted: #5c6068;
+    --line: #dfe1e5; --amber: #c98300; --green: #1f9d55; --red: #d63a2f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1e1f22; --surface: #2b2d31; --card: #313338; --ink: #eceef1; --muted: #a7abb3;
+      --line: #3f4147; --amber: #f5a623; --green: #3fcf7f; --red: #f0645a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1e1f22; --surface: #2b2d31; --card: #313338; --ink: #eceef1; --muted: #a7abb3;
+    --line: #3f4147; --amber: #f5a623; --green: #3fcf7f; --red: #f0645a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Noto Sans TC', system-ui, -apple-system, sans-serif; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 24px 16px 60px; }
+  header small { color: var(--amber); font-weight: 700; font-size: 12px; letter-spacing: .08em; }
+  header h1 { margin: 2px 0 4px; font-size: 24px; font-weight: 900; }
+  header p { margin: 0 0 18px; color: var(--muted); font-size: 14px; }
+  header a { color: var(--amber); }
+  .stats { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+  .stat { flex: 1; min-width: 120px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .stat b { display: block; font-size: 24px; font-variant-numeric: tabular-nums; }
+  .stat span { color: var(--muted); font-size: 13px; }
+  .tabs { display: flex; gap: 6px; background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 4px; margin-bottom: 12px; }
+  .tabs button { flex: 1; border: 0; background: transparent; color: var(--muted); font: inherit; font-weight: 700; font-size: 14px;
+                 padding: 8px 0; border-radius: 999px; cursor: pointer; }
+  .tabs button[aria-selected="true"] { background: var(--amber); color: #1e1f22; }
+  .search { width: 100%; font: inherit; font-size: 16px; color: var(--ink); background: var(--surface); border: 1px solid var(--line);
+            border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; outline: none; }
+  .search:focus { border-color: var(--amber); }
+  .list { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-top: 1px solid var(--line); }
+  .row:first-child { border-top: 0; }
+  .who { flex: 1; min-width: 0; }
+  .who b { display: block; overflow-wrap: anywhere; font-size: 15px; }
+  .who span { color: var(--muted); font-size: 12px; }
+  .pill { font-size: 11px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); margin-left: 6px; white-space: nowrap; }
+  .pill.on { color: var(--green); border-color: var(--green); }
+  .pill.req { color: var(--amber); border-color: var(--amber); }
+  .act { border: 0; border-radius: 999px; padding: 8px 16px; font: inherit; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; }
+  .act.grant { background: var(--amber); color: #1e1f22; }
+  .act.revoke { background: transparent; color: var(--red); border: 1px solid var(--red); }
+  .act:disabled { opacity: .5; }
+  .empty, .note { padding: 28px 14px; text-align: center; color: var(--muted); font-size: 14px; }
+  #deny { display: none; text-align: center; padding: 80px 16px; }
+  #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: var(--bg);
+           padding: 10px 18px; border-radius: 999px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  #toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div id="deny">
+  <h2>🔒 只有管理員能使用這一頁</h2>
+  <p style="color:var(--muted)">請用管理員帳號登入。</p>
+  <p><a href="panel-login.html?next=panel-admin.html" style="color:var(--amber)">前往登入</a></p>
+</div>
+
+<div class="wrap" id="app" style="display:none">
+  <header>
+    <small>BitoAlliance</small>
+    <h1>📊 盤口面板・開通管理</h1>
+    <p>按「開通」對方重新整理面板就能用；按「取消」就會被擋下。<a href="panel.html">回到面板 →</a></p>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><b id="nReq">—</b><span>等待開通</span></div>
+    <div class="stat"><b id="nOn">—</b><span>已開通</span></div>
+    <div class="stat"><b id="nAll">—</b><span>全部帳號</span></div>
+  </div>
+
+  <div class="tabs" role="tablist" id="tabs">
+    <button data-v="req" aria-selected="true">等待開通</button>
+    <button data-v="on" aria-selected="false">已開通</button>
+    <button data-v="all" aria-selected="false">全部帳號</button>
+  </div>
+  <input class="search" id="q" type="search" placeholder="🔍 搜尋 Email 或名稱">
+  <div class="list" id="list"><div class="note">載入中…</div></div>
+</div>
+<div id="toast"></div>
+
+<script>
+const SB_URL  = 'https://kldumnxdlgovaxtiszyn.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsZHVtbnhkbGdvdmF4dGlzenluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjIyNDgsImV4cCI6MjA5MzY5ODI0OH0.P_anfYpSV2tgCPIQ7uZDVBjUFY3UhfEXk9u3XjlzBHI';
+const sb = window.MOCK ? window.MOCK.sb : supabase.createClient(SB_URL, SB_ANON);
+const $ = id => document.getElementById(id);
+let ROWS = [], VIEW = 'req';
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmtT = t => t ? new Date(t).toLocaleString('zh-TW', { hour12: false, month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast.h); toast.h = setTimeout(() => el.classList.remove('show'), 2200); }
+
+async function load() {
+  const all = [];
+  for (let from = 0; ; from += 1000) {           // 一次最多 1000 筆，分批抓完
+    const { data, error } = await sb.from('profiles')
+      .select('id, email, display_name, plan, panel_access, panel_request_at, created_at')
+      .order('created_at', { ascending: false }).range(from, from + 999);
+    if (error) { $('list').innerHTML = `<div class="note">讀取失敗：${esc(error.message)}<br>如果訊息提到 panel_access，代表 SQL 還沒執行。</div>`; return; }
+    all.push(...data); if (data.length < 1000) break;
+  }
+  ROWS = all; draw();
+}
+
+function draw() {
+  const isReq = r => !r.panel_access && r.panel_request_at;
+  $('nReq').textContent = ROWS.filter(isReq).length;
+  $('nOn').textContent = ROWS.filter(r => r.panel_access).length;
+  $('nAll').textContent = ROWS.length;
+  const q = $('q').value.trim().toLowerCase();
+  let rows = VIEW === 'req' ? ROWS.filter(isReq).sort((a, b) => new Date(b.panel_request_at) - new Date(a.panel_request_at))
+           : VIEW === 'on' ? ROWS.filter(r => r.panel_access) : ROWS;
+  if (q) rows = rows.filter(r => (r.email || '').toLowerCase().includes(q) || (r.display_name || '').toLowerCase().includes(q));
+  if (!rows.length) {
+    $('list').innerHTML = `<div class="empty">${q ? '找不到符合的帳號' : VIEW === 'req' ? '目前沒有人在等待開通 👍' : '沒有資料'}</div>`;
+    return;
+  }
+  $('list').innerHTML = rows.slice(0, 300).map(r => `
+    <div class="row">
+      <div class="who">
+        <b>${esc(r.email || '（沒有 Email）')}${r.panel_access ? '<span class="pill on">已開通</span>' : r.panel_request_at ? '<span class="pill req">申請中</span>' : ''}${r.plan === 'admin' ? '<span class="pill">管理員</span>' : ''}</b>
+        <span>${esc(r.display_name || '')}${r.panel_request_at ? `・申請於 ${fmtT(r.panel_request_at)}` : ''}・註冊於 ${fmtT(r.created_at)}</span>
+      </div>
+      ${r.panel_access ? `<button class="act revoke" data-id="${r.id}" data-v="0">取消</button>` : `<button class="act grant" data-id="${r.id}" data-v="1">開通</button>`}
+    </div>`).join('') + (rows.length > 300 ? `<div class="note">只顯示前 300 筆，請用搜尋找特定帳號</div>` : '');
+}
+
+$('list').addEventListener('click', async e => {
+  const b = e.target.closest('.act'); if (!b) return;
+  const id = b.dataset.id, on = b.dataset.v === '1', r = ROWS.find(x => x.id === id);
+  if (!on && !confirm(`確定取消 ${r.email || '這個帳號'} 的面板權限？`)) return;
+  b.disabled = true;
+  const { error } = await sb.from('profiles').update({ panel_access: on }).eq('id', id);
+  if (error) { b.disabled = false; toast('失敗：' + error.message); return; }
+  r.panel_access = on; draw(); toast(on ? `✅ 已開通 ${r.email || ''}` : `已取消 ${r.email || ''}`);
+});
+$('tabs').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return; VIEW = b.dataset.v;
+  document.querySelectorAll('#tabs button').forEach(x => x.setAttribute('aria-selected', x === b ? 'true' : 'false')); draw();
+});
+$('q').addEventListener('input', draw);
+
+(async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { location.replace('panel-login.html?next=panel-admin.html'); return; }
+  const { data: me } = await sb.from('profiles').select('plan').eq('id', session.user.id).maybeSingle();
+  if (!me || me.plan !== 'admin') { $('deny').style.display = 'block'; return; }
+  $('app').style.display = 'block';
+  load();
+})();
+</script>
+</body>
+</html>

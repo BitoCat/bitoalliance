@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>盤口面板登入</title>
+<meta name="description" content="即時盤口面板的登入與註冊">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
+<style>
+  :root {
+    --bg: #f2f3f5; --surface: #ffffff; --card: #f7f8f9; --ink: #1f2124; --muted: #5c6068;
+    --line: #dfe1e5; --amber: #c98300; --amber-soft: #fff3dc; --green: #1f9d55; --red: #d63a2f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1e1f22; --surface: #2b2d31; --card: #313338; --ink: #eceef1; --muted: #a7abb3;
+      --line: #3f4147; --amber: #f5a623; --amber-soft: #3a2f1a; --green: #3fcf7f; --red: #f0645a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1e1f22; --surface: #2b2d31; --card: #313338; --ink: #eceef1; --muted: #a7abb3;
+    --line: #3f4147; --amber: #f5a623; --amber-soft: #3a2f1a; --green: #3fcf7f; --red: #f0645a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--ink); font-family: 'Noto Sans TC', system-ui, -apple-system, sans-serif;
+         min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+  .box { width: 100%; max-width: 400px; }
+  .brand { text-align: center; margin-bottom: 22px; }
+  .brand small { display: block; color: var(--amber); font-weight: 700; font-size: 12px; letter-spacing: .08em; }
+  .brand h1 { margin: 4px 0 6px; font-size: 26px; font-weight: 900; }
+  .brand p { margin: 0; color: var(--muted); font-size: 14px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 22px 20px; }
+  .tabs { display: flex; gap: 6px; background: var(--card); border-radius: 999px; padding: 4px; margin-bottom: 18px; }
+  .tabs button { flex: 1; border: 0; background: transparent; color: var(--muted); font: inherit; font-weight: 700;
+                 padding: 9px 0; border-radius: 999px; cursor: pointer; }
+  .tabs button[aria-selected="true"] { background: var(--amber); color: #1e1f22; }
+  .pane { display: none; } .pane.on { display: block; }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 12px 0 6px; }
+  input { width: 100%; font: inherit; font-size: 16px; color: var(--ink); background: var(--card);
+          border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; outline: none; }
+  input:focus { border-color: var(--amber); }
+  .btn { width: 100%; margin-top: 18px; border: 0; border-radius: 999px; padding: 12px; font: inherit; font-weight: 700;
+         background: var(--amber); color: #1e1f22; cursor: pointer; }
+  .btn:disabled { opacity: .6; cursor: default; }
+  .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); margin-top: 10px;
+               display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; margin: 16px 0 0; }
+  .or::before, .or::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+  .link { background: none; border: 0; color: var(--amber); font: inherit; font-size: 13px; cursor: pointer; padding: 0; margin-top: 12px; }
+  .msg { display: none; margin-top: 14px; font-size: 14px; line-height: 1.6; padding: 10px 12px; border-radius: 10px; }
+  .msg.err { display: block; color: var(--red); background: color-mix(in srgb, var(--red) 12%, transparent); }
+  .msg.ok  { display: block; color: var(--green); background: color-mix(in srgb, var(--green) 12%, transparent); }
+  .foot { text-align: center; color: var(--muted); font-size: 12px; margin-top: 16px; line-height: 1.7; }
+</style>
+</head>
+<body>
+<main class="box">
+  <div class="brand">
+    <small>BitoAlliance</small>
+    <h1>📊 即時盤口面板</h1>
+    <p>登入後就能看即時盤口判讀</p>
+  </div>
+
+  <div class="card">
+    <div class="tabs" role="tablist" id="tabs">
+      <button role="tab" data-p="login" aria-selected="true">登入</button>
+      <button role="tab" data-p="signup" aria-selected="false">註冊</button>
+    </div>
+
+    <!-- 登入 -->
+    <section class="pane on" id="p-login">
+      <label for="liEmail">Email</label>
+      <input id="liEmail" type="email" autocomplete="email" inputmode="email">
+      <label for="liPw">密碼</label>
+      <input id="liPw" type="password" autocomplete="current-password">
+      <button class="btn" id="liBtn">登入</button>
+      <div class="or">或</div>
+      <button class="btn ghost" data-google>用 Google 帳號登入</button>
+      <button class="link" data-go="forgot">忘記密碼？</button>
+      <div class="msg" id="liMsg"></div>
+    </section>
+
+    <!-- 註冊 -->
+    <section class="pane" id="p-signup">
+      <label for="suEmail">Email</label>
+      <input id="suEmail" type="email" autocomplete="email" inputmode="email">
+      <label for="suPw">密碼（至少 8 個字）</label>
+      <input id="suPw" type="password" autocomplete="new-password">
+      <label for="suPw2">再輸入一次密碼</label>
+      <input id="suPw2" type="password" autocomplete="new-password">
+      <button class="btn" id="suBtn">建立帳號</button>
+      <div class="or">或</div>
+      <button class="btn ghost" data-google>用 Google 帳號註冊</button>
+      <div class="msg" id="suMsg"></div>
+    </section>
+
+    <!-- 忘記密碼 -->
+    <section class="pane" id="p-forgot">
+      <label for="fgEmail">註冊時用的 Email</label>
+      <input id="fgEmail" type="email" autocomplete="email" inputmode="email">
+      <button class="btn" id="fgBtn">寄送重設密碼信</button>
+      <button class="link" data-go="login">← 回到登入</button>
+      <div class="msg" id="fgMsg"></div>
+    </section>
+
+    <!-- 設定新密碼（點了重設信的連結後會到這裡） -->
+    <section class="pane" id="p-reset">
+      <label for="rsPw">新密碼（至少 8 個字）</label>
+      <input id="rsPw" type="password" autocomplete="new-password">
+      <label for="rsPw2">再輸入一次</label>
+      <input id="rsPw2" type="password" autocomplete="new-password">
+      <button class="btn" id="rsBtn">更新密碼</button>
+      <div class="msg" id="rsMsg"></div>
+    </section>
+  </div>
+
+  <p class="foot">比特聯盟的會員可以直接用原本的帳號登入。<br>新帳號註冊後，需要管理員開通才能使用面板。</p>
+</main>
+
+<script>
+const SB_URL  = 'https://kldumnxdlgovaxtiszyn.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsZHVtbnhkbGdvdmF4dGlzenluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjIyNDgsImV4cCI6MjA5MzY5ODI0OH0.P_anfYpSV2tgCPIQ7uZDVBjUFY3UhfEXk9u3XjlzBHI';
+const BASE    = 'https://bitocat.github.io/bitoalliance/';
+const AFTER   = ['panel.html', 'panel-admin.html'].includes(new URLSearchParams(location.search).get('next')) ? new URLSearchParams(location.search).get('next') : 'panel.html';
+const sb = supabase.createClient(SB_URL, SB_ANON);
+const $ = id => document.getElementById(id);
+let recovering = /type=recovery/.test(location.hash);
+
+function show(p) {
+  document.querySelectorAll('.pane').forEach(el => el.classList.toggle('on', el.id === 'p-' + p));
+  const tabbed = p === 'login' || p === 'signup';
+  $('tabs').style.display = tabbed ? 'flex' : 'none';
+  document.querySelectorAll('#tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.p === p ? 'true' : 'false'));
+  document.querySelectorAll('.msg').forEach(m => { m.className = 'msg'; m.textContent = ''; });
+}
+function msg(id, text, ok) { const m = $(id); m.textContent = text; m.className = 'msg ' + (ok ? 'ok' : 'err'); }
+function errText(e) {
+  const t = (e && e.message) || '';
+  if (/Invalid login/i.test(t)) return 'Email 或密碼不對，請再確認一次。';
+  if (/Email not confirmed/i.test(t)) return '這個帳號還沒完成 Email 驗證，請先到信箱點驗證連結。';
+  if (/already registered/i.test(t)) return '這個 Email 已經註冊過了，直接登入就可以。';
+  if (/Password should be/i.test(t)) return '密碼至少要 8 個字。';
+  if (/rate limit|too many/i.test(t)) return '嘗試太多次了，請等幾分鐘再試。';
+  return t || '發生錯誤，請稍後再試。';
+}
+async function busy(btn, label, fn) { const old = btn.textContent; btn.disabled = true; btn.textContent = label; try { await fn(); } finally { btn.disabled = false; btn.textContent = old; } }
+
+document.querySelectorAll('#tabs button').forEach(b => b.addEventListener('click', () => show(b.dataset.p)));
+document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => show(b.dataset.go)));
+document.querySelectorAll('[data-google]').forEach(b => b.addEventListener('click', async () => {
+  const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: BASE + AFTER } });
+  if (error) msg(b.closest('.pane').querySelector('.msg').id, errText(error));
+}));
+
+$('liBtn').addEventListener('click', e => busy(e.target, '登入中…', async () => {
+  const email = $('liEmail').value.trim(), password = $('liPw').value;
+  if (!email || !password) return msg('liMsg', '請填 Email 和密碼。');
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) return msg('liMsg', errText(error));
+  location.replace(AFTER);
+}));
+
+$('suBtn').addEventListener('click', e => busy(e.target, '建立中…', async () => {
+  const email = $('suEmail').value.trim(), pw = $('suPw').value, pw2 = $('suPw2').value;
+  if (!email || !pw) return msg('suMsg', '請填 Email 和密碼。');
+  if (pw.length < 8) return msg('suMsg', '密碼至少要 8 個字。');
+  if (pw !== pw2) return msg('suMsg', '兩次輸入的密碼不一樣。');
+  const { data, error } = await sb.auth.signUp({ email, password: pw, options: { emailRedirectTo: BASE + AFTER } });
+  if (error) return msg('suMsg', errText(error));
+  if (data && data.session) return location.replace(AFTER);
+  msg('suMsg', '✅ 帳號建立好了！請到信箱點「驗證連結」，驗證完就會回到面板。', true);
+}));
+
+$('fgBtn').addEventListener('click', e => busy(e.target, '寄送中…', async () => {
+  const email = $('fgEmail').value.trim();
+  if (!email) return msg('fgMsg', '請填 Email。');
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: BASE + 'panel-login.html' });
+  if (error) return msg('fgMsg', errText(error));
+  msg('fgMsg', '✅ 已寄出。請到信箱點信裡的連結，回到這裡設定新密碼。', true);
+}));
+
+$('rsBtn').addEventListener('click', e => busy(e.target, '更新中…', async () => {
+  const pw = $('rsPw').value, pw2 = $('rsPw2').value;
+  if (pw.length < 8) return msg('rsMsg', '密碼至少要 8 個字。');
+  if (pw !== pw2) return msg('rsMsg', '兩次輸入的密碼不一樣。');
+  const { error } = await sb.auth.updateUser({ password: pw });
+  if (error) return msg('rsMsg', errText(error));
+  recovering = false;
+  msg('rsMsg', '✅ 密碼已更新，正在進入面板…', true);
+  setTimeout(() => location.replace(AFTER), 1200);
+}));
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const on = document.querySelector('.pane.on'); if (!on) return;
+  const btn = on.querySelector('.btn:not(.ghost)'); if (btn && !btn.disabled) btn.click();
+});
+
+sb.auth.onAuthStateChange(ev => { if (ev === 'PASSWORD_RECOVERY') { recovering = true; show('reset'); } });
+if (recovering) show('reset');
+else sb.auth.getSession().then(({ data }) => { if (data.session && !recovering) location.replace(AFTER); });
+if (/[?&]tab=signup/.test(location.search)) show('signup');
+</script>
+</body>
+</html>
