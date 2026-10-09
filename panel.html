@@ -217,6 +217,37 @@
   nav.jump { position: sticky; top: 0; }
   .card h3 > span:first-child { white-space:nowrap; }
   .card h3 .q { text-align:right; }
+
+  .hist { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin:14px 0 0; }
+  .hist-h { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  .hist-h h3 { margin:0; font-size:16px; }
+  .hbtn { border:1px solid var(--line); background:var(--card); color:var(--ink); font:inherit; font-size:13px; padding:4px 12px; border-radius:999px; cursor:pointer; white-space:nowrap; }
+  .hnote { color:var(--muted); font-size:13.5px; margin:6px 0 8px; line-height:1.6; }
+  .hsvg { width:100%; touch-action:pan-y; cursor:crosshair; user-select:none; -webkit-user-select:none; }
+  .hsvg svg { display:block; }
+  .hinfo { border-top:1px dashed var(--line); margin-top:6px; padding-top:8px; font-size:14px; }
+  .hi-top { font-size:15px; }
+  .hi-res { margin:4px 0 6px; }
+  .hi-list { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:2px 16px; color:var(--muted); font-size:13.5px; }
+  .hi-list b { color:var(--ink); font-weight:600; }
+  .tag { display:inline-block; margin-left:8px; font-size:11.5px; padding:0 7px; border:1px solid var(--line); border-radius:999px; color:var(--muted); }
+
+  .viz:empty { display:none; }
+  .viz { display:flex; flex-direction:column; gap:4px; }
+  .dbar { display:grid; grid-template-columns:5.5em 1fr 5em; gap:8px; align-items:center; font-size:12.5px; color:var(--muted); }
+  .dbar .dt { position:relative; height:10px; background:var(--card); border-radius:999px; overflow:hidden; }
+  .dbar .dt::after { content:''; position:absolute; left:50%; top:0; bottom:0; width:1px; background:var(--muted); }
+  .dbar .dt i { position:absolute; top:0; bottom:0; border-radius:999px; }
+  .dbar .dv { text-align:right; color:var(--ink); font-weight:600; }
+  .vnote, .vlbl { font-size:12px; color:var(--muted); line-height:1.5; }
+  .spark { width:100%; display:block; background:var(--card); border-radius:6px; }
+  .ladder { position:relative; height:34px; background:var(--card); border-radius:6px; }
+  .ladder .now { position:absolute; top:0; bottom:0; width:2px; background:var(--amber); }
+  .ladder .wall { position:absolute; top:6px; width:8px; height:12px; border-radius:2px; transform:translateX(-4px); }
+  .ladder .wl { position:absolute; top:19px; transform:translateX(-50%); font-size:11px; white-space:nowrap; color:var(--ink); }
+  .lad-ax { display:flex; justify-content:space-between; font-size:11px; color:var(--muted); }
+  .dist { height:10px; background:var(--card); border-radius:999px; overflow:hidden; }
+  .dist i { display:block; height:100%; background:var(--amber); border-radius:999px; }
 </style>
 </head>
 <body>
@@ -262,6 +293,13 @@
     </div>
   </div>
 
+  <div class="hist" id="hist">
+    <div class="hist-h"><h3>📈 復盤走勢：之前是什麼狀態、後來怎麼走</h3><button type="button" id="histNow" class="hbtn">回到最新</button></div>
+    <p class="hnote">上面是價格（綠底＝當時偏多、紅底＝當時偏空，▲▼＝轉多／轉空的那一根），中間是綜合分數，下面七排是 ①～⑦ 每一項當時的判讀（綠＝看漲、紅＝看跌、灰＝沒訊號）。<b>點圖上任一根</b>，下面會列出那一刻七項怎麼說、之後價格走了多少。<a href="#replay">怎麼看？</a></p>
+    <div id="histSvg" class="hsvg"></div>
+    <div id="histInfo" class="hinfo"></div>
+  </div>
+
   <div class="grid" id="grid"></div>
 
   <div class="foot" id="foot"></div>
@@ -273,7 +311,7 @@
   </section>
   <nav class="jump" aria-label="章節">
   <div class="rail">
-    <a href="#how">怎麼看</a><a href="#absorb">① 吸收</a><a href="#spot">② 現貨 vs 合約</a><a href="#oi">③ OI × 費率 × 爆倉</a><a href="#wall">④ 掛單牆</a><a href="#approach">⑤ 接近方式</a><a href="#div">⑥ 動能背離</a><a href="#accept">⑦ 價量／接受度</a><a href="#total">綜合分數</a><a href="#limits">資料限制</a>
+    <a href="#how">怎麼看</a><a href="#absorb">① 吸收</a><a href="#spot">② 現貨 vs 合約</a><a href="#oi">③ OI × 費率 × 爆倉</a><a href="#wall">④ 掛單牆</a><a href="#approach">⑤ 接近方式</a><a href="#div">⑥ 動能背離</a><a href="#accept">⑦ 價量／接受度</a><a href="#total">綜合分數</a><a href="#replay">復盤走勢</a><a href="#limits">資料限制</a>
   </div>
 </nav>
   <main>
@@ -353,6 +391,19 @@
     <div class="note">價量關係：價漲量增＝健康；價漲量縮＝追價的人變少；價跌量增＝賣壓重；價跌量縮＝賣壓在減輕。</div>
   </section>
 
+  <section id="replay">
+    <h2><span class="pin" aria-hidden="true">📈</span>復盤走勢圖</h2>
+    <p class="lead">回頭看：之前每一根 K 當下是什麼狀態，後來價格怎麼走</p>
+    <p>面板上方的走勢圖把最近 120 根 K 的判讀都畫出來，讓你可以對照「當時面板怎麼說」和「後來真的發生什麼事」。</p>
+    <div class="states-wrap"><table class="states"><thead><tr><th>圖上的東西</th><th>意思</th></tr></thead><tbody>
+    <tr><td>價格線＋底色</td><td>綠底＝那根 K 當時綜合分數 +3 以上（偏多），紅底＝−3 以下（偏空），沒底色＝多空拉扯。</td></tr>
+    <tr><td>▲ ▼</td><td>從拉扯「轉成偏多」或「轉成偏空」的那一根。復盤時最值得看這些點後來有沒有走出來。</td></tr>
+    <tr><td>中間的柱子</td><td>每根 K 的綜合分數，虛線是 +3 和 −3。</td></tr>
+    <tr><td>下面七排色塊</td><td>①～⑦ 每一項當時的判讀：綠＝看漲、紅＝看跌、灰＝沒訊號，顏色越深代表訊號越強。可以看出是哪幾項先變色、帶動後面的走勢。</td></tr>
+    <tr><td>點任一根</td><td>下面會列出那一刻七項各自怎麼說，以及「之後 6 根、12 根」價格漲跌了多少，這就是復盤的結果。按「回到最新」回到現在。</td></tr>
+    </tbody></table></div>
+    <div class="note">⚠️ 橘色虛線左邊（打開網頁之前）是用 K 線回推的，<b>不含 ④ 掛單牆、爆倉和資金費率</b>，因為這些資料只有即時才看得到；虛線右邊是網頁開著時每秒記錄的完整七項。完整紀錄會存在你這台手機或電腦上，下次打開同一個幣和週期還會在。</div>
+  </section>
   <section id="total">
     <h2>最上面的大字（綜合判斷）</h2>
     <p class="lead">面板右上角那一塊，是把七項加起來的總結。</p>
@@ -384,6 +435,26 @@
   </footer>
 </div>
 
+<script>
+// 登入狀態同時存在 localStorage 和 cookie：有些 App 內建瀏覽器會清掉或封鎖 localStorage，cookie 當備份
+const AUTH_STORE = (() => {
+  const CK = 'bpa', SZ = 3000, AGE = 60 * 60 * 24 * 60, PATH = '; path=/; SameSite=Lax' + (location.protocol === 'https:' ? '; Secure' : '');
+  const ls = (() => { try { const k = '__t'; localStorage.setItem(k, '1'); localStorage.removeItem(k); return localStorage; } catch (e) { return null; } })();
+  const ckAll = () => Object.fromEntries(document.cookie.split('; ').filter(Boolean).map(x => { const i = x.indexOf('='); return [x.slice(0, i), x.slice(i + 1)]; }));
+  const ckGet = () => { const c = ckAll(), n = +(c[CK + 'n'] || 0); if (!n) return null; let s = ''; for (let i = 0; i < n; i++) { if (c[CK + i] === undefined) return null; s += c[CK + i]; } try { return decodeURIComponent(s); } catch (e) { return null; } };
+  const ckDel = () => { const c = ckAll(), n = +(c[CK + 'n'] || 0); for (let i = 0; i < Math.max(n, 6); i++) document.cookie = CK + i + '=; max-age=0' + PATH; document.cookie = CK + 'n=; max-age=0' + PATH; };
+  const ckSet = v => { ckDel(); const e = encodeURIComponent(v), parts = []; for (let i = 0; i < e.length; i += SZ) parts.push(e.slice(i, i + SZ)); parts.forEach((p, i) => { document.cookie = CK + i + '=' + p + '; max-age=' + AGE + PATH; }); document.cookie = CK + 'n=' + parts.length + '; max-age=' + AGE + PATH; };
+  return {
+    canRemember: !!ls || navigator.cookieEnabled,
+    storage: {
+      getItem: k => { let v = null; try { v = ls && ls.getItem(k); } catch (e) {} return v || ckGet(); },
+      setItem: (k, v) => { try { ls && ls.setItem(k, v); } catch (e) {} try { ckSet(v); } catch (e) {} },
+      removeItem: k => { try { ls && ls.removeItem(k); } catch (e) {} try { ckDel(); } catch (e) {} },
+    },
+  };
+})();
+const IN_APP = /Line\/|FBAN|FBAV|Instagram|MicroMessenger|KAKAOTALK|Discord|Telegram|; wv\)/i.test(navigator.userAgent);
+</script>
 <script>
 // =====================================================================
 //  即時盤口面板：會員瀏覽器直連公開行情（K 線、OI、資金費率、爆倉、掛單簿、美國現貨價）
@@ -492,7 +563,7 @@ async function loadHistory() {
   const tasks = [
     getJ(`${FAPI}/fapi/v1/klines?symbol=${sym}&interval=${itv}&limit=300`).then(d => { S.perp = d.map(toBar); S.conn.perp = 'ok'; }).catch(() => S.conn.perp = 'bad'),
     getJ(`${SAPI}/api/v3/klines?symbol=${S.cfg.s}&interval=${itv}&limit=300`).then(d => { S.spot = d.map(toBar); S.conn.spot = 'ok'; }).catch(() => S.conn.spot = 'na'),
-    getJ(`${FAPI}/futures/data/openInterestHist?symbol=${sym}&period=5m&limit=60`).then(d => { S.oiHist = d.map(x => ({ t: +x.timestamp, oi: +x.sumOpenInterest })); S.conn.oi = 'ok'; }).catch(() => S.conn.oi = 'bad'),
+    getJ(`${FAPI}/futures/data/openInterestHist?symbol=${sym}&period=5m&limit=500`).then(d => { S.oiHist = d.map(x => ({ t: +x.timestamp, oi: +x.sumOpenInterest })); S.conn.oi = 'ok'; }).catch(() => S.conn.oi = 'bad'),
     ...HTFS.map(tf => getJ(`${FAPI}/fapi/v1/klines?symbol=${sym}&interval=${tf}&limit=500`).then(d => { S.htf[tf] = d.map(toBar); }).catch(() => {})),
   ];
   await Promise.all(tasks);
@@ -584,11 +655,14 @@ function onBook(bids, asks) {
 }
 
 // ================= 計算 =================
-function compute() {
-  const b = S.perp, n = b.length, k = P.k, L = P.L;
+function liveCtx() { return { b: S.perp, spot: S.spot, htf: S.htf, oi: [...S.oiHist, ...(S.oiNow ? [S.oiNow] : [])], live: true, now: Date.now() }; }
+function compute() { return computeAt(liveCtx()); }
+// X = 要計算的那一刻的資料。live=false 時是「回推過去某根 K」，掛單牆／爆倉／資金費率這些只有即時才有的資料不算
+function computeAt(X) {
+  const b = X.b, n = b.length, k = P.k, L = P.L;
   if (n < k + L + P.volLen + 5) return null;
   const itvMs = ITV_MIN[S.itv] * 60e3;
-  const spotMap = new Map(S.spot.map(x => [x.t, x]));
+  const spotMap = new Map(X.spot.map(x => [x.t, x]));
   const sp = b.map(x => spotMap.get(x.t) || null);
   const spotOk = sp.slice(-k).every(x => x);
   const dP = b.map(x => 2 * x.tb - x.v);
@@ -626,7 +700,7 @@ function compute() {
 
   // 隧道與關卡
   const T = {};
-  for (const tf of HTFS) { const a = S.htf[tf]; if (a.length > 20) T[tf] = { ...bands(a.map(x => x.c).reverse()), atr: last(atrArr(a, tf === '15m' ? 8 : 6)) }; }
+  for (const tf of HTFS) { const a = X.htf[tf]; if (a.length > 20) T[tf] = { ...bands(a.map(x => x.c).reverse()), atr: last(atrArr(a, tf === '15m' ? 8 : 6)) }; }
   const noise = tf => T[tf] && (T[tf].u - T[tf].d) > 0 ? T[tf].atr / (T[tf].u - T[tf].d) : null;
   const n15 = noise('15m'), n60 = noise('1h');
   const act = n15 !== null && n15 <= P.noiseThr ? '15m' : n60 !== null && n60 <= P.noiseThr ? '1h' : '4h';
@@ -641,23 +715,23 @@ function compute() {
 
   // OI
   const windowMs = k * itvMs;
-  const oiSeries = [...S.oiHist, ...(S.oiNow ? [S.oiNow] : [])].sort((a, c) => a.t - c.t);
+  const oiSeries = X.oi.slice().sort((a, c) => a.t - c.t);
   let oiChgK = null;
   if (oiSeries.length >= 2) {
     const nowOi = last(oiSeries), target = nowOi.t - windowMs;
     let ref = oiSeries[0]; for (const x of oiSeries) if (x.t <= target) ref = x;
     if (ref && ref.oi > 0 && ref !== nowOi) oiChgK = (nowOi.oi - ref.oi) / ref.oi * 100;
   }
-  const fund = S.mark ? S.mark.r * 100 : null;                     // %
-  const basis = S.mark && S.mark.i > 0 ? (S.mark.p - S.mark.i) / S.mark.i * 100 : null;
-  const now = Date.now();
-  S.liqs = S.liqs.filter(x => now - x.t < 60 * 60e3);
-  const liqWin = S.liqs.filter(x => now - x.t < Math.max(windowMs, 5 * 60e3));
+  const fund = X.live && S.mark ? S.mark.r * 100 : null;                     // %
+  const basis = X.live && S.mark && S.mark.i > 0 ? (S.mark.p - S.mark.i) / S.mark.i * 100 : null;
+  const now = X.now;
+  if (X.live) S.liqs = S.liqs.filter(x => now - x.t < 60 * 60e3);
+  const liqWin = !X.live ? [] : S.liqs.filter(x => now - x.t < Math.max(windowMs, 5 * 60e3));
   const liqLong = sum(liqWin.filter(x => x.side === 'long').map(x => x.usd));
   const liqShort = sum(liqWin.filter(x => x.side === 'short').map(x => x.usd));
   const spotPx = sp[I] ? sp[I].c * S.cfg.mult : null;
-  const cbPrem = S.cb && spotPx && now - S.cbT < 60e3 ? (S.cb - spotPx) / spotPx * 100 : null;
-  const nyH = (() => { const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })); return d.getHours() + d.getMinutes() / 60; })();
+  const cbPrem = X.live && S.cb && spotPx && now - S.cbT < 60e3 ? (S.cb - spotPx) / spotPx * 100 : null;
+  const nyH = (() => { const d = new Date(new Date(X.now).toLocaleString('en-US', { timeZone: 'America/New_York' })); return d.getHours() + d.getMinutes() / 60; })();
   const usOpen = nyH >= 9.5 && nyH < 16;
 
   const R = {};
@@ -697,10 +771,10 @@ function compute() {
   R.m3 = { sc: m3, j: m3j, st: `OI <b>${fmt(oiChgK, '%', 2)}</b>｜資金費率 <b>${fund === null ? '—' : fund.toFixed(4) + '%'}</b>｜爆倉 多 <b>${fmtUsd(liqLong)}</b>・空 <b>${fmtUsd(liqShort)}</b>` };
 
   // ④ 掛單牆
-  const recentEv = S.wallEvents.filter(e => now - e.t < 3 * 60e3);
+  const recentEv = X.live ? S.wallEvents.filter(e => now - e.t < 3 * 60e3) : [];
   const lastEv = last(recentEv);
-  let m4 = 0, m4j = '附近沒有特別大的掛單';
-  const walls = [...S.walls.values()];
+  let m4 = 0, m4j = X.live ? '附近沒有特別大的掛單' : '— 開頁前沒有掛單紀錄';
+  const walls = X.live ? [...S.walls.values()] : [];
   const nearBid = walls.filter(w => w.side === 'bid').sort((a, c) => c.p - a.p)[0];
   const nearAsk = walls.filter(w => w.side === 'ask').sort((a, c) => a.p - c.p)[0];
   if (lastEv) {
@@ -758,7 +832,8 @@ function compute() {
   R.m7 = { sc: m7, j: m7j, st: `<b>${pv}</b>｜量能 <b>${effortK === null ? '—' : effortK.toFixed(1) + 'x'}</b>｜${HTF_NAME[act]} 軌道外 <b>${Math.max(aboveN, belowN)}</b> 根` };
 
   const tot = R.m1.sc + R.m2.sc + R.m3.sc + R.m4.sc + R.m5.sc + R.m6.sc + R.m7.sc;
-  return { R, tot, px, nL, nDir, act, n15, n60, T, dayOpen: S.htf['1d'].length ? last(S.htf['1d']).o : null };
+  return { R, tot, px, nL, nDir, act, n15, n60, T, dayOpen: X.htf['1d'].length ? last(X.htf['1d']).o : null,
+    V: { b, C, I, k, pDelK, sDelK, progK, effortK, oiChgK, fund, liqLong, liqShort, nearBid, nearAsk, volRat, tests, cvdP, hiIdx, loIdx, newHi, newLo, topN, botN, uA, dA, aboveN, belowN, oiSeries, tol } };
 }
 
 // ================= 畫面 =================
@@ -774,8 +849,181 @@ const CARDS = [
 const cls = (sc, j) => sc > 0 ? 'bg-g' : sc < 0 ? 'bg-r' : /⚠️|🔥|💥/.test(j) ? 'bg-y' : 'bg-w';
 function buildGrid() {
   document.getElementById('grid').innerHTML = CARDS.map(([id, t, q, sec]) =>
-    `<div class="card" id="c_${id}"><h3><span>${t}<a class="help" href="#${sec}" aria-label="${t} 說明">?</a></span><span class="q">${q}</span></h3><div class="j bg-w">計算中…</div><div class="st"></div><div class="ev" style="display:none"></div></div>`).join('');
+    `<div class="card" id="c_${id}"><h3><span>${t}<a class="help" href="#${sec}" aria-label="${t} 說明">?</a></span><span class="q">${q}</span></h3><div class="j bg-w">計算中…</div><div class="viz"></div><div class="st"></div><div class="ev" style="display:none"></div></div>`).join('');
 }
+// ================= 復盤：每根 K 當時的判讀 =================
+// 開頁前：用 K 線回推（不含掛單牆、爆倉、資金費率）；開頁後：每秒記錄完整七項，存在這台裝置
+const HIST_N = 120;
+const snapOf = (t, r, full) => ({ t, px: r.px, tot: r.tot, sc: CARDS.map(([id]) => r.R[id].sc), j: CARDS.map(([id]) => r.R[id].j), full });
+function liveKey() { return 'bp_live_' + S.sym + '_' + S.itv; }
+function loadLive() {
+  S.live = new Map();
+  try { const a = JSON.parse(localStorage.getItem(liveKey()) || '[]'); a.forEach(x => S.live.set(x.t, x)); } catch (e) {}
+}
+function saveLive() {
+  try { const a = [...S.live.values()].sort((x, y) => x.t - y.t).slice(-400); localStorage.setItem(liveKey(), JSON.stringify(a)); } catch (e) {}
+}
+function htfAt(T, px) {
+  const o = {};
+  for (const tf of HTFS) {
+    const a = S.htf[tf].filter(x => x.t <= T);
+    if (a.length) { const l = a[a.length - 1]; a[a.length - 1] = { ...l, c: px, h: Math.max(l.o, px), l: Math.min(l.o, px) }; }   // 那根大週期 K 還沒收完，用當時價格，不偷看未來
+    o[tf] = a;
+  }
+  return o;
+}
+function buildReplay() {
+  const b = S.perp, n = b.length;
+  if (n < 70) return;
+  const key = n + '|' + b[n - 2].t + '|' + S.htf['1h'].length + '|' + S.oiHist.length;
+  if (S.replayKey === key) return;
+  S.replayKey = key;
+  const itvMs = ITV_MIN[S.itv] * 60e3, start = Math.max(P.k + P.L + P.volLen + 6, n - 1 - HIST_N);
+  const out = new Map();
+  for (let i = start; i <= n - 2; i++) {
+    const t = b[i].t, T = t + itvMs - 1;
+    try {
+      const r = computeAt({ b: b.slice(0, i + 1), spot: S.spot, htf: htfAt(t, b[i].c), oi: S.oiHist.filter(x => x.t <= T), live: false, now: T });
+      if (r) out.set(t, snapOf(t, r, false));
+    } catch (e) {}
+  }
+  S.replay = out;
+}
+function recordLive(r) {
+  const t = last(S.perp).t;
+  S.live.set(t, snapOf(t, r, true));
+  if (!S.liveSaveT || Date.now() - S.liveSaveT > 10000) { S.liveSaveT = Date.now(); saveLive(); }
+}
+function histSeries() {
+  const ts = S.perp.slice(-HIST_N).map(x => x.t);
+  return ts.map(t => S.live.get(t) || (S.replay && S.replay.get(t)) || null).filter(Boolean);
+}
+
+// ---- 走勢圖 ----
+const colSc = (v, a = 1) => v > 0 ? `color-mix(in srgb, var(--green) ${Math.round(a * 100)}%, transparent)` : v < 0 ? `color-mix(in srgb, var(--red) ${Math.round(a * 100)}%, transparent)` : 'var(--line)';
+const hhmm = t => new Date(t).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
+function drawHist() {
+  const box = document.getElementById('histSvg'); if (!box) return;
+  const H = histSeries();
+  if (H.length < 5) { box.innerHTML = '<div class="hnote">K 線資料載入中…</div>'; document.getElementById('histInfo').innerHTML = ''; return; }
+  const W = Math.max(280, box.clientWidth), G = 22, N = H.length, step = (W - G) / N;
+  const hP = 130, hS = 60, rowH = 11, hHeat = rowH * 7, gap = 8, hAx = 16;
+  const yS0 = hP + gap, yH0 = yS0 + hS + gap, Ht = yH0 + hHeat + hAx;
+  const pxs = H.map(x => x.px), lo = Math.min(...pxs), hi = Math.max(...pxs), pad = (hi - lo) * 0.08 || hi * 0.001;
+  const yP = v => 4 + (hP - 8) * (1 - (v - lo + pad) / (hi - lo + 2 * pad));
+  const X = i => G + i * step + step / 2;
+  const maxT = Math.max(6, ...H.map(x => Math.abs(x.tot)));
+  const yT = v => yS0 + hS / 2 - v / maxT * (hS / 2 - 2);
+  let g = '';
+  // 背景：綜合判斷
+  H.forEach((x, i) => { if (x.tot >= 3 || x.tot <= -3) g += `<rect x="${G + i * step}" y="0" width="${step + 0.5}" height="${hP}" fill="${colSc(x.tot, 0.16)}"/>`; });
+  // 開頁分界
+  const fi = H.findIndex(x => x.full);
+  if (fi > 0) g += `<line x1="${G + fi * step}" x2="${G + fi * step}" y1="0" y2="${yH0 + hHeat}" stroke="var(--amber)" stroke-dasharray="4 3"/>${fi > N * 0.6 ? `<text x="${G + fi * step - 4}" y="12" font-size="11" text-anchor="end" fill="var(--amber)">← K 線回推｜開頁後完整七項</text>` : `<text x="${G + fi * step + 4}" y="12" font-size="11" fill="var(--amber)">開頁後完整七項 →</text>`}`;
+  // 價格線
+  g += `<polyline fill="none" stroke="var(--ink)" stroke-width="1.6" points="${H.map((x, i) => X(i).toFixed(1) + ',' + yP(x.px).toFixed(1)).join(' ')}"/>`;
+  // 轉多 / 轉空 記號
+  const st = v => v >= 3 ? 1 : v <= -3 ? -1 : 0;
+  H.forEach((x, i) => { if (i && st(x.tot) !== st(H[i - 1].tot) && st(x.tot) !== 0) {
+    const up = st(x.tot) > 0, y = yP(x.px) + (up ? 14 : -8);
+    g += `<text x="${X(i)}" y="${y}" font-size="12" text-anchor="middle" fill="${up ? 'var(--green)' : 'var(--red)'}">${up ? '▲' : '▼'}</text>`; } });
+  // 分數柱
+  g += `<line x1="${G}" x2="${W}" y1="${yT(0)}" y2="${yT(0)}" stroke="var(--line)"/>`;
+  [3, -3].forEach(v => { g += `<line x1="${G}" x2="${W}" y1="${yT(v)}" y2="${yT(v)}" stroke="${v > 0 ? 'var(--green)' : 'var(--red)'}" stroke-dasharray="3 3" opacity=".7"/>`; });
+  H.forEach((x, i) => { const y = yT(Math.max(x.tot, 0)), h = Math.abs(yT(x.tot) - yT(0)); g += `<rect x="${G + i * step + step * 0.15}" y="${x.tot >= 0 ? y : yT(0)}" width="${Math.max(1, step * 0.7)}" height="${Math.max(h, 0.5)}" fill="${x.tot >= 3 ? 'var(--green)' : x.tot <= -3 ? 'var(--red)' : 'var(--gray)'}"/>`; });
+  g += `<text x="2" y="${yT(3) + 4}" font-size="10" fill="var(--green)">+3</text><text x="2" y="${yT(-3) + 4}" font-size="10" fill="var(--red)">−3</text>`;
+  // 七項熱度條
+  const nums = '①②③④⑤⑥⑦';
+  for (let m = 0; m < 7; m++) {
+    const y = yH0 + m * rowH;
+    g += `<text x="3" y="${y + rowH - 2}" font-size="10" fill="var(--muted)">${nums[m]}</text>`;
+    H.forEach((x, i) => { const v = x.sc[m]; g += `<rect x="${G + i * step}" y="${y + 1}" width="${step + 0.3}" height="${rowH - 2}" fill="${v ? colSc(v, Math.min(1, 0.35 + Math.abs(v) * 0.3)) : 'color-mix(in srgb, var(--line) 55%, transparent)'}"/>`; });
+  }
+  // 時間軸
+  const every = Math.max(1, Math.ceil(N / (W / 70)));
+  H.forEach((x, i) => { if (i % every === 0) g += `<text x="${X(i)}" y="${Ht - 3}" font-size="10" text-anchor="middle" fill="var(--muted)">${hhmm(x.t)}</text>`; });
+  // 選取
+  let si = S.selT ? H.findIndex(x => x.t === S.selT) : -1; if (si < 0) si = N - 1;
+  g += `<line x1="${X(si)}" x2="${X(si)}" y1="0" y2="${yH0 + hHeat}" stroke="var(--amber)" stroke-width="1.5"/><circle cx="${X(si)}" cy="${yP(H[si].px)}" r="4" fill="var(--amber)"/>`;
+  box.innerHTML = `<svg width="${W}" height="${Ht}" viewBox="0 0 ${W} ${Ht}" role="img" aria-label="綜合分數與七項判讀的走勢">${g}</svg>`;
+  S.histLay = { G, step, ts: H.map(x => x.t) };
+  // 下方說明：那一刻的判讀 → 之後的結果
+  const x = H[si], bi = S.perp.findIndex(y => y.t === x.t), k = P.k;
+  const after = m => bi >= 0 && bi + m < S.perp.length ? (S.perp[bi + m].c - x.px) / x.px * 100 : null;
+  const a1 = after(k), a2 = after(k * 2), mins = ITV_MIN[S.itv];
+  const verdict = x.tot >= 3 ? '<span class="chip g">偏多</span>' : x.tot <= -3 ? '<span class="chip r">偏空</span>' : '<span class="chip y">拉扯</span>';
+  const res = v => v === null ? '<span class="w">還沒走完</span>' : `<b class="${v > 0 ? 'g' : v < 0 ? 'r' : ''}">${fmt(v, '%', 2)}</b>`;
+  document.getElementById('histInfo').innerHTML =
+    `<div class="hi-top"><b>${hhmm(x.t)}</b>　價格 <b>${fmtPx(x.px)}</b>　${verdict} 綜合分數 <b>${x.tot > 0 ? '+' : ''}${x.tot}</b>${x.full ? '' : '<span class="tag">K 線回推</span>'}</div>` +
+    `<div class="hi-res">📌 之後的結果：${k} 根後（${k * mins} 分鐘）${res(a1)}　·　${k * 2} 根後（${k * 2 * mins} 分鐘）${res(a2)}</div>` +
+    `<ul class="hi-list">${CARDS.map(([id, t], m) => `<li><span class="dot" style="background:${x.sc[m] > 0 ? 'var(--green)' : x.sc[m] < 0 ? 'var(--red)' : 'var(--gray)'}"></span><b>${t.replace(/^[①-⑦]\s*/, nums[m] + ' ')}</b>　${x.j[m]}</li>`).join('')}</ul>`;
+}
+function bindHist() {
+  const box = document.getElementById('histSvg');
+  const pick = e => {
+    if (!S || !S.histLay) return;
+    const r = box.getBoundingClientRect(), xx = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+    const i = Math.max(0, Math.min(S.histLay.ts.length - 1, Math.floor((xx - S.histLay.G) / S.histLay.step)));
+    const t = S.histLay.ts[i];
+    S.selT = i === S.histLay.ts.length - 1 ? null : t;
+    drawHist();
+  };
+  box.addEventListener('pointerdown', pick);
+  box.addEventListener('pointermove', e => { if (e.buttons || e.pointerType === 'mouse') pick(e); });
+  document.getElementById('histNow').addEventListener('click', () => { S.selT = null; drawHist(); });
+  window.addEventListener('resize', () => { if (S) drawHist(); });
+}
+
+// ---- 卡片小圖 ----
+function dbar(label, v, maxAbs, txt) {
+  const w = v === null || !isFinite(v) ? 0 : Math.min(50, Math.abs(v) / maxAbs * 50);
+  const c = v > 0 ? 'var(--green)' : 'var(--red)';
+  return `<div class="dbar"><span class="dl">${label}</span><span class="dt"><i style="${v >= 0 ? 'left:50%' : 'right:50%'};width:${w}%;background:${c}"></i></span><span class="dv">${txt}</span></div>`;
+}
+function spark(vals, opts = {}) {
+  const v = vals.filter(x => x !== null && isFinite(x)); if (v.length < 2) return '';
+  const W = 300, H = opts.h || 54, lo = Math.min(...v, ...(opts.ext || [])), hi = Math.max(...v, ...(opts.ext || [])), rg = hi - lo || 1;
+  const y = x => 3 + (H - 6) * (1 - (x - lo) / rg), X = i => i / (vals.length - 1) * W;
+  const pts = vals.map((x, i) => x === null ? null : X(i).toFixed(1) + ',' + y(x).toFixed(1)).filter(Boolean).join(' ');
+  let g = (opts.lines || []).map(l => `<line x1="0" x2="${W}" y1="${y(l.v)}" y2="${y(l.v)}" stroke="${l.c}" stroke-dasharray="4 3" vector-effect="non-scaling-stroke"/>`).join('');
+  (opts.dots || []).forEach(d => { g += `<circle cx="${X(d.i)}" cy="${y(vals[d.i])}" r="3.5" fill="${d.c}" vector-effect="non-scaling-stroke"/>`; });
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" class="spark" style="height:${H}px">${g}<polyline fill="none" stroke="${opts.c || 'var(--ink)'}" stroke-width="1.6" vector-effect="non-scaling-stroke" points="${pts}"/></svg>`;
+}
+function vizFor(id, r) {
+  const V = r.V, M = 40, s0 = Math.max(0, V.I - M + 1), tail = a => a.slice(s0, V.I + 1);
+  const pct = (x, d = 1) => x === null || !isFinite(x) ? '—' : fmt(x, '%', d);
+  if (id === 'm1') return dbar('主動買賣差', V.pDelK, 50, pct(V.pDelK)) + dbar('價格移動', V.progK, 3, V.progK === null ? '—' : fmt(V.progK, ' ATR', 1)) +
+    '<div class="vnote">兩條方向相反（例如賣很多、價格卻沒跌）＝有人在吸收</div>';
+  if (id === 'm2') return dbar('合約', V.pDelK, 50, pct(V.pDelK)) + dbar('現貨', V.sDelK, 50, pct(V.sDelK)) +
+    '<div class="vnote">同方向＝真的有人在買賣；只有合約有動＝多半是槓桿</div>';
+  if (id === 'm3') { const o = V.oiSeries.slice(-36).map(x => x.oi); return o.length > 2 ? `<div class="vlbl">未平倉量（OI）最近走勢</div>${spark(o, { c: 'var(--amber)', h: 44 })}` : ''; }
+  if (id === 'm4') {
+    const px = r.px, rg = px * 0.01, pos = p => Math.max(0, Math.min(100, (p - (px - rg)) / (2 * rg) * 100));
+    const mk = (w, c, side) => w ? `<i class="wall" style="left:${pos(w.p)}%;background:${c}" title="${fmtPx(w.p)}"></i><span class="wl" style="left:${pos(w.p)}%">${side} ${fmtUsd(w.p * w.q)}</span>` : '';
+    return `<div class="vlbl">現價上下 1% 的大掛單</div><div class="ladder"><i class="now" style="left:50%"></i>${mk(V.nearBid, 'var(--green)', '買')}${mk(V.nearAsk, 'var(--red)', '賣')}</div><div class="lad-ax"><span>−1%</span><span>現價</span><span>+1%</span></div>`;
+  }
+  if (id === 'm5') {
+    if (!r.nL) return '';
+    const d = (r.nL.v - r.px) / r.px * 100, w = Math.min(100, Math.abs(d) / 1.5 * 100);
+    return `<div class="vlbl">離${r.nDir > 0 ? '壓力' : '支撐'}還有多遠（滿格＝1.5%）</div><div class="dist"><i style="width:${100 - w}%"></i></div>` +
+      `<div class="vlbl">這個位置被碰過：${'●'.repeat(Math.min(V.tests, 8)) || '還沒碰過'}${V.tests >= 3 ? ' ← 碰越多次越容易破' : ''}</div>`;
+  }
+  if (id === 'm6') {
+    const c = tail(V.C), cv = tail(V.cvdP), dots = [];
+    const hi = V.newHi ? V.hiIdx : V.newLo ? V.loIdx : null;
+    if (hi !== null && hi >= s0) dots.push({ i: hi - s0, c: 'var(--amber)' });
+    return `<div class="vlbl">價格</div>${spark(c, { h: 40, dots })}<div class="vlbl">主動買賣累積（CVD）</div>${spark(cv, { c: 'var(--amber)', h: 40, dots })}` +
+      '<div class="vnote">價格創新高、下面這條卻沒跟著創新高 ＝ 力道變弱（背離）。橘點是前一段的高／低點</div>';
+  }
+  if (id === 'm7') {
+    if (V.uA === null) return '';
+    const c = tail(V.C);
+    return `<div class="vlbl">價格和 ${HTF_NAME[r.act]} 隧道（虛線＝上軌、下軌）</div>${spark(c, { h: 54, ext: [V.uA, V.dA], lines: [{ v: V.uA, c: 'var(--red)' }, { v: V.dA, c: 'var(--green)' }] })}` +
+      '<div class="vnote">衝出虛線後要站穩幾根、量也要跟上，突破才算數</div>';
+  }
+  return '';
+}
+
 function render() {
   const pxEl = document.getElementById('px');
   const conn = S.conn;
@@ -786,6 +1034,7 @@ function render() {
   if (conn.perp === 'bad') { err.style.display = 'block'; err.textContent = '⚠️ 連不上行情資料。可能是網路或所在地區限制，請換個網路（例如關掉 VPN 或改用手機網路）後重新整理。'; }
   else err.style.display = 'none';
   if (!r) return;
+  try { recordLive(r); buildReplay(); drawHist(); } catch (e) { console.warn(e); }
   pxEl.textContent = fmtPx(r.px);
   const chg = r.dayOpen ? (r.px - r.dayOpen) / r.dayOpen * 100 : null;
   const ce = document.getElementById('pxChg'); ce.textContent = chg === null ? '' : '今日 ' + fmt(chg, '%', 2); ce.style.color = chg >= 0 ? 'var(--green)' : 'var(--red)';
@@ -802,6 +1051,7 @@ function render() {
     const c = document.getElementById('c_' + id), m = r.R[id];
     const j = c.querySelector('.j'); j.className = 'j ' + cls(m.sc, m.j); j.textContent = m.j;
     c.querySelector('.st').innerHTML = m.st;
+    try { c.querySelector('.viz').innerHTML = vizFor(id, r); } catch (e) {}
     const ev = c.querySelector('.ev'); ev.style.display = m.ev ? 'block' : 'none'; ev.innerHTML = m.ev ? '最近：<br>' + m.ev : '';
   }
 }
@@ -809,7 +1059,7 @@ function render() {
 // ================= 啟動 / 切換 =================
 function stop() { if (!S) return; const socks = S.sockets; S.sockets = []; socks.forEach(w => { try { w.close(); } catch (e) {} }); S.timers.forEach(clearInterval); }
 async function start(sym, itv) {
-  stop(); S = freshState(sym, itv); buildGrid();
+  stop(); S = freshState(sym, itv); loadLive(); buildGrid();
   document.getElementById('px').textContent = '—';
   document.getElementById('symLbl').textContent = sym + ' / USDT 永續合約';
   if (window.MOCK) { MOCK.fill(S); } else { await loadHistory(); openSockets(); pollOI(); pollMark(); pollBook(); S.timers.push(setInterval(pollOI, 10000), setInterval(pollMark, 5000), setInterval(pollBook, 3000)); }
@@ -861,12 +1111,15 @@ function bindSeg(id, key) {
   try { sym = localStorage.getItem('bp_sym') || sym; itv = localStorage.getItem('bp_itv') || itv; } catch (e) {}
   if (!/^[A-Z0-9]{2,20}$/.test(sym)) sym = 'BTC'; if (!ITV_MIN[itv]) itv = '5m';
   document.querySelectorAll('#itvSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === itv ? 'true' : 'false'));
-  const show = () => { document.getElementById('page').style.display = 'block'; markSym(sym); bindSeg('symSeg', 'sym'); bindSeg('itvSeg', 'itv'); bindSearch(); start(sym, itv); };
+  const show = () => { document.getElementById('page').style.display = 'block'; bindHist(); markSym(sym); bindSeg('symSeg', 'sym'); bindSeg('itvSeg', 'itv'); bindSearch(); start(sym, itv); };
   if (location.protocol === 'file:' && window.MOCK) { show(); return; }       // 本機測試用
-  const sb = supabase.createClient(SB_URL, SB_ANON);
+  const sb = supabase.createClient(SB_URL, SB_ANON, { auth: { storage: AUTH_STORE.storage, persistSession: true, autoRefreshToken: true } });
   const toLogin = () => location.replace('panel-login.html');
   let session;
-  try { session = (await sb.auth.getSession()).data.session; } catch (e) {}
+  for (let i = 0; i < 3 && !session; i++) {            // 手機從背景切回來時網路可能還沒好，多等一下再判斷
+    try { session = (await sb.auth.getSession()).data.session; } catch (e) {}
+    if (!session && i < 2) await new Promise(r => setTimeout(r, 900));
+  }
   if (!session) return toLogin();
   let p = null;
   try { p = (await sb.from('profiles').select('plan, panel_access, panel_request_at').eq('id', session.user.id).maybeSingle()).data; } catch (e) {}

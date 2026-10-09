@@ -94,9 +94,29 @@
 <div id="toast"></div>
 
 <script>
+// 登入狀態同時存在 localStorage 和 cookie：有些 App 內建瀏覽器會清掉或封鎖 localStorage，cookie 當備份
+const AUTH_STORE = (() => {
+  const CK = 'bpa', SZ = 3000, AGE = 60 * 60 * 24 * 60, PATH = '; path=/; SameSite=Lax' + (location.protocol === 'https:' ? '; Secure' : '');
+  const ls = (() => { try { const k = '__t'; localStorage.setItem(k, '1'); localStorage.removeItem(k); return localStorage; } catch (e) { return null; } })();
+  const ckAll = () => Object.fromEntries(document.cookie.split('; ').filter(Boolean).map(x => { const i = x.indexOf('='); return [x.slice(0, i), x.slice(i + 1)]; }));
+  const ckGet = () => { const c = ckAll(), n = +(c[CK + 'n'] || 0); if (!n) return null; let s = ''; for (let i = 0; i < n; i++) { if (c[CK + i] === undefined) return null; s += c[CK + i]; } try { return decodeURIComponent(s); } catch (e) { return null; } };
+  const ckDel = () => { const c = ckAll(), n = +(c[CK + 'n'] || 0); for (let i = 0; i < Math.max(n, 6); i++) document.cookie = CK + i + '=; max-age=0' + PATH; document.cookie = CK + 'n=; max-age=0' + PATH; };
+  const ckSet = v => { ckDel(); const e = encodeURIComponent(v), parts = []; for (let i = 0; i < e.length; i += SZ) parts.push(e.slice(i, i + SZ)); parts.forEach((p, i) => { document.cookie = CK + i + '=' + p + '; max-age=' + AGE + PATH; }); document.cookie = CK + 'n=' + parts.length + '; max-age=' + AGE + PATH; };
+  return {
+    canRemember: !!ls || navigator.cookieEnabled,
+    storage: {
+      getItem: k => { let v = null; try { v = ls && ls.getItem(k); } catch (e) {} return v || ckGet(); },
+      setItem: (k, v) => { try { ls && ls.setItem(k, v); } catch (e) {} try { ckSet(v); } catch (e) {} },
+      removeItem: k => { try { ls && ls.removeItem(k); } catch (e) {} try { ckDel(); } catch (e) {} },
+    },
+  };
+})();
+const IN_APP = /Line\/|FBAN|FBAV|Instagram|MicroMessenger|KAKAOTALK|Discord|Telegram|; wv\)/i.test(navigator.userAgent);
+</script>
+<script>
 const SB_URL  = 'https://kldumnxdlgovaxtiszyn.supabase.co';
 const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsZHVtbnhkbGdvdmF4dGlzenluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjIyNDgsImV4cCI6MjA5MzY5ODI0OH0.P_anfYpSV2tgCPIQ7uZDVBjUFY3UhfEXk9u3XjlzBHI';
-const sb = window.MOCK ? window.MOCK.sb : supabase.createClient(SB_URL, SB_ANON);
+const sb = window.MOCK ? window.MOCK.sb : supabase.createClient(SB_URL, SB_ANON, { auth: { storage: AUTH_STORE.storage, persistSession: true, autoRefreshToken: true } });
 const $ = id => document.getElementById(id);
 let ROWS = [], VIEW = 'req';
 
