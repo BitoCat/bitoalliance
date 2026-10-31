@@ -555,7 +555,7 @@ def tunnel_read(ti, name, oi=None):
     rt = _ratio_txt(ti["ratio"]) if (ti["side"] or ti["rev"]) else ""
     if rt:
         head += f"｜量 {rt}"
-    if oi is not None and name == "H4":
+    if oi is not None and name == "H4" and (ti["side"] or ti["rev"]):
         head += f"｜持倉 4h {arrow_pct(oi, 1)}"
     note = ""
     r = ti["ratio"] or 0
@@ -629,7 +629,8 @@ def tunnel_full_lines(t):
             L.append(f"• {r[0]}" + (f"：{r[1]}" if r[1] else ""))
     L.append(f"• H1 {_zone(t.get('1H'))}｜15m {_zone(t.get('15m'))}")
     L += nest_lines(t)
-    L.append("-# 15m／H1 碰軌或出軌本身不代表方向，短線看上面的三層波動；歷史傾向來自回測，不代表這次一定如此")
+    L.append("-# 15m／H1 碰軌或出軌本身不代表方向，短線請看🪜三層波動（碰到 H1 軌時才會出現）；"
+             "歷史傾向來自回測，不代表這次一定如此")
     return L
 
 
