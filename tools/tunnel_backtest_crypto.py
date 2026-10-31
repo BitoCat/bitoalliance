@@ -353,6 +353,12 @@ def nest_scan(coin, k15, k1, k4, oi15):
         prev = [x for x in v[max(0, i - 20):i] if x]
         return v[i] / (sum(prev) / len(prev)) if len(prev) >= 10 and v[i] else None
 
+    # 15m ATR(14)：用來把「再延伸多少」換成波動單位（BTC 與山寨幣才能比較）
+    tr = [h[0] - l[0]] + [max(h[i] - l[i], abs(h[i] - c[i - 1]), abs(l[i] - c[i - 1])) for i in range(1, n)]
+    atr = [None] * n
+    for i in range(14, n):
+        atr[i] = sum(tr[i - 13:i + 1]) / 14
+
     out = []
     for i in range(WARMUP + 20, n - NEST_H):
         if not (B15[i] and b1[i] and b4[i] and b1[i - 1]):
@@ -396,6 +402,14 @@ def nest_scan(coin, k15, k1, k4, oi15):
             else:
                 tier = "0 沒回到15m對側軌"
             ext_first = first["ext"] is not None and (first["15m"] is None or first["ext"] < first["15m"])
+            # 碰軌後、到第一站（15m 對側軌）之前，往反方向最多再走多少（沒到第一站就看整個 12 小時）
+            end = i + (first["15m"] or NEST_H)
+            if side == "up":
+                mae = max(max(h[i + 1:end + 1]) - ref, 0.0)
+            else:
+                mae = max(ref - min(l[i + 1:end + 1]), 0.0)
+            mae_atr = mae / atr[i] if atr[i] else None
+            mae_pct = mae / ref * 100
             r = vr(i)
             a, b = oi15.get(ts[i]), oi15.get(ts[i - 1])
             oc = (a / b - 1) * 100 if a and b else None
@@ -411,8 +425,43 @@ def nest_scan(coin, k15, k1, k4, oi15):
                         "ropp": first["H1對軌"] is not None, "rh4": first["H4"] is not None,
                         "ext_first": ext_first, "ratio": round(r, 2) if r else None, "ratio_b": ratio_b(r),
                         "oi_chg": round(oc, 2) if oc is not None else None, "oi_b": oi_b(oc, 0.3),
-                        "h4ctx": h4ctx})
+                        "h4ctx": h4ctx, "mae_atr": round(mae_atr, 3) if mae_atr is not None else None,
+                        "mae_pct": round(mae_pct, 3),
+                        "grp": "BTC" if coin == "BTC" else "ETH" if coin == "ETH" else "山寨"})
     return out
+
+
+def _q(xs, q):
+    xs = sorted(x for x in xs if x is not None)
+    return xs[min(len(xs) - 1, int(len(xs) * q))] if xs else None
+
+
+def report_mae(ev):
+    print("\n==================== F3 碰軌後先往反方向多走多少（到第一站之前）====================")
+    print("欄位：N｜中位數(ATR)｜75分位(ATR)｜90分位(ATR)｜中位數%｜≥0.5ATR｜≥1ATR｜≥0.5%｜到15m對側軌｜到H1中線｜到H1對側軌｜到H4對側軌")
+
+    def line(name, rows):
+        n = len(rows)
+        if n < 30:
+            return
+        a = [r["mae_atr"] for r in rows]
+        print(f"  {name:<22}{n:6d}  {_q(a, .5):5.2f}  {_q(a, .75):5.2f}  {_q(a, .9):5.2f}"
+              f"  {_q([r['mae_pct'] for r in rows], .5):5.2f}%"
+              f"  {pct(sum(1 for x in a if x is not None and x >= .5), n)}  {pct(sum(1 for x in a if x is not None and x >= 1), n)}"
+              f"  {pct(sum(1 for r in rows if r['mae_pct'] >= .5), n)}"
+              f"  {pct(sum(r['r15'] for r in rows), n)}  {pct(sum(r['rmid'] for r in rows), n)}"
+              f"  {pct(sum(r['ropp'] for r in rows), n)}  {pct(sum(r['rh4'] for r in rows), n)}")
+
+    for side, nm in (("up", "碰H1上軌"), ("dn", "碰H1下軌")):
+        es = [e for e in ev if e["side"] == side]
+        print(f" ◆ {nm}")
+        line("全部", es)
+        for g in ("BTC", "ETH", "山寨"):
+            line(g, [e for e in es if e["grp"] == g])
+        for ctx in sorted({e["h4ctx"] for e in es}):
+            line(ctx, [e for e in es if e["h4ctx"] == ctx])
+            for g in ("BTC", "ETH", "山寨"):
+                line(f"  {ctx}/{g}", [e for e in es if e["h4ctx"] == ctx and e["grp"] == g])
 
 
 def report_nest(ev, side):
@@ -578,6 +627,7 @@ def main():
             ev += nest_scan(coin, k15, k1, k4, oi15)
         report_nest([e for e in ev if e["side"] == "up"], "up")
         report_nest([e for e in ev if e["side"] == "dn"], "dn")
+        report_mae(ev)
         if ev:
             keys = sorted({kk for e in ev for kk in e})
             with open("backtest_crypto_nest.csv", "w", newline="", encoding="utf-8-sig") as fh:
