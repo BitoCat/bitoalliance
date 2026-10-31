@@ -359,7 +359,10 @@ NEST_P = [
     [21, 39, 33, 12, 38, 36],   # 到 H1 對側軌
     [3, 11, 15, 1, 18, 9],      # 到 H4 對側軌
 ]
-NEST_X = [61, 48, 48, 66, 50, 56]   # 先續創高/續破低 0.5% 才回頭
+# 碰軌後、到第一站之前先往反方向多走多少（15m ATR14 倍數）：中位數 / 75 分位（換成 ATR 後 BTC/ETH/山寨相近）
+NEST_XM = [2.17, 1.23, 1.32, 2.36, 1.27, 1.64]
+NEST_X75 = [6.10, 3.52, 4.19, 5.80, 4.10, 4.31]
+NEST_XN = [25, 35, 34, 24, 35, 31]   # 幾乎沒再延伸（< 0.5 ATR）就回頭的比例 %
 NEST_H = 12                         # 追蹤小時數（同回測）
 
 
@@ -446,6 +449,13 @@ def _oi_change(c, k1h, hours):
     return (f(a[1]) / pa) / (f(b[1]) / pb) * 100 - 100
 
 
+def _atr(k, i, n=14):
+    if i < n:
+        return None
+    tr = [max(k[j][2] - k[j][3], abs(k[j][2] - k[j - 1][4]), abs(k[j][3] - k[j - 1][4])) for j in range(i - n + 1, i + 1)]
+    return sum(tr) / n
+
+
 def nest_event(k15, k1, k4, last):
     """找最近 12 小時內「15m 剛碰到 H1 上/下軌」的事件，並追蹤四站到了沒"""
     if len(k15) < 60 or len(k1) < 90 or len(k4) < 90:
@@ -473,7 +483,8 @@ def nest_event(k15, k1, k4, last):
             p4 = (k15[i][4] - b4[0]) / (b4[2] - b4[0]) * 100 if b4[2] > b4[0] else 50
             side = 1 if up and (not dn or k15[i][4] >= b1[1]) else -1
             ctx = (0 if p4 > 100 else 1 if p4 >= 50 else 2) if side > 0 else (3 if p4 < 0 else 4 if p4 > 50 else 5)
-            ev = {"i": i, "side": side, "ctx": ctx, "ts": t, "ref": k15[i][2] if side > 0 else k15[i][3]}
+            ev = {"i": i, "side": side, "ctx": ctx, "ts": t, "ref": k15[i][2] if side > 0 else k15[i][3],
+                  "atr": _atr(k15, i)}
     if not ev:
         return None
     hit = [False] * 4
@@ -602,8 +613,11 @@ def nest_lines(t):
     status = f"最遠已到 {names[far]}" if far >= 0 else "還沒到第一站"
     if nxt is not None:
         status += f"｜下一站 {names[nxt]} {pnum(ev['lv'][nxt])}"
-        if far < 0:
-            status += f"（有 {NEST_X[ev['ctx']]}% 會先再{'漲' if up else '跌'} 0.5% 才{'回頭' if up else '彈'}）"
+        if far < 0 and ev.get("atr"):
+            sg = 1 if up else -1
+            a, b = ev["ref"] + sg * NEST_XM[ev["ctx"]] * ev["atr"], ev["ref"] + sg * NEST_X75[ev["ctx"]] * ev["atr"]
+            status += (f"｜📏 再延伸參考：一半不超過 {pnum(a)}、四分之三不超過 {pnum(b)}；"
+                       f"約 {NEST_XN[ev['ctx']]}% 幾乎沒延伸就直接{'回頭' if up else '反彈'}")
     else:
         status += "（四站都到了，這次是大波動）"
     L.append("-# " + status)
@@ -1336,3 +1350,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+
