@@ -5,9 +5,9 @@ on:
   workflow_dispatch:
     inputs:
       tf:
-        description: '週期（逗號分隔）：1H,4H,1D'
+        description: '週期（逗號分隔）：15m,1H,4H,1D,nest（nest=多週期嵌套）'
         required: false
-        default: '1H,4H,1D'
+        default: '15m,1H,4H,1D,nest'
       coins:
         description: '幣種（逗號分隔，留空=預設10檔主流幣）'
         required: false
