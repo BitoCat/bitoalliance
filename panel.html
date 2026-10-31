@@ -311,7 +311,7 @@
   </section>
   <nav class="jump" aria-label="章節">
   <div class="rail">
-    <a href="#how">怎麼看</a><a href="#absorb">① 吸收</a><a href="#spot">② 現貨 vs 合約</a><a href="#oi">③ OI × 費率 × 爆倉</a><a href="#wall">④ 掛單牆</a><a href="#approach">⑤ 接近方式</a><a href="#div">⑥ 動能背離</a><a href="#accept">⑦ 價量／接受度</a><a href="#total">綜合分數</a><a href="#replay">復盤走勢</a><a href="#limits">資料限制</a>
+    <a href="#how">怎麼看</a><a href="#absorb">① 吸收</a><a href="#spot">② 現貨 vs 合約</a><a href="#oi">③ OI × 費率 × 爆倉</a><a href="#wall">④ 掛單牆</a><a href="#approach">⑤ 接近方式</a><a href="#div">⑥ 動能背離</a><a href="#accept">⑦ 價量／接受度</a><a href="#nest">🪜 三層波動</a><a href="#total">綜合分數</a><a href="#replay">復盤走勢</a><a href="#limits">資料限制</a>
   </div>
 </nav>
   <main>
@@ -389,6 +389,31 @@
     <p>衝出軌道只是第一步，之後幾根 K 能不能站穩、量有沒有跟上，才決定突破是真是假。這是最後一道確認。</p>
     <div class="states-wrap"><table class="states"><thead><tr><th>面板上寫</th><th>白話意思</th></tr></thead><tbody><tr><td><span class="chip g">突破後站穩 N 根，量也有跟</span></td><td>突破被市場接受。</td></tr><tr><td><span class="chip y">站上了但沒量</span></td><td>突破不太可靠。</td></tr><tr><td><span class="chip r">突破後又跌回來</span></td><td>假突破。</td></tr><tr><td><span class="chip w">還在隧道裡</span></td><td>還沒有突破，繼續觀察。</td></tr></tbody></table></div>
     <div class="note">價量關係：價漲量增＝健康；價漲量縮＝追價的人變少；價跌量增＝賣壓重；價跌量縮＝賣壓在減輕。</div>
+  </section>
+
+  <section id="nest">
+    <h2><span class="pin" aria-hidden="true">🪜</span>三層波動（指標上的標籤與價位線）</h2>
+    <p class="lead">價格碰到 H1 隧道上軌或下軌之後，接下來通常會回到哪裡</p>
+    <p>加密貨幣大部分的波動，都在 15 分鐘隧道和 1 小時隧道之間來回。指標把這個節奏分成三層，從近到遠：</p>
+    <div class="states-wrap"><table class="states"><thead><tr><th>層級</th><th>碰到 H1 上軌之後</th><th>碰到 H1 下軌之後</th></tr></thead><tbody>
+      <tr><td>第一層（小震盪）</td><td>回到 15m 下軌</td><td>彈到 15m 上軌</td></tr>
+      <tr><td>第二層（H1 隧道來回）</td><td>回到 H1 中線，甚至 H1 下軌</td><td>彈到 H1 中線，甚至 H1 上軌</td></tr>
+      <tr><td>第三層（大波動）</td><td>一路回到 H4 下軌</td><td>一路彈到 H4 上軌</td></tr>
+    </tbody></table></div>
+    <h3>標籤怎麼讀</h3>
+    <div class="term"><dl>
+      <dt>第一行</dt><dd>碰到哪一條軌道，以及當下的<b>大方向</b>（看 H4 隧道）：強勢＝H4 上軌外、偏多＝H4 中線上、偏空＝H4 中線下、弱勢＝H4 下軌外。大方向不同，接下來會走多遠的機率也不同。例如大方向強勢時碰到 H1 上軌，多半只是小回。</dd>
+      <dt>四個價位與百分比</dt><dd>過去同樣的情況，接下來 12 小時內「到過」這個價位的比例。由近到遠排列，越遠的越少見。</dd>
+      <dt>最後一行（⚠️）</dt><dd>碰軌之後，價格常會先往同一個方向再多走一段，才開始回頭。這一行提醒你過去常見的「再多走」幅度，避免停損放得太緊、被洗出去。</dd>
+      <dt>持倉提示</dt><dd>碰下軌時持倉在下降（多單正在被清），或碰上軌時持倉在增加（新倉在追價），過去都比較常先再延伸一段，標籤會額外提醒。</dd>
+    </dl></div>
+    <h3>圖上的虛線與儀表板</h3>
+    <div class="term"><dl>
+      <dt>四條虛線</dt><dd>就是上面四個價位，會跟著隧道移動。價格到過的那一條會變淡，並打上 ✓。</dd>
+      <dt>儀表板「🪜 三層波動」</dt><dd>寫著碰軌是幾小時前、目前最遠到了哪一站，以及<b>下一站的價位和歷史機率</b>。沒有事件時顯示「等待價格碰到 H1 上軌或下軌」。</dd>
+      <dt>追蹤多久</dt><dd>預設 12 小時，時間到就結束，等下一次碰軌。</dd>
+    </dl></div>
+    <div class="note">百分比來自過去行情的統計（主流幣 15 分鐘 K 線約半年），只描述「通常怎麼走」，不代表這次一定會到。只有在 15 分鐘以下的圖才會啟用。進出場、停損和部位大小，仍由你自己決定。</div>
   </section>
 
   <section id="replay">
@@ -1143,3 +1168,5 @@ function bindSeg(id, key) {
 </script>
 </body>
 </html>
+
+
