@@ -1,0 +1,35 @@
+name: 幣圈貓咪隧道回測
+
+# 一次性回測（只讀、不推播、不寫資料庫）。手動執行，結果看 log，明細 CSV 在 Artifacts。
+on:
+  workflow_dispatch:
+    inputs:
+      tf:
+        description: '週期（逗號分隔）：1H,4H,1D'
+        required: false
+        default: '1H,4H,1D'
+      coins:
+        description: '幣種（逗號分隔，留空=預設10檔主流幣）'
+        required: false
+        default: ''
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install requests
+      - name: Run backtest
+        run: |
+          ARGS="--tf ${{ github.event.inputs.tf }}"
+          if [ -n "${{ github.event.inputs.coins }}" ]; then ARGS="$ARGS --coins ${{ github.event.inputs.coins }}"; fi
+          python tools/tunnel_backtest_crypto.py $ARGS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backtest-crypto
+          path: backtest_crypto_*.csv
