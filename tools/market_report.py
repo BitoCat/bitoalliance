@@ -327,7 +327,310 @@ def coin_data(c, full=False):
 
     # 近 1 小時爆倉
     d["liq_long"], d["liq_short"] = liquidations(c, hours=1)
+
+    # 貓咪隧道（15m／H1／H4，完整版加日線）＋ 三層波動
+    try:
+        d["tun"] = tunnel_data(c, d["last"], full)
+    except Exception as e:  # noqa  隧道失敗不影響其他內容
+        print(f"[tunnel] {c['name']} 失敗：{e}")
     return d
+
+
+# ───────────────────────── 貓咪隧道 × 量能（依 2026/10 回測） ─────────────────────────
+# 隧道：高斯核回歸 BW=14、DEV=1.5（與 TradingView 貓咪隧道相同參數），只用「已收盤」K 計算。
+# 回測（tools/tunnel_backtest_crypto.py，10 檔主流幣）結論，只採各週期方向一致者：
+#   - 15m／1H 出軌本身沒有方向性（平均報酬≈0）→ 只描述，不下方向
+#   - H4／日線收在上軌外：偏續強，不是回落訊號
+#   - 下軌外：偏小幅反彈但過半先再跌一段；爆量（＋持倉下降）時反彈最明顯；H4 下軌外第 4 根起反彈較明顯
+#   - 中段「從上軌回落、中線仍上彎」：較常繼續回測下軌（三週期一致）
+#   - 回軌K：放量站回下軌成功率最高、量縮最弱；跌回上軌時持倉下降＝多單撤退，回落成功率高
+#   - 三層波動（15m 碰 H1 軌後 12 小時）：機率表同 Pine 指標 貓咪隧道crypto Premium
+import math
+
+_TBW, _TDEV = 14, 1.5
+_TW = [math.exp(-(j / _TBW) ** 2 / 2) / math.sqrt(2 * math.pi) for j in range(150)]
+_TSUM = sum(math.exp(-(j / _TBW) ** 2 / 2) / math.sqrt(2 * math.pi) for j in range(500))
+_TF_MS = {"15m": 900_000, "1H": 3_600_000, "4H": 14_400_000, "1D": 86_400_000}
+
+# 三層波動機率（%）：0~2 碰上軌時 H4【上軌外/中線上/中線下】；3~5 碰下軌時 H4【下軌外/中線上/中線下】
+NEST_P = [
+    [77, 87, 83, 73, 76, 79],   # 到 15m 對側軌
+    [57, 77, 70, 54, 71, 72],   # 到 H1 中線
+    [21, 39, 33, 12, 38, 36],   # 到 H1 對側軌
+    [3, 11, 15, 1, 18, 9],      # 到 H4 對側軌
+]
+NEST_X = [61, 48, 48, 66, 50, 56]   # 先續創高/續破低 0.5% 才回頭
+NEST_H = 12                         # 追蹤小時數（同回測）
+
+
+def _closed_rows(rows):
+    """OKX K 線 → 已收盤、舊到新的 (ts, o, h, l, c, 成交額USDT)"""
+    out = []
+    for r in rows or []:
+        if len(r) > 8 and r[8] != "1":
+            continue
+        q = f(r[7]) if len(r) > 7 and r[7] else (f(r[5]) or 0) * (f(r[4]) or 0)
+        out.append((int(r[0]), f(r[1]), f(r[2]), f(r[3]), f(r[4]), q or 0))
+    return sorted(out, key=lambda x: x[0])
+
+
+def _band(closes, i):
+    seg = closes[max(0, i - 149):i + 1][::-1]
+    s1 = s2 = 0.0
+    for j, v in enumerate(seg):
+        w = _TW[j]
+        s1 += v * w
+        s2 += v * v * w
+    m = s1 / _TSUM
+    sd = math.sqrt(max(s2 / _TSUM - m * m, 0.0))
+    return m - _TDEV * sd, m, m + _TDEV * sd
+
+
+def _bands(k, start):
+    c = [x[4] for x in k]
+    return {i: _band(c, i) for i in range(max(60, start), len(k))}
+
+
+def tunnel_info(k, last):
+    """單一週期：最後一根已收盤 K 的隧道與位置（同回測，以收盤判斷）、連續出軌根數、量比、來源/中線方向、回軌K"""
+    n = len(k)
+    if n < 90:
+        return None
+    B = _bands(k, n - 30)
+    L, M, U = B[n - 1]
+    if U <= L:
+        return None
+    pos = lambda p, b: (p - b[0]) / (b[2] - b[0]) * 100
+    pc = pos(k[-1][4], B[n - 1])                       # 最後收盤在隧道的位置
+    side = "up" if pc > 100 else "dn" if pc < 0 else None
+    run, run_v = 0, []
+    for i in range(n - 1, n - 30, -1):
+        pi = pos(k[i][4], B[i])
+        if (side == "up" and pi > 100) or (side == "dn" and pi < 0):
+            run += 1
+            run_v.append(k[i][5])
+        else:
+            break
+    vols = [x[5] for x in k[n - 21:n - 1] if x[5]]
+    ratio = k[-1][5] / (sum(vols) / len(vols)) if vols and k[-1][5] else None
+    tl = any(k[i][3] <= B[i][0] for i in range(n - 16, n - 1))
+    tu = any(k[i][2] >= B[i][2] for i in range(n - 16, n - 1))
+    M5 = B[n - 6][1]
+    slope = "上彎" if M > M5 * 1.002 else "下彎" if M < M5 * 0.998 else "走平"
+    # 回軌K（最後一根已收盤）
+    Lp, Mp, Up = B[n - 2]
+    rev = None
+    if k[-2][3] <= Lp and k[-1][3] > L and k[-1][4] > k[-2][4]:
+        rev = "long"
+    elif k[-2][2] >= Up and k[-1][2] < U and k[-1][4] < k[-2][4]:
+        rev = "short"
+    return {"L": L, "M": M, "U": U, "pos": pc, "pos_now": pos(last, B[n - 1]), "side": side, "run": run,
+            "maxvol": run > 1 and k[-1][5] >= max(run_v), "ratio": ratio,
+            "from": "下軌" if tl and not tu else "上軌" if tu and not tl else None,
+            "slope": slope, "rev": rev, "ts": k[-1][0]}
+
+
+def _oi_change(c, k1h, hours):
+    """近 N 小時持倉（以幣數計，排除價格漲跌影響）變化 %"""
+    oi = okx("/rubik/stat/contracts/open-interest-volume", ccy=c["name"], period="1H")
+    if not oi or not k1h:
+        return None
+    px = {x[0]: x[1] for x in k1h}                      # 每小時開盤價
+    rows = sorted(oi, key=lambda r: int(r[0]), reverse=True)
+    if len(rows) <= hours:
+        return None
+    a, b = rows[0], rows[hours]
+    pa, pb = px.get(int(a[0])), px.get(int(b[0]))
+    if not (pa and pb and f(a[1]) and f(b[1])):
+        return None
+    return (f(a[1]) / pa) / (f(b[1]) / pb) * 100 - 100
+
+
+def nest_event(k15, k1, k4, last):
+    """找最近 12 小時內「15m 剛碰到 H1 上/下軌」的事件，並追蹤四站到了沒"""
+    if len(k15) < 60 or len(k1) < 90 or len(k4) < 90:
+        return None
+    B15 = _bands(k15, len(k15) - NEST_H * 4 - 2)
+    B1 = _bands(k1, 60)
+    B4 = _bands(k4, 60)
+    ends1 = [x[0] + _TF_MS["1H"] for x in k1]
+    ends4 = [x[0] + _TF_MS["4H"] for x in k4]
+    import bisect
+
+    def hb(ends, B, t):
+        j = bisect.bisect_right(ends, t) - 1
+        return B.get(j)
+    start = len(k15) - NEST_H * 4
+    ev = None
+    for i in range(max(start, 1), len(k15)):
+        t = k15[i][0]
+        b1, b1p, b4 = hb(ends1, B1, t), hb(ends1, B1, k15[i - 1][0]), hb(ends4, B4, t)
+        if not (b1 and b1p and b4):
+            continue
+        up = k15[i][2] >= b1[2] and k15[i - 1][2] < b1p[2]
+        dn = k15[i][3] <= b1[0] and k15[i - 1][3] > b1p[0]
+        if up or dn:
+            p4 = (k15[i][4] - b4[0]) / (b4[2] - b4[0]) * 100 if b4[2] > b4[0] else 50
+            side = 1 if up and (not dn or k15[i][4] >= b1[1]) else -1
+            ctx = (0 if p4 > 100 else 1 if p4 >= 50 else 2) if side > 0 else (3 if p4 < 0 else 4 if p4 > 50 else 5)
+            ev = {"i": i, "side": side, "ctx": ctx, "ts": t, "ref": k15[i][2] if side > 0 else k15[i][3]}
+    if not ev:
+        return None
+    hit = [False] * 4
+    ext = False
+    for j in list(range(ev["i"] + 1, len(k15))) + [None]:
+        if j is None:                                   # 最後用現價補一次
+            hi = lo = last
+            t = k15[-1][0] + _TF_MS["15m"]
+            b15 = B15.get(len(k15) - 1)
+        else:
+            hi, lo, t = k15[j][2], k15[j][3], k15[j][0]
+            b15 = B15.get(j)
+        b1, b4 = hb(ends1, B1, t), hb(ends4, B4, t)
+        if not (b15 and b1 and b4):
+            continue
+        if ev["side"] > 0:
+            if not hit[0] and hi >= ev["ref"] * 1.005:
+                ext = True
+            lv = [b15[0], b1[1], b1[0], b4[0]]
+            for x in range(4):
+                hit[x] = hit[x] or lo <= lv[x]
+        else:
+            if not hit[0] and lo <= ev["ref"] * 0.995:
+                ext = True
+            lv = [b15[2], b1[1], b1[2], b4[2]]
+            for x in range(4):
+                hit[x] = hit[x] or hi >= lv[x]
+    b15, b1, b4 = B15.get(len(k15) - 1), B1.get(len(k1) - 1), B4.get(len(k4) - 1)
+    if ev["side"] > 0:
+        lv = [b15[0], b1[1], b1[0], b4[0]]
+    else:
+        lv = [b15[2], b1[1], b1[2], b4[2]]
+    ev.update(hit=hit, ext=ext, lv=lv, hours=(time.time() * 1000 - ev["ts"]) / 3_600_000)
+    return ev
+
+
+def tunnel_data(c, last, full=False):
+    k15 = _closed_rows(okx("/market/candles", instId=c["swap"], bar="15m", limit="300"))
+    k1 = _closed_rows(okx("/market/candles", instId=c["swap"], bar="1H", limit="300"))
+    k4 = _closed_rows(okx("/market/candles", instId=c["swap"], bar="4H", limit="300"))
+    t = {"15m": tunnel_info(k15, last), "1H": tunnel_info(k1, last), "4H": tunnel_info(k4, last)}
+    if full:
+        t["1D"] = tunnel_info(_closed_rows(okx("/market/candles", instId=c["swap"], bar="1Dutc", limit="300")), last)
+    t["oi4h"] = _oi_change(c, k1, 4)
+    t["nest"] = nest_event(k15, k1, k4, last)
+    return t
+
+
+def _zone(ti):
+    if not ti:
+        return "—"
+    p = ti["pos"]
+    if p > 100:
+        return "上軌外"
+    if p < 0:
+        return "下軌外"
+    if p >= 70:
+        return "靠近上軌"
+    if p <= 30:
+        return "靠近下軌"
+    return "中段"
+
+
+def _ratio_txt(r):
+    if r is None:
+        return ""
+    tag = "爆量" if r >= 2.5 else "放量" if r >= 1.5 else "量縮" if r < 0.8 else "量平"
+    return f"{tag} {r:.1f}×"
+
+
+def tunnel_read(ti, name, oi=None):
+    """H4／日線：位置 ＋ 回測的歷史傾向（描述盤勢，不下指令）"""
+    if not ti:
+        return None
+    z = _zone(ti)
+    head = f"{name} {z}"
+    if ti["side"]:
+        head += f" 第 {ti['run']} 根"
+    rt = _ratio_txt(ti["ratio"]) if (ti["side"] or ti["rev"]) else ""
+    if rt:
+        head += f"｜量 {rt}"
+    if oi is not None and name == "H4":
+        head += f"｜持倉 4h {arrow_pct(oi, 1)}"
+    note = ""
+    r = ti["ratio"] or 0
+    if ti["side"] == "up":
+        note = "歷史上收在上軌外之後多半延續強勢，並不是回落訊號"
+    elif ti["side"] == "dn":
+        if r >= 2.5 and oi is not None and oi <= -1:
+            note = "爆量＋持倉下降（多單被清）：歷史上這類情況之後反彈最明顯"
+        elif r >= 2.5:
+            note = "出現爆量：歷史上下軌外爆量之後反彈較明顯"
+        elif name == "H4" and ti["run"] >= 4:
+            note = "已在下軌外多根：歷史上這時之後的反彈反而較明顯，但過程常有震盪"
+        else:
+            note = "歷史上偏小幅反彈，但過半會先再跌一段"
+    elif z == "中段" or 30 < ti["pos"] < 70:
+        if ti["from"] == "上軌" and ti["slope"] == "上彎":
+            note = "從上軌回落、中線仍上彎：歷史上較常繼續回測下軌"
+        elif ti["from"] == "下軌" and ti["slope"] == "下彎":
+            note = "從下軌反彈、中線仍下彎：歷史上略偏先碰上軌"
+    if ti["rev"] == "long":
+        rr = ti["ratio"] or 0
+        note = ("剛站回下軌，" + ("而且放量：歷史上這類站回成功率較高" if rr >= 1.5 else
+                                  "但量縮：歷史上這類站回較常失敗" if rr < 1 else "量能普通"))
+    elif ti["rev"] == "short":
+        note = "剛跌回上軌內" + ("，持倉下降（多單撤退）：歷史上這類回落成功率較高" if oi is not None and oi <= -1 and name == "H4" else "")
+    return head, note
+
+
+NEST_NAMES = {1: ["15m 下軌", "H1 中線", "H1 下軌", "H4 下軌"], -1: ["15m 上軌", "H1 中線", "H1 上軌", "H4 上軌"]}
+NEST_CTX = {0: "大方向強勢", 1: "大方向偏多", 2: "大方向偏空", 3: "大方向弱勢", 4: "大方向偏多", 5: "大方向偏空"}
+
+
+def nest_lines(t):
+    ev = (t or {}).get("nest")
+    if not ev:
+        return []
+    up = ev["side"] > 0
+    names = NEST_NAMES[ev["side"]]
+    far = max([x for x in range(4) if ev["hit"][x]], default=-1)   # 最遠到過哪一站
+    nxt = far + 1 if far < 3 else None
+    L = [f"🪜 {ev['hours']:.1f} 小時前碰到 H1 {'上軌' if up else '下軌'}（{NEST_CTX[ev['ctx']]}）"
+         f"→ 歷史上 12 小時內{'回落' if up else '反彈'}到："
+         + "、".join(f"{names[x]} {NEST_P[x][ev['ctx']]}%" for x in range(4))]
+    status = f"最遠已到 {names[far]}" if far >= 0 else "還沒到第一站"
+    if nxt is not None:
+        status += f"｜下一站 {names[nxt]} {pnum(ev['lv'][nxt])}"
+        if far < 0:
+            status += f"（有 {NEST_X[ev['ctx']]}% 會先再{'漲' if up else '跌'} 0.5% 才{'回頭' if up else '彈'}）"
+    else:
+        status += "（四站都到了，這次是大波動）"
+    L.append("-# " + status)
+    return L
+
+
+def tunnel_short_line(t):
+    """簡短版：一行位置 ＋ 三層波動"""
+    if not t or not t.get("4H"):
+        return []
+    parts = [f"H4 {_zone(t['4H'])}", f"H1 {_zone(t.get('1H'))}", f"15m {_zone(t.get('15m'))}"]
+    L = ["🐱 隧道：" + "｜".join(parts)]
+    return L + nest_lines(t)
+
+
+def tunnel_full_lines(t):
+    if not t or not t.get("4H"):
+        return []
+    L = ["**🐱 貓咪隧道（位置 × 歷史傾向）**"]
+    for name in ("1D", "4H"):
+        r = tunnel_read(t.get(name), "日線" if name == "1D" else "H4", t.get("oi4h"))
+        if r:
+            L.append(f"• {r[0]}" + (f"：{r[1]}" if r[1] else ""))
+    L.append(f"• H1 {_zone(t.get('1H'))}｜15m {_zone(t.get('15m'))}")
+    L += nest_lines(t)
+    L.append("-# 15m／H1 碰軌或出軌本身不代表方向，短線看上面的三層波動；歷史傾向來自回測，不代表這次一定如此")
+    return L
 
 
 # ───────────────────────── 成交量分布（Volume Profile） ─────────────────────────
@@ -902,6 +1205,9 @@ def full_coin_embed(c, d, premium, stamp, h4):
     tl = trend_lines(d)
     if tl:
         L += tl + [""]
+    tn = tunnel_full_lines(d.get("tun"))
+    if tn:
+        L += tn + [""]
     rg = regime(d)
     box = f"目前是箱型整理，區間 {pnum(rg['lo'])}～{pnum(rg['hi'])}。" if rg and rg["type"] == "箱型" and st in ("整理", "膠著") else ""
     L += [f"**🧭 短線局勢（15m／1h）：{icon} {st}**", desc + pos_sentence(d) + box, "", "**🚦 短線燈號**"]
@@ -964,6 +1270,7 @@ def short_embed(datas, title, stamp):
         if fm is not None and fm <= 60:
             L.append(f"⏳ {funding_note(d.get('funding'), fm)}")
         L.append(f"📍 壓力 {pnum(d['hi1'])}｜支撐 {pnum(d['lo1'])}（近 1 小時）")
+        L += tunnel_short_line(d.get("tun"))
         vs = vp_short_line(d)
         if vs:
             L.append(vs)
