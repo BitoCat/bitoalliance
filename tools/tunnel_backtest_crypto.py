@@ -19,10 +19,20 @@
 資料：交易所公開 K 線與持倉歷史（GitHub Actions 可連）。OI 歷史較短，抓不到的事件歸「OI無資料」。
 
 用法：
-  python tools/tunnel_backtest_crypto.py                       # 預設 10 檔主流幣 × 1H/4H/1D
+  python tools/tunnel_backtest_crypto.py                       # 預設 10 檔主流幣 × 15m/1H/4H/1D ＋ 多週期嵌套
+  python tools/tunnel_backtest_crypto.py --tf nest             # 只跑「多週期嵌套」
   python tools/tunnel_backtest_crypto.py --tf 1H --coins BTC,ETH
 結果印在 log；明細存 backtest_crypto_{tf}.csv（workflow 上傳成 Artifact）。
+
+F 多週期嵌套（毛哥的震盪框架）：
+  第一層：H1 上軌 ↔ 15m 下軌（小震盪）
+  第二層：H1 上軌 ↔ H1 下軌（整個 H1 隧道的來回）
+  第三層：觸及 H4 軌道（大波動）
+  事件＝15m K 線「剛碰到」H1 上軌（或下軌）。往後 12 小時（48 根 15m）記錄最深回到哪一層：
+    碰 H1 上軌 → 15m 下軌？H1 中線？H1 下軌？H4 下軌？以及「先續創高再回」的比例。
+  H1/H4 隧道一律用「已收盤」那根的值，避免偷看未來。
 """
+import bisect
 import argparse
 import csv
 import math
@@ -38,6 +48,7 @@ S.headers["User-Agent"] = "Mozilla/5.0"
 DEFAULT_COINS = ["BTC", "ETH", "SOL", "XRP", "DOGE", "BNB", "ADA", "LINK", "AVAX", "SUI"]
 # 每個週期：抓幾根、往後看幾根、「再延伸」門檻%、OI 變化分界%
 TF = {
+    "15m": {"bars": 17520, "H": 16, "ext": 0.8, "oi": 0.3, "okx": "15m"},  # 約半年；往後看 4 小時
     "1H": {"bars": 8760, "H": 12, "ext": 1.5, "oi": 0.5, "okx": "1H"},     # 約一年
     "4H": {"bars": 4380, "H": 12, "ext": 3.0, "oi": 1.0, "okx": "4H"},     # 約兩年
     "1D": {"bars": 1100, "H": 10, "ext": 5.0, "oi": 2.0, "okx": "1Dutc"},  # 約三年
@@ -63,8 +74,20 @@ def api(path, params, tries=4):
     return []
 
 
+_CACHE = {}
+
+
 def candles(coin, tf, need):
-    """回 [(ts,o,h,l,c,volUSDT)] 舊→新，只取已收盤K。"""
+    """回 [(ts,o,h,l,c,volUSDT)] 舊→新，只取已收盤K。同一幣種週期抓過就用快取（嵌套分析會重用）。"""
+    got = _CACHE.get((coin, tf))
+    if got and len(got) >= need:
+        return got[-need:]
+    out = _fetch_candles(coin, tf, need)
+    _CACHE[(coin, tf)] = out
+    return out
+
+
+def _fetch_candles(coin, tf, need):
     inst = f"{coin}-USDT-SWAP"
     out, after = [], None
     while len(out) < need:
@@ -88,7 +111,7 @@ def candles(coin, tf, need):
 def oi_history(coin, tf):
     """回 {ts: oi}。先試 open-interest-history（可分頁），不行退 open-interest-volume（較短）。"""
     inst = f"{coin}-USDT-SWAP"
-    period = {"1H": "1H", "4H": "4H", "1D": "1D"}[tf]
+    period = {"15m": "15m", "1H": "1H", "4H": "4H", "1D": "1D"}[tf]
     m, end = {}, None
     for _ in range(60):
         p = {"instId": inst, "period": period, "limit": "100"}
@@ -290,6 +313,139 @@ def revert_event(base, fam, i, B, h, l, v, H, shadow, side):
             "touch_b": "觸軌期放量" if tr >= 1.5 else "觸軌期無放量"}
 
 
+# ---------------- F 多週期嵌套 ----------------
+NEST_H = 48            # 往後看幾根 15m（12 小時）
+NEST_EXT = 0.5         # 「先續創高」門檻 %
+TF_MS = {"15m": 900000, "1H": 3600000, "4H": 14400000}
+
+
+def band_series(k):
+    c = [x[4] for x in k]
+    return [bands(c, i) if i >= WARMUP else None for i in range(len(k))]
+
+
+def closed_lookup(k_hi, B_hi, tf_hi):
+    """回函式 f(t)：15m K 開盤時間 t 當下，最近一根「已收盤」高週期K的隧道值。"""
+    ends = [x[0] + TF_MS[tf_hi] for x in k_hi]       # 高週期每根的收盤時間
+
+    def f(t):
+        j = bisect.bisect_right(ends, t) - 1
+        return B_hi[j] if j >= 0 else None
+    return f
+
+
+def nest_scan(coin, k15, k1, k4, oi15):
+    n = len(k15)
+    if n < WARMUP + NEST_H + 30:
+        return []
+    ts = [x[0] for x in k15]
+    h = [x[2] for x in k15]
+    l = [x[3] for x in k15]
+    c = [x[4] for x in k15]
+    v = [x[5] for x in k15]
+    B15 = band_series(k15)
+    f1 = closed_lookup(k1, band_series(k1), "1H")
+    f4 = closed_lookup(k4, band_series(k4), "4H")
+    b1 = [f1(t) for t in ts]
+    b4 = [f4(t) for t in ts]
+
+    def vr(i):
+        prev = [x for x in v[max(0, i - 20):i] if x]
+        return v[i] / (sum(prev) / len(prev)) if len(prev) >= 10 and v[i] else None
+
+    out = []
+    for i in range(WARMUP + 20, n - NEST_H):
+        if not (B15[i] and b1[i] and b4[i] and b1[i - 1]):
+            continue
+        L1, M1, U1 = b1[i]
+        L4, M4, U4 = b4[i]
+        for side in ("up", "dn"):
+            if side == "up":
+                hit = h[i] >= U1 and h[i - 1] < b1[i - 1][2]      # 剛碰 H1 上軌
+            else:
+                hit = l[i] <= L1 and l[i - 1] > b1[i - 1][0]      # 剛碰 H1 下軌
+            if not hit:
+                continue
+            ref = h[i] if side == "up" else l[i]
+            first = {"15m": None, "H1中": None, "H1對軌": None, "H4": None, "ext": None}
+            for kk in range(1, NEST_H + 1):
+                j = i + kk
+                if not (B15[j] and b1[j] and b4[j]):
+                    continue
+                L15j, _, U15j = B15[j]
+                L1j, M1j, U1j = b1[j]
+                L4j, _, U4j = b4[j]
+                if side == "up":
+                    checks = [("15m", l[j] <= L15j), ("H1中", l[j] <= M1j), ("H1對軌", l[j] <= L1j),
+                              ("H4", l[j] <= L4j), ("ext", h[j] >= ref * (1 + NEST_EXT / 100))]
+                else:
+                    checks = [("15m", h[j] >= U15j), ("H1中", h[j] >= M1j), ("H1對軌", h[j] >= U1j),
+                              ("H4", h[j] >= U4j), ("ext", l[j] <= ref * (1 - NEST_EXT / 100))]
+                for key, ok in checks:
+                    if ok and first[key] is None:
+                        first[key] = kk
+            # 最深回到哪一層（12 小時內）
+            if first["H4"]:
+                tier = "4 到H4對側軌(大波動)"
+            elif first["H1對軌"]:
+                tier = "3 到H1對側軌"
+            elif first["H1中"]:
+                tier = "2 到H1中線"
+            elif first["15m"]:
+                tier = "1 只到15m對側軌"
+            else:
+                tier = "0 沒回到15m對側軌"
+            ext_first = first["ext"] is not None and (first["15m"] is None or first["ext"] < first["15m"])
+            r = vr(i)
+            a, b = oi15.get(ts[i]), oi15.get(ts[i - 1])
+            oc = (a / b - 1) * 100 if a and b else None
+            h4pos = (c[i] - L4) / (U4 - L4) * 100 if U4 > L4 else None
+            if side == "up":
+                h4ctx = ("H4上軌外" if h4pos > 100 else "H4中線上" if h4pos >= 50 else "H4中線下")
+            else:
+                h4ctx = ("H4下軌外" if h4pos < 0 else "H4中線下" if h4pos <= 50 else "H4中線上")
+            out.append({"coin": coin, "ts": ts[i], "side": side, "tier": tier,
+                        "t15": first["15m"], "tmid": first["H1中"], "topp": first["H1對軌"],
+                        "r15_4h": first["15m"] is not None and first["15m"] <= 16,
+                        "r15": first["15m"] is not None, "rmid": first["H1中"] is not None,
+                        "ropp": first["H1對軌"] is not None, "rh4": first["H4"] is not None,
+                        "ext_first": ext_first, "ratio": round(r, 2) if r else None, "ratio_b": ratio_b(r),
+                        "oi_chg": round(oc, 2) if oc is not None else None, "oi_b": oi_b(oc, 0.3),
+                        "h4ctx": h4ctx})
+    return out
+
+
+def report_nest(ev, side):
+    up = side == "up"
+    title = "F1 碰 H1 上軌之後（往下回到哪一層？）" if up else "F2 碰 H1 下軌之後（往上彈到哪一層？）"
+    print(f"\n==================== {title}（事件 {len(ev)}）====================")
+    print("欄位：N｜4h內到15m對側軌｜12h內到15m對側軌｜到H1中線｜到H1對側軌｜到H4對側軌｜"
+          f"先續{'創高' if up else '破低'}≥{NEST_EXT}%｜到15m對側軌中位數(根15m)")
+
+    def med(xs):
+        xs = sorted(x for x in xs if x is not None)
+        return xs[len(xs) // 2] if xs else None
+
+    def line(name, rows):
+        n = len(rows)
+        if n < 30:
+            return
+        m = med([r["t15"] for r in rows])
+        print(f"  {name:<20}{n:6d}  {pct(sum(r['r15_4h'] for r in rows), n)}  {pct(sum(r['r15'] for r in rows), n)}"
+              f"  {pct(sum(r['rmid'] for r in rows), n)}  {pct(sum(r['ropp'] for r in rows), n)}"
+              f"  {pct(sum(r['rh4'] for r in rows), n)}  {pct(sum(r['ext_first'] for r in rows), n)}"
+              f"   {m if m is not None else '-'}")
+
+    line("全部", ev)
+    group_lines(ev, [("h4ctx", "H4 大方向"), ("ratio_b", "碰軌那根15m量比"), ("oi_b", "碰軌那根持倉變化")], line)
+    print(" ◆ 12 小時內最深到哪一層（波動層級分布）")
+    g = defaultdict(int)
+    for r in ev:
+        g[r["tier"]] += 1
+    for k in sorted(g):
+        print(f"  {k:<20}{g[k]:6d}  {pct(g[k], len(ev))}")
+
+
 # ---------------- 報表 ----------------
 def pct(x, n):
     return f"{x / n * 100:5.1f}%" if n else "   - "
@@ -377,12 +533,13 @@ def report_revert(ev, title):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--tf", default="1H,4H,1D")
+    ap.add_argument("--tf", default="15m,1H,4H,1D,nest")
     ap.add_argument("--coins", default=",".join(DEFAULT_COINS))
     args = ap.parse_args()
     coins = [x.strip().upper() for x in args.coins.split(",") if x.strip()]
 
-    for tf in [x.strip() for x in args.tf.split(",") if x.strip()]:
+    tfs = [x.strip() for x in args.tf.split(",") if x.strip()]
+    for tf in [t for t in tfs if t != "nest"]:
         events = []
         print(f"\n################ 週期 {tf}（往後看 {TF[tf]['H']} 根）################")
         for coin in coins:
@@ -405,6 +562,29 @@ def main():
             w.writeheader()
             w.writerows(events)
         print(f"[info] 明細已存 {fn}")
+
+    if "nest" in tfs:
+        print("\n################ F 多週期嵌套（15m × H1 × H4）################")
+        ev = []
+        for coin in coins:
+            k15 = candles(coin, "15m", TF["15m"]["bars"])
+            if not k15:
+                continue
+            span = k15[-1][0] - k15[0][0]
+            k1 = candles(coin, "1H", int(span / 3600000) + 200)
+            k4 = candles(coin, "4H", int(span / 14400000) + 200)
+            oi15 = oi_history(coin, "15m")
+            print(f"[data] {coin}：15m {len(k15)} 根、1H {len(k1)} 根、4H {len(k4)} 根、15m OI {len(oi15)} 筆")
+            ev += nest_scan(coin, k15, k1, k4, oi15)
+        report_nest([e for e in ev if e["side"] == "up"], "up")
+        report_nest([e for e in ev if e["side"] == "dn"], "dn")
+        if ev:
+            keys = sorted({kk for e in ev for kk in e})
+            with open("backtest_crypto_nest.csv", "w", newline="", encoding="utf-8-sig") as fh:
+                w = csv.DictWriter(fh, fieldnames=keys)
+                w.writeheader()
+                w.writerows(ev)
+            print("[info] 明細已存 backtest_crypto_nest.csv")
 
 
 if __name__ == "__main__":
